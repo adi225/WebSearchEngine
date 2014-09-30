@@ -10,7 +10,7 @@ import java.util.Iterator;
 // in homework 2.  For this homework, don't worry about how this is done.
 class Document {
   public int _docid;
-//test
+
   private static HashMap < String , Integer > _dictionary = new HashMap < String , Integer >();
   private static Vector < String > _rdictionary = new Vector < String >();
   private static HashMap < Integer , Integer > _df = new HashMap < Integer , Integer >();
