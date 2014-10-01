@@ -6,3 +6,7 @@
 .settings/org.eclipse.jdt.core.prefs
 
 *.class
+
+WebSearchEngine.iml
+
+.idea
