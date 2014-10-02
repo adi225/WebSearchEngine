@@ -65,27 +65,27 @@ class Ranker {
     }
     
     // writing out to files
-    File vsmFile = new File(currentPath + "/" + vsmFileName);
+    File vsmFile = new File(currentPath + "/results/" + vsmFileName);
     PrintWriter vsmWriter = new PrintWriter(vsmFile);
     vsmWriter.write(vsmQueryResponse);
     vsmWriter.close();
     
-    File qlFile = new File(currentPath + "/" + qlFileName);
+    File qlFile = new File(currentPath + "/results/" + qlFileName);
     PrintWriter qlWriter = new PrintWriter(qlFile);
     qlWriter.write(qlQueryResponse);
     qlWriter.close();
     
-    File phraseFile = new File(currentPath + "/" + phraseFileName);
+    File phraseFile = new File(currentPath + "/results/" + phraseFileName);
     PrintWriter phraseWriter = new PrintWriter(phraseFile);
     phraseWriter.write(phraseQueryResponse);
     phraseWriter.close();
     
-    File numviewFile = new File(currentPath + "/" + numviewFileName);
+    File numviewFile = new File(currentPath + "/results/" + numviewFileName);
     PrintWriter numviewWriter = new PrintWriter(numviewFile);
     numviewWriter.write(numviewQueryResponse);
     numviewWriter.close();
     
-    File linearFile = new File(currentPath + "/" + linearFileName);
+    File linearFile = new File(currentPath + "/results/" + linearFileName);
     PrintWriter linearWriter = new PrintWriter(linearFile);
     linearWriter.write(linearQueryResponse);
     linearWriter.close();

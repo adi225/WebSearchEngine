@@ -45,11 +45,11 @@ class Evaluator {
 	String current_path = System.getProperty("user.dir");  
 	  
 	// please change this path accordingly
-	String index_path = "D:/NYU/Courses/Web Search Engine/Fall 2014/HW1/data/corpus.tsv";
+	String index_path = "./data/corpus.tsv";
 	Ranker ranker = new Ranker(index_path);
 	
 	// please change the input path accordingly
-    String input_query_path = "D:/NYU/Courses/Web Search Engine/Fall 2014/HW1/data/queries.tsv";
+    String input_query_path = "./data/queries.tsv";
     
     // output file names
     String vsm_file_name = "hw1.3-vsm.tsv";  // vector space model
@@ -98,27 +98,27 @@ class Evaluator {
     
     // writing out to files
     
-    File vsm_file = new File(current_path+"/"+vsm_file_name);
+    File vsm_file = new File(current_path+"/results/"+vsm_file_name);
     PrintWriter vsm_writer = new PrintWriter(vsm_file);
     vsm_writer.write(vsm_evaluation);
     vsm_writer.close();
     
-    File ql_file = new File(current_path+"/"+ql_file_name);
+    File ql_file = new File(current_path+"/results/"+ql_file_name);
     PrintWriter ql_writer = new PrintWriter(ql_file);
     ql_writer.write(ql_evaluation);
     ql_writer.close();
     
-    File phrase_file = new File(current_path+"/"+phrase_file_name);
+    File phrase_file = new File(current_path+"/results/"+phrase_file_name);
     PrintWriter phrase_writer = new PrintWriter(phrase_file);
     phrase_writer.write(phrase_evaluation);
     phrase_writer.close();
     
-    File numviews_file = new File(current_path+"/"+numview_file_name);
+    File numviews_file = new File(current_path+"/results/"+numview_file_name);
     PrintWriter numviews_writer = new PrintWriter(numviews_file);
     numviews_writer.write(numview_evaluation);
     numviews_writer.close();
     
-    File linear_file = new File(current_path+"/"+linear_file_name);
+    File linear_file = new File(current_path+"/results/"+linear_file_name);
     PrintWriter linear_writer = new PrintWriter(linear_file);
     linear_writer.write(linear_evaluation);
     linear_writer.close();
