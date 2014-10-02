@@ -123,39 +123,47 @@ class Ranker {
       String term = s.next();
       qv.add(term);
     }
-    
+
     for (int i = 0; i < _index.numDocs(); ++i){
+        Map<String, Integer> documentMap = new HashMap<String, Integer>();
+        Vector<String> dv = _index.getDoc(i).get_body_vector();
+
+        for(String word : dv) {
+            if(documentMap.containsKey(word)) {
+                documentMap.put(word, documentMap.get(word) + 1);
+            } else {
+                documentMap.put(word, 1);
+            }
+        }
+
         switch (method) {
             case COSINE:
-                retrievalResults.add(cosineSimilarity(qv, i));
+                retrievalResults.add(cosineSimilarity(qv, documentMap, i));
                 break;
             case QL:
-                retrievalResults.add(queryLikelihood(qv, i));
+                retrievalResults.add(queryLikelihood(qv, documentMap, i));
                 break;
             case PHRASE:
-                retrievalResults.add(phraseRanker(qv, i));
+                retrievalResults.add(phraseRanker(qv, documentMap, i));
                 break;
             case NUMVIEWS:
                 retrievalResults.add(numViews(i));
                 break;
             case LINEAR:
-                retrievalResults.add(simpleLinear(qv, i));
+                retrievalResults.add(simpleLinear(qv, documentMap, i));
                 break;
         }
     }
     return retrievalResults;
   }
   
-  public ScoredDocument cosineSimilarity(Vector<String> qv, int did){
-    Document d = _index.getDoc(did);
-    Vector<String> dv = d.get_body_vector();
-
+  public ScoredDocument cosineSimilarity(Vector<String> qv, Map<String, Integer> documentMap, int did){
     double score = 0, q_sqr = 0, d_sqr = 0;
     int n = _index.numDocs();
-    double idf, wtf_q, wtf_d, q, doc;
+    double idf, tf_q, tf_d, tfidf_q, tfidf_d;
 
     // inserts query terms into map
-    Map<String, Integer> queryMap = new TreeMap<String, Integer>();
+    Map<String, Integer> queryMap = new HashMap<String, Integer>();
     for(String query : qv) {
       if(queryMap.containsKey(query)) {
         queryMap.put(query, queryMap.get(query) + 1);
@@ -167,121 +175,92 @@ class Ranker {
     // iterates over all words in query
     for(String term : queryMap.keySet()) {
       idf = 1 + Math.log(n / _index.documentFrequency(term)) / Math.log(2);
-      wtf_q = queryMap.get(term);
-      wtf_d = termFrequencyInDocument(dv, term);
-      q = wtf_q * idf;
-      doc = wtf_d * idf;
-      q_sqr += q * q;
-      d_sqr += doc * doc;
-      score += q * doc;
+      tf_q = queryMap.get(term); // count of term in query
+      tf_d = documentMap.containsKey(term) ? documentMap.get(term) : 0; // count of term in document
+      tfidf_q = tf_q * idf;  // tfidf of term in query
+      tfidf_d = tf_d * idf;  // tfidf of term in document
+      q_sqr += tfidf_q * tfidf_q;  // computing x^2 term of cosine similarity
+      d_sqr += tfidf_d * tfidf_d;  // computing y^2 term of cosine similarity
+      score += tfidf_q * tfidf_d;  // computing x*y term of cosine similarity
     }
 
     if (q_sqr * d_sqr == 0)
       score = 0;
     else
-      score /= Math.sqrt(q_sqr * d_sqr);
+      score /= Math.sqrt(q_sqr * d_sqr); // computing cosine similarity
 
-    return new ScoredDocument(did, d.get_title_string(), score);
+    return new ScoredDocument(did, _index.getDoc(did).get_title_string(), score);
   }
   
-  public ScoredDocument queryLikelihood(Vector < String > qv, int did){
+  public ScoredDocument queryLikelihood(Vector<String> qv, Map<String, Integer> documentMap, int did){
     Document d = _index.getDoc(did);
-    Vector < String > dv = d.get_body_vector();  
+    Vector<String> dv = d.get_body_vector();
     
-    int document_size = dv.size();
-    int total_words_in_collection = _index.termFrequency();
+    int documentSize = dv.size();
+    int totalWordsInCorpus = _index.termFrequency();
 	double lambda = 0.5;
 	
 	double score = 0;
 	
-	for(int i=0;i<qv.size();i++){
-	  int word_frequency_in_document = termFrequencyInDocument(dv, qv.get(i));
-	  int word_frequency_in_corpus = _index.termFrequency(qv.get(i));
-	  
+	for(String word : qv) {
+	  int wordFrequencyInDocument = documentMap.containsKey(word) ? documentMap.get(word) : 0;
+	  int wordFrequencyInCorpus = _index.termFrequency(word);
+
 	  // This formula calculates the value of log( P(Q|D) ), which is given by
-	  // the summation of log( ((1-lambda)*word_frequency_in_document/document_size) + word_frequency_in_corpus/total_words_in_collection )
+	  // the summation of log( ((1-lambda) * wordFrequencyInDocument/documentSize) + wordFrequencyInCorpus/totalWordsInCorpus )
 	  // Usage of the log is to overcome the problem of multiplying many small numbers together, which might
 	  // lead to accuracy problem.
-	  score += Math.log(((1-lambda)*((double)word_frequency_in_document)/document_size)+lambda*((double)word_frequency_in_corpus)/total_words_in_collection);
+	  score += Math.log(((1-lambda)*((double)wordFrequencyInDocument)/documentSize)+lambda*((double)wordFrequencyInCorpus)/totalWordsInCorpus);
 	}
 	
     return new ScoredDocument(did, d.get_title_string(), score);
   } 
   
-  public ScoredDocument phraseRanker(Vector < String > qv, int did){
+  public ScoredDocument phraseRanker(Vector<String> qv, Map<String, Integer> documentMap, int did){
     Document d = _index.getDoc(did);
-    Vector < String > dv = d.get_body_vector(); 
-    double bigramsCount = dv.size()-1;
-    int j = 1;    
-    double score = 1;
-    for(int i = 0; i<qv.size()-1; i++)
-    {
-    	String word1 = qv.get(i);
-    	String word2 = qv.get(j);
-    	int bigramFrequencyInDoc = getBigramFrequencyInDocument(dv, word1, word2);
-    	score *= bigramFrequencyInDoc/bigramsCount;
-    	
-    	j++;
+    Vector<String> dv = d.get_body_vector();
+    double score = 0;
+
+    if(qv.size() ==  1) {
+        String term = qv.firstElement();
+        score = documentMap.containsKey(term) ? documentMap.get(term) : 0;
+        return new ScoredDocument(did, d.get_title_string(), score);
     }
-    ScoredDocument doc = new ScoredDocument(did, d.get_title_string(), score);
-    return doc;
+
+    for(int i = 0; i < qv.size()-1; i++) {
+    	score += getBigramFrequencyInDocument(dv, qv.get(i), qv.get(i+1));
+    }
+    return new ScoredDocument(did, d.get_title_string(), score);
   }
   
-  //Method that returns the number of times a bigram appears in the document
+  // Method that returns the number of times a bigram appears in the document
   int getBigramFrequencyInDocument(Vector<String> dv, String word1, String word2)
   {
 	  int frequency = 0;
-	  
-	  int j = 1;
-	  for(int i = 0; i<dv.size()-1; i++)
-	  {
-		  //for a bigram to be counted, we need to find the 2 words consecutively
-		 if(dv.get(i).equalsIgnoreCase(word1) && dv.get(j).equalsIgnoreCase(word2))
-			 frequency++;
-		 
-		 j++;
-	  }
-	   
+      for(int i = 0; i < dv.size()-1; i++) {
+          //for a bigram to be counted, we need to find the 2 words consecutively
+          if (dv.get(i).equalsIgnoreCase(word1) && dv.get(i + 1).equalsIgnoreCase(word2))
+              frequency++;
+      }
 	  return frequency;
   }
   
   public ScoredDocument numViews(int did){
-    Document d = _index.getDoc( did );
-    int score = d.get_numviews();
-    return new ScoredDocument(did, d.get_title_string(), score);
+    Document d = _index.getDoc(did);
+    return new ScoredDocument(did, d.get_title_string(), d.get_numviews());
   }
   
-  public ScoredDocument simpleLinear(Vector < String > qv, int did){
-	Document d = _index.getDoc( did );  
-	  
-	double beta_cos = 1;
-	double beta_ql = 1;
-	double beta_phrase = 1;
-	double beta_numviews = 1;
+  public ScoredDocument simpleLinear(Vector<String> qv, Map<String, Integer> documentMap, int did){
+	double betaCos = 1;
+	double betaQL = 1;
+	double betaPhrase = 1;
+	double betaNumviews = 1;
 	
-	ScoredDocument d_cos = cosineSimilarity(qv, did);
-	ScoredDocument d_ql = queryLikelihood(qv, did);
-	ScoredDocument d_phrase = phraseRanker(qv, did);
-	ScoredDocument d_numviews = numViews(did);
+	double combined_score = (betaCos      * cosineSimilarity(qv, documentMap, did)._score) +
+			                (betaQL       * queryLikelihood(qv, documentMap, did)._score) +
+			                (betaPhrase   * phraseRanker(qv, documentMap, did)._score) +
+			                (betaNumviews * numViews(did)._score);
 	
-	double combined_score = (beta_cos*d_cos._score)+ 
-			                (beta_ql*d_ql._score)+ 
-			                (beta_phrase*d_phrase._score)+ 
-			                (beta_numviews*d_numviews._score);
-	
-	return new ScoredDocument(did, d.get_title_string(), combined_score);
+	return new ScoredDocument(did, _index.getDoc(did).get_title_string(), combined_score);
   }
-
-  // This helper method takes a document vector and a term as inputs and returns the number of occurrence of the given term
-  // in the given document vector.
-  public int termFrequencyInDocument(Vector < String> dv, String term){
-    int count = 0;
-    for(int i=0;i<dv.size();i++){
-    	if(dv.get(i).equalsIgnoreCase(term)){
-    	  count++;
-    	}
-    }
-	return count;
-  }
-
 }
