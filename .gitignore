@@ -10,3 +10,9 @@
 WebSearchEngine.iml
 
 .idea
+
+hw1.1-numviews.tsv
+hw1.1-phrase.tsv
+hw1.1-ql.tsv
+hw1.1-vsm.tsv
+hw1.2-linear.tsv

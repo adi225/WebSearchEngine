@@ -1,225 +1,185 @@
 package edu.nyu.cs.cs2580;
 
-import java.awt.LinearGradientPaint;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.Vector;
-import java.util.Scanner;
+import java.util.*;
 
 class Ranker {
   private Index _index;
-  public static enum ranker {COSINE,QL,PHRASE,NUMVIEWS,LINEAR};
-  private boolean save_Output = false;
+  public static enum RankingMethod { COSINE, QL, PHRASE, NUMVIEWS, LINEAR };
 
-  public Ranker(String index_source) throws FileNotFoundException{
-    _index = new Index(index_source);
-    if(save_Output){
-      saveOutput();
+  private boolean saveOutput = true;
+
+  public Ranker(String indexSource) throws FileNotFoundException {
+    _index = new Index(indexSource);
+
+    if(saveOutput) {
+        saveOutput();
     }
   }
   
-  // This method saves the output of each ranking algorithm into files
   public void saveOutput() throws FileNotFoundException {
 	// The output file will be saved in the parent directory that contains the .class file
-	String current_path = System.getProperty("user.dir");
-	
+	String currentPath      = System.getProperty("user.dir");
+
 	// please change the input path accordingly
-    String input_query_path = "D:/NYU/Courses/Web Search Engine/Fall 2014/HW1/data/queries.tsv";
-    
+    String inputQueryPath   = "./data/queries.tsv";
+
     // output file names
-    String vsm_file_name = "hw1.1-vsm.tsv";  // vector space model
-    String ql_file_name = "hw1.1-ql.tsv";  // query likelihood with Jelinek-Mercer smoothing
-    String phrase_file_name = "hw1.1-phrase.tsv";  // phrase-based ranker
-    String numview_file_name = "hw1.1-numviews.tsv";  // numviews-based ranker
-    String linear_file_name = "hw1.2-linear.tsv";  // linear ranker
+    String vsmFileName      = "hw1.1-vsm.tsv";  // vector space model
+    String qlFileName       = "hw1.1-ql.tsv";  // query likelihood with Jelinek-Mercer smoothing
+    String phraseFileName   = "hw1.1-phrase.tsv";  // phrase-based RankingMethod
+    String numviewFileName  = "hw1.1-numviews.tsv";  // numviews-based RankingMethod
+    String linearFileName   = "hw1.2-linear.tsv";  // linear RankingMethod
     
     // output query response to be written out to each output file
-    String vsm_queryResponse = "";
-    String ql_queryResponse = "";
-    String phrase_queryResponse = "";
-    String numview_queryResponse = "";
-    String linear_queryResponse = "";
+    String vsmQueryResponse     = "";
+    String qlQueryResponse      = "";
+    String phraseQueryResponse  = "";
+    String numviewQueryResponse = "";
+    String linearQueryResponse  = "";
     
     Vector<String> queries = new Vector<String>();
     
-    try{
-      BufferedReader reader = new BufferedReader(new FileReader(input_query_path));	
+    try {
+      BufferedReader reader = new BufferedReader(new FileReader(inputQueryPath));
       String line = null;
-      while((line=reader.readLine())!=null){
+      while((line = reader.readLine())!=null){
         queries.add(line);
       }
       reader.close();
-    }
-    catch (IOException ioe){
+    } catch (IOException ioe) {
       System.err.println("Oops " + ioe.getMessage());
     }
     
-    for(int i=0;i<queries.size();i++){
-      vsm_queryResponse += getQueryResponse(queries.get(i), "COSINE");
-      ql_queryResponse += getQueryResponse(queries.get(i), "QL");
-      phrase_queryResponse += getQueryResponse(queries.get(i), "PHRASE");
-      numview_queryResponse += getQueryResponse(queries.get(i), "NUMVIEWS");
-      linear_queryResponse += getQueryResponse(queries.get(i), "LINEAR");
+    for(int i=0; i < queries.size(); i++){
+      vsmQueryResponse      += getQueryResponse(queries.get(i), "COSINE");
+      qlQueryResponse       += getQueryResponse(queries.get(i), "QL");
+      phraseQueryResponse   += getQueryResponse(queries.get(i), "PHRASE");
+      numviewQueryResponse  += getQueryResponse(queries.get(i), "NUMVIEWS");
+      linearQueryResponse   += getQueryResponse(queries.get(i), "LINEAR");
     }
     
     // writing out to files
+    File vsmFile = new File(currentPath + "/" + vsmFileName);
+    PrintWriter vsmWriter = new PrintWriter(vsmFile);
+    vsmWriter.write(vsmQueryResponse);
+    vsmWriter.close();
     
-    File vsm_file = new File(current_path+"/"+vsm_file_name);
-    PrintWriter vsm_writer = new PrintWriter(vsm_file);
-    vsm_writer.write(vsm_queryResponse);
-    vsm_writer.close();
+    File qlFile = new File(currentPath + "/" + qlFileName);
+    PrintWriter qlWriter = new PrintWriter(qlFile);
+    qlWriter.write(qlQueryResponse);
+    qlWriter.close();
     
-    File ql_file = new File(current_path+"/"+ql_file_name);
-    PrintWriter ql_writer = new PrintWriter(ql_file);
-    ql_writer.write(ql_queryResponse);
-    ql_writer.close();
+    File phraseFile = new File(currentPath + "/" + phraseFileName);
+    PrintWriter phraseWriter = new PrintWriter(phraseFile);
+    phraseWriter.write(phraseQueryResponse);
+    phraseWriter.close();
     
-    File phrase_file = new File(current_path+"/"+phrase_file_name);
-    PrintWriter phrase_writer = new PrintWriter(phrase_file);
-    phrase_writer.write(phrase_queryResponse);
-    phrase_writer.close();
+    File numviewFile = new File(currentPath + "/" + numviewFileName);
+    PrintWriter numviewWriter = new PrintWriter(numviewFile);
+    numviewWriter.write(numviewQueryResponse);
+    numviewWriter.close();
     
-    File numviews_file = new File(current_path+"/"+numview_file_name);
-    PrintWriter numviews_writer = new PrintWriter(numviews_file);
-    numviews_writer.write(numview_queryResponse);
-    numviews_writer.close();
-    
-    File linear_file = new File(current_path+"/"+linear_file_name);
-    PrintWriter linear_writer = new PrintWriter(linear_file);
-    linear_writer.write(linear_queryResponse);
-    linear_writer.close();
+    File linearFile = new File(currentPath + "/" + linearFileName);
+    PrintWriter linearWriter = new PrintWriter(linearFile);
+    linearWriter.write(linearQueryResponse);
+    linearWriter.close();
   }
   
   public String getQueryResponse(String query, String method){
-    if(method.equalsIgnoreCase(ranker.COSINE.toString())){
-      Vector < ScoredDocument > scored_documents = runquery(query, "COSINE");
-      sortScoredDocuments(scored_documents);
-      String queryResponse = getResultsAsString(query, scored_documents);	
-      return queryResponse;    	
+    method = method.toUpperCase();
+    try {
+        RankingMethod m = RankingMethod.valueOf(method); // throws IllegalArgumentException if not a valid enum
+        Vector<ScoredDocument> scoredDocuments = runquery(query, m);
+        Collections.sort(scoredDocuments);
+        return getResultsAsString(query, scoredDocuments);
+    } catch (IllegalArgumentException e) {
+        return null;
     }
-    else if(method.equalsIgnoreCase(ranker.QL.toString())){
-      Vector < ScoredDocument > scored_documents = runquery(query, "QL");
-      sortScoredDocuments(scored_documents);
-      String queryResponse = getResultsAsString(query, scored_documents);	
-      return queryResponse;
-    }
-    else if(method.equalsIgnoreCase(ranker.PHRASE.toString())){
-      Vector < ScoredDocument > scored_documents = runquery(query, "PHRASE");
-      sortScoredDocuments(scored_documents);
-      String queryResponse = getResultsAsString(query, scored_documents);	
-      return queryResponse;	
-    }
-    else if(method.equalsIgnoreCase(ranker.NUMVIEWS.toString())){
-      Vector < ScoredDocument > scored_documents = runquery(query, "NUMVIEWS");
-      sortScoredDocuments(scored_documents);
-      String queryResponse = getResultsAsString(query, scored_documents);	
-      return queryResponse;	
-    }
-    else if(method.equalsIgnoreCase(ranker.LINEAR.toString())){
-      Vector < ScoredDocument > scored_documents = runquery(query, "LINEAR");
-      sortScoredDocuments(scored_documents);
-      String queryResponse = getResultsAsString(query, scored_documents);	
-      return queryResponse;	    	
-    }
-    return null;
   }
-  
-  // This method sorts the given vector of scored documents according to their score in a decreasing order
-  public void sortScoredDocuments(Vector<ScoredDocument> scored_documents){
-    Collections.sort(scored_documents);
-  }
-  
+
   // This method returns the result string after sorting the scored documents in the required format:
   // QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE
-  public String getResultsAsString(String query, Vector<ScoredDocument> sorted_documents){
+  public String getResultsAsString(String query, Vector<ScoredDocument> sortedDocuments){
 	String result = "";
-    for(int i=0;i<sorted_documents.size();i++){
-      result += query+"\t"+sorted_documents.get(i).asString()+"\n";
+    for(int i = 0; i < sortedDocuments.size(); i++) {
+      result += query + "\t" + sortedDocuments.get(i).asString() + "\n";
     }
     return result;
   }
   
-  public Vector < ScoredDocument > runquery(String query, String method){
-    Vector < ScoredDocument > retrieval_results = new Vector < ScoredDocument > ();
+  public Vector<ScoredDocument> runquery(String query, RankingMethod method) {
+    Vector<ScoredDocument> retrievalResults = new Vector<ScoredDocument>();
     
     // Build query vector
     Scanner s = new Scanner(query);
-    Vector < String > qv = new Vector < String > ();
+    Vector<String> qv = new Vector<String>();
     while (s.hasNext()){
       String term = s.next();
       qv.add(term);
     }
     
     for (int i = 0; i < _index.numDocs(); ++i){
-	    ScoredDocument sd = null;
-	    if(method.equalsIgnoreCase(ranker.COSINE.toString())){
-	      sd = cosineSimilarity(qv, i);
-	    }
-	    else if(method.equalsIgnoreCase(ranker.QL.toString())){
-	      sd = queryLikelihood(qv, i);
-	    }
-	    else if(method.equalsIgnoreCase(ranker.PHRASE.toString())){
-		  sd = phraseRanker(qv, i);
-		}
-	    else if(method.equalsIgnoreCase(ranker.NUMVIEWS.toString())){
-		  sd = numViews(i);
-		}
-	    else if(method.equalsIgnoreCase(ranker.LINEAR.toString())){
-		  sd = simpleLinear(qv, i);
-		}
-        retrieval_results.add(sd);
+        switch (method) {
+            case COSINE:
+                retrievalResults.add(cosineSimilarity(qv, i));
+                break;
+            case QL:
+                retrievalResults.add(queryLikelihood(qv, i));
+                break;
+            case PHRASE:
+                retrievalResults.add(phraseRanker(qv, i));
+                break;
+            case NUMVIEWS:
+                retrievalResults.add(numViews(i));
+                break;
+            case LINEAR:
+                retrievalResults.add(simpleLinear(qv, i));
+                break;
+        }
     }
-    return retrieval_results;
+    return retrievalResults;
   }
   
-  public ScoredDocument cosineSimilarity(Vector < String > qv, int did){
-    Document d = _index.getDoc( did );
-    Vector < String > dv = d.get_body_vector();
+  public ScoredDocument cosineSimilarity(Vector<String> qv, int did){
+    Document d = _index.getDoc(did);
+    Vector<String> dv = d.get_body_vector();
 
     double score = 0, q_sqr = 0, d_sqr = 0;
     int n = _index.numDocs();
     double idf, wtf_q, wtf_d, q, doc;
 
-    // inserts query into map
-    TreeMap < String , Integer > queryList = new TreeMap< String, Integer >();
-    for (int i = 0; i<qv.size(); i++) {
-      String query = qv.get(i);
-      if ( queryList.containsKey( query ) ) {
-        queryList.put( query, queryList.get( query ) + 1 );
+    // inserts query terms into map
+    Map<String, Integer> queryMap = new TreeMap<String, Integer>();
+    for(String query : qv) {
+      if(queryMap.containsKey(query)) {
+        queryMap.put(query, queryMap.get(query) + 1);
       } else {
-        queryList.put( query, 1 );
+        queryMap.put(query, 1);
       }
     }
 
     // iterates over all words in query
-    Set set = queryList.entrySet();
-    Iterator iter = set.iterator();
-    while( iter.hasNext() ) {
-      Map.Entry < String, Integer > queryWord = ( Map.Entry ) iter.next();
-      idf = 1 + ( double ) Math.log( n / _index.documentFrequency( queryWord.getKey() ) ) /  Math.log( 2 );
-      // wtf_q = 1 + ( double ) Math.log( queryWord.getValue() );
-      wtf_q = queryWord.getValue();
-      wtf_d = termFrequencyInDocument( dv, queryWord.getKey() );
+    for(String term : queryMap.keySet()) {
+      idf = 1 + Math.log(n / _index.documentFrequency(term)) / Math.log(2);
+      wtf_q = queryMap.get(term);
+      wtf_d = termFrequencyInDocument(dv, term);
       q = wtf_q * idf;
       doc = wtf_d * idf;
-      q_sqr += Math.pow( q, 2 );
-      d_sqr += Math.pow( doc, 2 );
+      q_sqr += q * q;
+      d_sqr += doc * doc;
       score += q * doc;
     }
 
-    if ( q_sqr * d_sqr == 0 )
+    if (q_sqr * d_sqr == 0)
       score = 0;
     else
-      score /= Math.pow( q_sqr * d_sqr , 0.5 );
+      score /= Math.sqrt(q_sqr * d_sqr);
 
     return new ScoredDocument(did, d.get_title_string(), score);
   }

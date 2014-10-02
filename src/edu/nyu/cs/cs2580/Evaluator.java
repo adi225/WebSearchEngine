@@ -54,9 +54,9 @@ class Evaluator {
     // output file names
     String vsm_file_name = "hw1.3-vsm.tsv";  // vector space model
     String ql_file_name = "hw1.3-ql.tsv";  // query likelihood with Jelinek-Mercer smoothing
-    String phrase_file_name = "hw1.3-phrase.tsv";  // phrase-based ranker
-    String numview_file_name = "hw1.3-numviews.tsv";  // numviews-based ranker
-    String linear_file_name = "hw1.3-linear.tsv";  // linear ranker
+    String phrase_file_name = "hw1.3-phrase.tsv";  // phrase-based RankingMethod
+    String numview_file_name = "hw1.3-numviews.tsv";  // numviews-based RankingMethod
+    String linear_file_name = "hw1.3-linear.tsv";  // linear RankingMethod
     
     // output of the evaluator to be written out to each output file
     String vsm_evaluation = "";
@@ -174,7 +174,7 @@ class Evaluator {
     try {
       BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
       
-      // Strings in this vector is the output of the retrieval system (ranker)
+      // Strings in this vector is the output of the retrieval system (RankingMethod)
       // That is, it is in the format: QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE
       Vector<String> retrieval_results = new Vector<String>();
       
