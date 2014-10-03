@@ -180,7 +180,17 @@ class Evaluator {
       
       String line = null;
       while (!(line = reader.readLine()).isEmpty()){
-    	  retrieval_results.add(line);
+        retrieval_results.add(line);
+      }
+      
+      // If the number of input line is less than 10, then return
+      // since this is the minimum requirement as some metrics,
+      // e.g., precision at 10, need at least 10 lines of input
+      // The input conforms to the format: QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE
+      // It is also assumed that all lines of input has the same query (only considering one query per call)
+      if(retrieval_results.size()<10){
+    	System.out.println("Please give at least 10 lines of input");
+        return;
       }
       
       String temp_line = retrieval_results.get(0);
