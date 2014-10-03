@@ -13,3 +13,5 @@ Please note that the url must be encoded like above
 - The input into the Evaluator is via standard input, corresponding to the format of the output of the ranker: QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE
 
 It is assumed that the input fed into the Evaluator is more than or equal to 10 lines. This is because some metrics, e.g, precision at 10, require such a minimum amount line of input.
+
+It is also assumed that all lines of input has the same query (only considering one query per call).
