@@ -1,10 +1,14 @@
 package edu.nyu.cs.cs2580;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+
+import java.io.PrintWriter;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +30,7 @@ class QueryHandler implements HttpHandler {
     Map<String, String> map = new HashMap<String, String>();  
     for (String param : params){  
       String name = param.split("=")[0];  
-      String value = param.split("=")[1];  
+      String value = param.split("=")[1];
       value = value.replace('+', ' ');
       map.put(name, value);  
     }
@@ -38,6 +42,7 @@ class QueryHandler implements HttpHandler {
     if (!requestMethod.equalsIgnoreCase("GET")){  // GET requests only.
       return;
     }
+
 
     // Print the user request header.
     Headers requestHeaders = exchange.getRequestHeaders();
@@ -54,6 +59,7 @@ class QueryHandler implements HttpHandler {
       if (uriPath.equals("/search")){
         Map<String,String> query_map = getQueryMap(uriQuery);
         Set<String> keys = query_map.keySet();
+        String format = keys.contains("format") ? query_map.get("format") : "html";
         if (keys.contains("query")){
           String query = query_map.get("query");  // should be URI encoded 
           if (keys.contains("ranker")){
@@ -61,15 +67,15 @@ class QueryHandler implements HttpHandler {
             // @CS2580: Invoke different ranking functions inside your
             // implementation of the Ranker class.
             if (ranker_type.equalsIgnoreCase("COSINE")){
-              queryResponse = _ranker.getQueryResponse(query, "COSINE");
+              queryResponse = _ranker.getQueryResponse(query, "COSINE", format);
             } else if (ranker_type.equalsIgnoreCase("QL")){
-              queryResponse = _ranker.getQueryResponse(query, "QL");
+              queryResponse = _ranker.getQueryResponse(query, "QL", format);
             } else if (ranker_type.equalsIgnoreCase("PHRASE")){
-              queryResponse = _ranker.getQueryResponse(query, "PHRASE");
+              queryResponse = _ranker.getQueryResponse(query, "PHRASE", format);
             } else if (ranker_type.equalsIgnoreCase("LINEAR")){
-              queryResponse = _ranker.getQueryResponse(query, "LINEAR");
+              queryResponse = _ranker.getQueryResponse(query, "LINEAR", format);
             } else {
-              queryResponse = _ranker.getQueryResponse(query, "NUMVIEWS");
+              queryResponse = _ranker.getQueryResponse(query, "NUMVIEWS", format);
             }
           } else {
             // @CS2580: The following is instructor's simple RankingMethod that does not
@@ -89,15 +95,35 @@ class QueryHandler implements HttpHandler {
             }
           }
         }
+        // Construct a simple response.
+        Headers responseHeaders = exchange.getResponseHeaders();
+        if(format.equalsIgnoreCase("html")) {
+            responseHeaders.set("Content-Type", "text/html");
+        } else {
+            responseHeaders.set("Content-Type", "text/plain");
+        }
+        exchange.sendResponseHeaders(200, 0);  // arbitrary number of bytes
+        OutputStream responseBody = exchange.getResponseBody();
+        responseBody.write(queryResponse.getBytes());
+        responseBody.close();
+        return;
+      } else if(uriPath.equalsIgnoreCase("/clicktrack")) {
+          Map<String,String> query_map = getQueryMap(uriQuery);
+          if(query_map.containsKey("documentId") && query_map.containsKey("query")) {
+              // writing out to files
+              String logFileName = "hw1.4-log.tsv";
+              File logFile = new File("./results/" + logFileName);
+              PrintWriter vsmWriter = new PrintWriter(logFile);
+              String logEntry = "session\t"+ URLDecoder.decode(query_map.get("query"), "UTF-8") +
+                      "\t" + query_map.get("documentId") + "\tclick\t" + System.currentTimeMillis();
+              vsmWriter.write(logEntry);
+              vsmWriter.close();
+          }
       }
     }
     
       // Construct a simple response.
-      Headers responseHeaders = exchange.getResponseHeaders();
-      responseHeaders.set("Content-Type", "text/plain");
-      exchange.sendResponseHeaders(200, 0);  // arbitrary number of bytes
-      OutputStream responseBody = exchange.getResponseBody();
-      responseBody.write(queryResponse.getBytes());
-      responseBody.close();
+      exchange.sendResponseHeaders(404, 0);  // arbitrary number of bytes
+      exchange.getResponseBody().close();
   }
 }

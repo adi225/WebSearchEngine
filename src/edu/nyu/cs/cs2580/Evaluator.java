@@ -80,19 +80,19 @@ class Evaluator {
     }
     
     for(int i=0;i<queries.size();i++){
-    	String vsm_queryResponse = ranker.getQueryResponse(queries.get(i), "COSINE");
+    	String vsm_queryResponse = ranker.getQueryResponse(queries.get(i), "COSINE", "TEXT");
         vsm_evaluation += getEvaluation(queries.get(i), convertToVector(vsm_queryResponse), relevance_judgments)+"\n";
     	
-    	String ql_queryResponse = ranker.getQueryResponse(queries.get(i), "QL");
+    	String ql_queryResponse = ranker.getQueryResponse(queries.get(i), "QL", "TEXT");
         ql_evaluation += getEvaluation(queries.get(i), convertToVector(ql_queryResponse), relevance_judgments)+"\n";
         
-        String phrase_queryResponse = ranker.getQueryResponse(queries.get(i), "PHRASE");
+        String phrase_queryResponse = ranker.getQueryResponse(queries.get(i), "PHRASE", "TEXT");
         phrase_evaluation += getEvaluation(queries.get(i), convertToVector(phrase_queryResponse), relevance_judgments)+"\n";
 
-        String numviews_queryResponse = ranker.getQueryResponse(queries.get(i), "NUMVIEWS");
+        String numviews_queryResponse = ranker.getQueryResponse(queries.get(i), "NUMVIEWS", "TEXT");
         numview_evaluation += getEvaluation(queries.get(i), convertToVector(numviews_queryResponse), relevance_judgments)+"\n";
 
-        String linear_queryResponse = ranker.getQueryResponse(queries.get(i), "LINEAR");
+        String linear_queryResponse = ranker.getQueryResponse(queries.get(i), "LINEAR", "TEXT");
         linear_evaluation += getEvaluation(queries.get(i), convertToVector(linear_queryResponse), relevance_judgments)+"\n";
     }
     

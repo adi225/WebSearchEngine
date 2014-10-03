@@ -11,8 +11,9 @@ import java.util.*;
 class Ranker {
   private Index _index;
   public static enum RankingMethod { COSINE, QL, PHRASE, NUMVIEWS, LINEAR };
+  public static enum Format { TEXT, HTML };
 
-  private boolean saveOutput = true;
+  private boolean saveOutput = false;
 
   public Ranker(String indexSource) throws FileNotFoundException {
     _index = new Index(indexSource);
@@ -23,10 +24,6 @@ class Ranker {
   }
   
   public void saveOutput() throws FileNotFoundException {
-	// The output file will be saved in the parent directory that contains the .class file
-	String currentPath      = System.getProperty("user.dir");
-
-	// please change the input path accordingly
     String inputQueryPath   = "./data/queries.tsv";
 
     // output file names
@@ -57,47 +54,47 @@ class Ranker {
     }
     
     for(int i=0; i < queries.size(); i++){
-      vsmQueryResponse      += getQueryResponse(queries.get(i), "COSINE");
-      qlQueryResponse       += getQueryResponse(queries.get(i), "QL");
-      phraseQueryResponse   += getQueryResponse(queries.get(i), "PHRASE");
-      numviewQueryResponse  += getQueryResponse(queries.get(i), "NUMVIEWS");
-      linearQueryResponse   += getQueryResponse(queries.get(i), "LINEAR");
+      vsmQueryResponse      += getQueryResponse(queries.get(i), "COSINE", "TEXT");
+      qlQueryResponse       += getQueryResponse(queries.get(i), "QL", "TEXT");
+      phraseQueryResponse   += getQueryResponse(queries.get(i), "PHRASE", "TEXT");
+      numviewQueryResponse  += getQueryResponse(queries.get(i), "NUMVIEWS", "TEXT");
+      linearQueryResponse   += getQueryResponse(queries.get(i), "LINEAR", "TEXT");
     }
     
     // writing out to files
-    File vsmFile = new File(currentPath + "/results/" + vsmFileName);
+    File vsmFile = new File("./results/" + vsmFileName);
     PrintWriter vsmWriter = new PrintWriter(vsmFile);
     vsmWriter.write(vsmQueryResponse);
     vsmWriter.close();
     
-    File qlFile = new File(currentPath + "/results/" + qlFileName);
+    File qlFile = new File("./results/" + qlFileName);
     PrintWriter qlWriter = new PrintWriter(qlFile);
     qlWriter.write(qlQueryResponse);
     qlWriter.close();
     
-    File phraseFile = new File(currentPath + "/results/" + phraseFileName);
+    File phraseFile = new File("./results/" + phraseFileName);
     PrintWriter phraseWriter = new PrintWriter(phraseFile);
     phraseWriter.write(phraseQueryResponse);
     phraseWriter.close();
     
-    File numviewFile = new File(currentPath + "/results/" + numviewFileName);
+    File numviewFile = new File("./results/" + numviewFileName);
     PrintWriter numviewWriter = new PrintWriter(numviewFile);
     numviewWriter.write(numviewQueryResponse);
     numviewWriter.close();
     
-    File linearFile = new File(currentPath + "/results/" + linearFileName);
+    File linearFile = new File("./results/" + linearFileName);
     PrintWriter linearWriter = new PrintWriter(linearFile);
     linearWriter.write(linearQueryResponse);
     linearWriter.close();
   }
   
-  public String getQueryResponse(String query, String method){
-    method = method.toUpperCase();
+  public String getQueryResponse(String query, String method, String format){
     try {
-        RankingMethod m = RankingMethod.valueOf(method); // throws IllegalArgumentException if not a valid enum
+        RankingMethod m = RankingMethod.valueOf(method.toUpperCase()); // throws IllegalArgumentException if not a valid enum
+        Format f = Format.valueOf(format.toUpperCase());
         Vector<ScoredDocument> scoredDocuments = runquery(query, m);
         Collections.sort(scoredDocuments);
-        return getResultsAsString(query, scoredDocuments);
+        return getResultsAsString(query, scoredDocuments, f);
     } catch (IllegalArgumentException e) {
         return null;
     }
@@ -105,10 +102,17 @@ class Ranker {
 
   // This method returns the result string after sorting the scored documents in the required format:
   // QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE
-  public String getResultsAsString(String query, Vector<ScoredDocument> sortedDocuments){
+  public String getResultsAsString(String query, Vector<ScoredDocument> sortedDocuments, Format format){
 	String result = "";
-    for(int i = 0; i < sortedDocuments.size(); i++) {
-      result += query + "\t" + sortedDocuments.get(i).asString() + "\n";
+    if(format.equals(Format.TEXT)) {
+        for (ScoredDocument document : sortedDocuments) {
+            result += query + "\t" + document.asString() + "\n";
+        }
+    } else if (format.equals(Format.HTML)) {
+        for (ScoredDocument document : sortedDocuments) {
+            result += "<a href=\"./clicktrack?documentId=" + document._did + "&query=" + query + "\">" +
+                    document._title + "</a><br/>\n";
+        }
     }
     return result;
   }
