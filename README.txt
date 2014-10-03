@@ -15,3 +15,10 @@ Please note that the url must be encoded like above
 It is assumed that the input fed into the Evaluator is more than or equal to 10 lines. This is because some metrics, e.g, precision at 10, require such a minimum amount line of input.
 
 It is also assumed that all lines of input has the same query (only considering one query per call).
+
+Below are the beta parameters for the construction of the simple linear model,
+
+	betaCos = 1.0/0.8
+	betaQL = 1.0/9.0
+	betaPhrase = 1.0/300.0
+	betaNumviews = 1.0/20000.0

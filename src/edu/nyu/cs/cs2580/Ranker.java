@@ -264,10 +264,10 @@ class Ranker {
   }
   
   public ScoredDocument simpleLinear(Vector<String> qv, Map<String, Integer> documentMap, int did){
-	double betaCos = 1;
-	double betaQL = 1;
-	double betaPhrase = 1;
-	double betaNumviews = 1;
+	double betaCos = 1.0/0.8;
+	double betaQL = 1.0/9.0;
+	double betaPhrase = 1.0/300.0;
+	double betaNumviews = 1.0/20000.0;
 	
 	double combined_score = (betaCos      * cosineSimilarity(qv, documentMap, did)._score) +
 			                (betaQL       * queryLikelihood(qv, documentMap, did)._score) +
