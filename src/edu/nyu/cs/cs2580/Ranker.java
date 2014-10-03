@@ -120,14 +120,13 @@ class Ranker {
     Scanner s = new Scanner(query);
     Vector<String> qv = new Vector<String>();
     while (s.hasNext()){
-      String term = s.next();
-      qv.add(term);
+      qv.add(s.next());
     }
 
     for (int i = 0; i < _index.numDocs(); ++i){
+        // Build document term frequency map.
         Map<String, Integer> documentMap = new HashMap<String, Integer>();
         Vector<String> dv = _index.getDoc(i).get_body_vector();
-
         for(String word : dv) {
             if(documentMap.containsKey(word)) {
                 documentMap.put(word, documentMap.get(word) + 1);
@@ -210,7 +209,8 @@ class Ranker {
 	  // the summation of log( ((1-lambda) * wordFrequencyInDocument/documentSize) + wordFrequencyInCorpus/totalWordsInCorpus )
 	  // Usage of the log is to overcome the problem of multiplying many small numbers together, which might
 	  // lead to accuracy problem.
-	  score += Math.log(((1-lambda)*((double)wordFrequencyInDocument)/documentSize)+lambda*((double)wordFrequencyInCorpus)/totalWordsInCorpus);
+	  score += Math.log(((1-lambda) * ((double)wordFrequencyInDocument) / documentSize) +
+                          lambda * ((double)wordFrequencyInCorpus) / totalWordsInCorpus);
 	}
 	
     return new ScoredDocument(did, d.get_title_string(), score);
