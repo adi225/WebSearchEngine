@@ -12,8 +12,9 @@ class Ranker {
   private Index _index;
   public static enum RankingMethod { COSINE, QL, PHRASE, NUMVIEWS, LINEAR };
   public static enum Format { TEXT, HTML };
+  public static final String RESULTS_FOLDER = "./results/";
 
-  private boolean saveOutput = false;
+  private boolean saveOutput = true;
 
   public Ranker(String indexSource) throws FileNotFoundException {
     _index = new Index(indexSource);
@@ -24,6 +25,7 @@ class Ranker {
   }
   
   public void saveOutput() throws FileNotFoundException {
+    System.out.println("Processing query file to " + RESULTS_FOLDER + " folder");
     String inputQueryPath   = "./data/queries.tsv";
 
     // output file names
@@ -62,27 +64,27 @@ class Ranker {
     }
     
     // writing out to files
-    File vsmFile = new File("./results/" + vsmFileName);
+    File vsmFile = new File(RESULTS_FOLDER + vsmFileName);
     PrintWriter vsmWriter = new PrintWriter(vsmFile);
     vsmWriter.write(vsmQueryResponse);
     vsmWriter.close();
     
-    File qlFile = new File("./results/" + qlFileName);
+    File qlFile = new File(RESULTS_FOLDER + qlFileName);
     PrintWriter qlWriter = new PrintWriter(qlFile);
     qlWriter.write(qlQueryResponse);
     qlWriter.close();
     
-    File phraseFile = new File("./results/" + phraseFileName);
+    File phraseFile = new File(RESULTS_FOLDER + phraseFileName);
     PrintWriter phraseWriter = new PrintWriter(phraseFile);
     phraseWriter.write(phraseQueryResponse);
     phraseWriter.close();
     
-    File numviewFile = new File("./results/" + numviewFileName);
+    File numviewFile = new File(RESULTS_FOLDER + numviewFileName);
     PrintWriter numviewWriter = new PrintWriter(numviewFile);
     numviewWriter.write(numviewQueryResponse);
     numviewWriter.close();
     
-    File linearFile = new File("./results/" + linearFileName);
+    File linearFile = new File(RESULTS_FOLDER + linearFileName);
     PrintWriter linearWriter = new PrintWriter(linearFile);
     linearWriter.write(linearQueryResponse);
     linearWriter.close();
@@ -182,9 +184,16 @@ class Ranker {
       tf_d = documentMap.containsKey(term) ? documentMap.get(term) : 0; // count of term in document
       tfidf_q = tf_q * idf;  // tfidf of term in query
       tfidf_d = tf_d * idf;  // tfidf of term in document
-      q_sqr += tfidf_q * tfidf_q;  // computing x^2 term of cosine similarity
-      d_sqr += tfidf_d * tfidf_d;  // computing y^2 term of cosine similarity
-      score += tfidf_q * tfidf_d;  // computing x*y term of cosine similarity
+      q_sqr += tfidf_q * tfidf_q;  // computing sum(x^2) term of cosine similarity
+      score += tfidf_q * tfidf_d;  // computing sum(x*y) term of cosine similarity
+    }
+
+    // we count sum(y^2) separately so that we include all words in document
+    for(String term : documentMap.keySet()) {
+        idf = 1 + Math.log(n / _index.documentFrequency(term)) / Math.log(2);
+        tf_d = documentMap.containsKey(term) ? documentMap.get(term) : 0; // count of term in document
+        tfidf_d = tf_d * idf;  // tfidf of term in document
+        d_sqr += tfidf_d * tfidf_d; // computing sum(y^2) term of cosine similarity
     }
 
     if (q_sqr * d_sqr == 0)
