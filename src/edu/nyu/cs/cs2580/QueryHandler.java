@@ -5,13 +5,10 @@ import java.io.*;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import java.util.UUID;
 
 import java.net.URLDecoder;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.Iterator;
-import java.util.Vector;
+import java.util.*;
 
 class QueryHandler implements HttpHandler {
   private static String plainResponse =
@@ -41,12 +38,21 @@ class QueryHandler implements HttpHandler {
       return;
     }
 
+    String sessionId = null;
 
     // Print the user request header.
     Headers requestHeaders = exchange.getRequestHeaders();
     System.out.print("Incoming request: ");
     for (String key : requestHeaders.keySet()){
       System.out.print(key + ":" + requestHeaders.get(key) + "; ");
+      if(requestHeaders.containsKey("Cookie")) {
+          sessionId = requestHeaders.getFirst("Cookie");
+      }
+    }
+    Headers responseHeaders = exchange.getResponseHeaders();
+    if(sessionId == null) {
+        sessionId = UUID.randomUUID().toString();
+        responseHeaders.set("Set-Cookie", sessionId);
     }
     System.out.println();
     String queryResponse = "";  
@@ -94,7 +100,6 @@ class QueryHandler implements HttpHandler {
           }
         }
         // Construct a simple response.
-        Headers responseHeaders = exchange.getResponseHeaders();
         if(format.equalsIgnoreCase("html")) {
             responseHeaders.set("Content-Type", "text/html");
         } else {
@@ -112,10 +117,15 @@ class QueryHandler implements HttpHandler {
               String logFileName = "hw1.4-log.tsv";
               FileWriter logFileWriter = new FileWriter("./results/" + logFileName, true);
               PrintWriter vsmWriter = new PrintWriter(new BufferedWriter(logFileWriter));
-              String logEntry = "session\t"+ URLDecoder.decode(query_map.get("query"), "UTF-8") +
+              String logEntry = sessionId + "\t"+ URLDecoder.decode(query_map.get("query"), "UTF-8") +
                       "\t" + query_map.get("documentId") + "\tclick\t" + System.currentTimeMillis();
               vsmWriter.write(logEntry + "\n");
               vsmWriter.close();
+              // Construct a simple response.
+              responseHeaders.set("Location", exchange.getRequestHeaders().getFirst("Referer"));
+              exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
+              exchange.getResponseBody().close();
+              return;
           }
       }
     }
