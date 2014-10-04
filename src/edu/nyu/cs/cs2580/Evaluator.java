@@ -29,7 +29,7 @@ class Evaluator {
     String p = args[0];
     // first read the relevance judgments into the HashMap
     readRelevanceJudgments(p,relevance_judgments);
-    
+        
     // save the evaluation results to files
     if(save_Output){
       saveOutput(relevance_judgments);
@@ -126,7 +126,7 @@ class Evaluator {
     try {
       BufferedReader reader = new BufferedReader(new FileReader(p));
       try {
-        String line = null;
+    	String line = null;
         while ((line = reader.readLine()) != null){
           // parse the query,did,relevance line
           Scanner s = new Scanner(line).useDelimiter("\t");
@@ -157,7 +157,8 @@ class Evaluator {
           HashMap < Integer , Double > qr = relevance_judgments.get(query);
           qr.put(did,rel);
         }
-      } finally {
+        System.out.println("Finished loading relevance judgements.");
+       } finally {
         reader.close();
       }
     } catch (IOException ioe){
@@ -165,11 +166,20 @@ class Evaluator {
     }
   }
 
+  
+  // - The input into the Evaluator is via standard input, corresponding to 
+  //   the format of the output of the ranker: 
+  //   QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE
+  // - It is assumed that the input fed into the Evaluator is more than 
+  //   or equal to 10 lines. This is because some metrics, 
+  //   e.g, precision at 10, require such a minimum amount line of input.
+  // - It is also assumed that all lines of input has the same query (only considering one query per call).
   public static void evaluateStdin(
     HashMap < String , HashMap < Integer , Double > > relevance_judgments){
     // only consider one query per call    
     try {
       BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+      System.out.println("Please provide at least 10 lines of input to be evaluated.");
       
       // Strings in this vector is the output of the retrieval system (RankingMethod)
       // That is, it is in the format: QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE
@@ -183,13 +193,13 @@ class Evaluator {
       // If the number of input line is less than 10, then return
       // since this is the minimum requirement as some metrics,
       // e.g., precision at 10, need at least 10 lines of input
-      // The input conforms to the format: QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE
-      // It is also assumed that all lines of input has the same query (only considering one query per call)
       if(retrieval_results.size()<10){
     	System.out.println("Please give at least 10 lines of input");
         return;
       }
       
+      // This is just to get the query (which is assumed to be the same for all
+      // lines of input) from the first line of input
       String temp_line = retrieval_results.get(0);
       Scanner temp_scanner = new Scanner(temp_line).useDelimiter("\t");
       String query = temp_scanner.next();
@@ -278,7 +288,7 @@ class Evaluator {
 	  }
 	  HashMap < Integer , Double > qr = relevance_judgments.get(query);
 	  if (qr.containsKey(did) != false){
-		if(qr.get(did)>1){
+		if(qr.get(did)>1){  // if the relevance value is greater than 1, it is considered as relevant (as suggested in the assignment)
 		  RR++;
 		}
 	  }
@@ -291,7 +301,7 @@ class Evaluator {
     double RR = 0.0;
     double N = 0.0;  // number of relevant document in the given inputs
     
-    // first pass to determine RR
+    // first pass to determine RR (number of relevant documents in the first k inputs)
 	for(int i=0;i<k;i++){
 	  Scanner scanner = new Scanner(inputs.get(i)).useDelimiter("\t");
 	  String query = scanner.next();
@@ -308,7 +318,7 @@ class Evaluator {
     	}
 	  }
     }
-    // second pass to determine N
+    // second pass to determine N (number of relevant documents in the entire input)
 	for(int i=0;i<inputs.size();i++){
 	  Scanner scanner = new Scanner(inputs.get(i)).useDelimiter("\t");
 	  String query = scanner.next();
@@ -336,10 +346,11 @@ class Evaluator {
     double alpha = 0.5;
 	double precision_at_k = precisionAtK(inputs, k, relevance_judgments);
     double recall_at_k = recallAtK(inputs, k, relevance_judgments);
-    double F_05 = 1/(alpha*(1/precision_at_k)+(1-alpha)*(1/recall_at_k));
+    double F_05 = 1 / (alpha*(1/precision_at_k)+(1-alpha)*(1/recall_at_k));  // formula in slide 1, page 42
     return F_05;
   }
   
+  // This method returns precision at {0,0.1,...,1.0} recalls.
   public static double[] precisionAtRecall(Vector<String> inputs, HashMap < String , HashMap < Integer , Double > > relevance_judgments) throws IOException{
     double[] precisions = new double[11];
     HashMap < Double , Double > p = new HashMap<Double,Double>();  // this maps between recall and precision
@@ -358,7 +369,7 @@ class Evaluator {
     	if(qr.get(did)>1){
     	  double recall = recallAtK(inputs, i+1, relevance_judgments);
     	  double precision = precisionAtK(inputs, i+1, relevance_judgments);
-    	  p.put(recall, precision);
+    	  p.put(recall, precision);  // putting recall and precision at position i+1 of the given line of input
     	}
 	  }
     }
@@ -367,6 +378,26 @@ class Evaluator {
       precisions[i] = getMaxPrecision(p, ((double)i)/10.0);
     }
 	return precisions;
+  }
+  
+  // This helper method takes a mapping between recall and precision as an input
+  // and returns the maximum value of precision such that its respective recall
+  // is greater or equal than R.
+  // Note that p is a mapping between recall and precision of the given lines of input
+  public static double getMaxPrecision(HashMap<Double,Double> p, double R){
+    double max_P = 0;
+    
+    // Follows the definition in the textbook, page 316
+    for(Double recall : p.keySet()){
+    	if(recall >= R){
+    		double precision = Double.parseDouble(p.get(recall).toString());
+    		if(precision >= max_P){
+    			max_P = precision;
+    		}
+    	}
+    }
+    
+    return max_P;
   }
   
   public static double averagePrecision(Vector<String> inputs, HashMap < String , HashMap < Integer , Double > > relevance_judgments) throws IOException{
@@ -382,7 +413,7 @@ class Evaluator {
 		throw new IOException("query not found");
       }
       HashMap < Integer , Double > qr = relevance_judgments.get(query);
-      if (qr.containsKey(did) != false){
+      if (qr.containsKey(did) != false){  // follows slide 1, page 51
     	if(qr.get(did)>1){
     	  RR++;
     	  AP += RR/(i+1);
@@ -397,7 +428,7 @@ class Evaluator {
   }
   
   public static double NDCGAtK(Vector<String> inputs, int k, HashMap < String , HashMap < Integer , Double > > relevance_judgments) throws IOException{
-	Vector<Double> rels = new Vector<Double>();
+	Vector<Double> rels = new Vector<Double>();  // a vector of relavance values for each line of input
 	// get the relevance values
 	for(int i=0;i<k;i++){
 	  Scanner scanner = new Scanner(inputs.get(i)).useDelimiter("\t");
@@ -417,6 +448,7 @@ class Evaluator {
       }
     }
 	
+	// Follows the textbook, page 319-321
 	Vector<Double> ideal_rels = getPerfectRanking(rels);
 	double DCG_k = 0.0;
 	double IDCG_k = 0.0;
@@ -438,6 +470,18 @@ class Evaluator {
     return 0;
   }
   
+  // This helper method takes a vector of relevance values as an input
+  // and returns a perfect ranking.
+  public static Vector<Double> getPerfectRanking(Vector<Double> rels){
+    Vector<Double> ideal = new Vector<Double>();
+    for(int i=0;i<rels.size();i++){
+      ideal.add(rels.get(i));
+    }
+	Comparator<Double> comp = Collections.reverseOrder(); 		
+	Collections.sort(ideal,comp);
+    return ideal;
+  }
+  
   public static double reciprocalRank(Vector<String> inputs, HashMap < String , HashMap < Integer , Double > > relevance_judgments) throws IOException{
     for(int i=0;i<inputs.size();i++){
   	  Scanner scanner = new Scanner(inputs.get(i)).useDelimiter("\t");
@@ -451,44 +495,11 @@ class Evaluator {
       HashMap < Integer , Double > qr = relevance_judgments.get(query);
       if (qr.containsKey(did) != false){
         if(qr.get(did)>1){
-          return 1.0/(i+1);
+          return 1.0/((double)(i+1));
         }
   	  }
     }
     return 0;
-  }
-  
-  // This helper method takes a vector of relevance values as an input
-  // and returns a perfect ranking.
-  public static Vector<Double> getPerfectRanking(Vector<Double> rels){
-    Vector<Double> ideal = new Vector<Double>();
-    for(int i=0;i<rels.size();i++){
-      ideal.add(rels.get(i));
-    }
-	Comparator<Double> comp = Collections.reverseOrder(); 		
-	Collections.sort(ideal,comp);
-    return ideal;
-  }
-  
-  // This helper method takes a mapping between recall and precision as an input
-  // and returns the maximum value of precision such that its respective recall
-  // is greater or equal than R.
-  public static double getMaxPrecision(HashMap<Double,Double> p, double R){
-    double max_P = 0;
-	Iterator it = p.entrySet().iterator();
-    while (it.hasNext()) {
-        Map.Entry pairs = (Map.Entry)it.next();
-        double tempDouble = new Double(pairs.getKey().toString()).doubleValue();
-        if(tempDouble >= R)
-        {
-        	tempDouble = ((Double)pairs.getValue()).doubleValue();	
-          if(tempDouble>=max_P){	
-            max_P = tempDouble;
-          }
-        }
-        //it.remove(); // avoids a ConcurrentModificationException
-    }
-    return max_P;
   }
   
   // This helper method returns a log base 2 of x.

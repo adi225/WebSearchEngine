@@ -8,13 +8,18 @@ import com.sun.net.httpserver.HttpHandler;
 import java.util.UUID;
 
 import java.net.URLDecoder;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.Iterator;
+import java.util.Vector;
 
 class QueryHandler implements HttpHandler {
   private static String plainResponse =
       "Request received, but I am not smart enough to echo yet!\n";
 
   private Ranker _ranker;
+  private final long SESSION_TIMEOUT = 1200000; // 20 min
 
   public QueryHandler(Ranker ranker){
     _ranker = ranker;
@@ -39,21 +44,24 @@ class QueryHandler implements HttpHandler {
     }
 
     String sessionId = null;
-
     // Print the user request header.
     Headers requestHeaders = exchange.getRequestHeaders();
     System.out.print("Incoming request: ");
     for (String key : requestHeaders.keySet()){
       System.out.print(key + ":" + requestHeaders.get(key) + "; ");
       if(requestHeaders.containsKey("Cookie")) {
-          sessionId = requestHeaders.getFirst("Cookie");
+          String[] info = requestHeaders.getFirst("Cookie").split("&");
+          if(Long.parseLong(info[1]) + SESSION_TIMEOUT > System.currentTimeMillis()){
+              sessionId = info[0];
+          }
+          break;
       }
     }
     Headers responseHeaders = exchange.getResponseHeaders();
     if(sessionId == null) {
         sessionId = UUID.randomUUID().toString();
-        responseHeaders.set("Set-Cookie", sessionId);
     }
+    responseHeaders.set("Set-Cookie", sessionId + "&" + System.currentTimeMillis());
     System.out.println();
     String queryResponse = "";  
     String uriQuery = exchange.getRequestURI().getQuery();
