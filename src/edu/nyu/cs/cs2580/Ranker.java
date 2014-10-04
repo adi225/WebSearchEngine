@@ -14,7 +14,7 @@ class Ranker {
   public static enum Format { TEXT, HTML };
   public static final String RESULTS_FOLDER = "./results/";
 
-  private boolean saveOutput = true;
+  private boolean saveOutput = false;
 
   public Ranker(String indexSource) throws FileNotFoundException {
     _index = new Index(indexSource);
