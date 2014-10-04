@@ -8,6 +8,7 @@ import com.sun.net.httpserver.HttpHandler;
 
 import java.net.URLDecoder;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Iterator;
@@ -18,9 +19,19 @@ class QueryHandler implements HttpHandler {
       "Request received, but I am not smart enough to echo yet!\n";
 
   private Ranker _ranker;
-
+  private Set<Integer> sessionIds;
+  private int s_id;
+  
   public QueryHandler(Ranker ranker){
     _ranker = ranker;
+    sessionIds = new HashSet<Integer>();
+    
+    // generating a random session id from 0 to 10000 
+    s_id = (int)(Math.random()*10000);
+    while(sessionIds.contains(s_id)){
+    	s_id = (int)(Math.random()*10000);
+    }
+    sessionIds.add(s_id);
   }
 
   public static Map<String, String> getQueryMap(String query){  
@@ -40,8 +51,7 @@ class QueryHandler implements HttpHandler {
     if (!requestMethod.equalsIgnoreCase("GET")){  // GET requests only.
       return;
     }
-
-
+    
     // Print the user request header.
     Headers requestHeaders = exchange.getRequestHeaders();
     System.out.print("Incoming request: ");
@@ -112,7 +122,7 @@ class QueryHandler implements HttpHandler {
               String logFileName = "hw1.4-log.tsv";
               FileWriter logFileWriter = new FileWriter("./results/" + logFileName, true);
               PrintWriter vsmWriter = new PrintWriter(new BufferedWriter(logFileWriter));
-              String logEntry = "session\t"+ URLDecoder.decode(query_map.get("query"), "UTF-8") +
+              String logEntry = s_id+"\t"+ URLDecoder.decode(query_map.get("query"), "UTF-8") +
                       "\t" + query_map.get("documentId") + "\tclick\t" + System.currentTimeMillis();
               vsmWriter.write(logEntry + "\n");
               vsmWriter.close();

@@ -16,18 +16,11 @@ It is assumed that the input fed into the Evaluator is more than or equal to 10 
 
 It is also assumed that all lines of input has the same query (only considering one query per call).
 
-<<<<<<< HEAD
 - Below are the beta parameters for the construction of the simple linear model,
 
  betaCos = 1.0/0.8
  betaQL = 1.0/9.0
  betaPhrase = 1.0/300.0
  betaNumviews = 1.0/20000.0
-=======
-Below are the beta parameters for the construction of the simple linear model,
 
-	betaCos = 1.0/0.8
-	betaQL = 1.0/9.0
-	betaPhrase = 1.0/300.0
-	betaNumviews = 1.0/20000.0
->>>>>>> 245459b09ed7ddc6a8018c754312fc86f3069775
+- Click logging is also implemented. The log file is saved in the "results" folder.
