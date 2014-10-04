@@ -1,13 +1,11 @@
 package edu.nyu.cs.cs2580;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
+
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
-import java.io.PrintWriter;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
@@ -112,11 +110,11 @@ class QueryHandler implements HttpHandler {
           if(query_map.containsKey("documentId") && query_map.containsKey("query")) {
               // writing out to files
               String logFileName = "hw1.4-log.tsv";
-              File logFile = new File("./results/" + logFileName);
-              PrintWriter vsmWriter = new PrintWriter(logFile);
+              FileWriter logFileWriter = new FileWriter("./results/" + logFileName, true);
+              PrintWriter vsmWriter = new PrintWriter(new BufferedWriter(logFileWriter));
               String logEntry = "session\t"+ URLDecoder.decode(query_map.get("query"), "UTF-8") +
                       "\t" + query_map.get("documentId") + "\tclick\t" + System.currentTimeMillis();
-              vsmWriter.write(logEntry);
+              vsmWriter.write(logEntry + "\n");
               vsmWriter.close();
           }
       }
