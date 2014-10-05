@@ -42,11 +42,11 @@ class Evaluator {
   // This method saves the output of each ranking algorithm into files
   public static void saveOutput(HashMap < String , HashMap < Integer , Double > > relevance_judgments) throws IOException {
   	// please change this path accordingly
-	String index_path = "./data/corpus.tsv";
+	String index_path = "../data/corpus.tsv";
 	Ranker ranker = new Ranker(index_path);
 	
 	// please change the input path accordingly
-    String input_query_path = "./data/queries.tsv";
+    String input_query_path = "../data/queries.tsv";
     
     // output file names
     String vsm_file_name = "hw1.3-vsm.tsv";  // vector space model

@@ -12,7 +12,7 @@ class Ranker {
   private Index _index;
   public static enum RankingMethod { COSINE, QL, PHRASE, NUMVIEWS, LINEAR };
   public static enum Format { TEXT, HTML };
-  public static final String RESULTS_FOLDER = "./results/";
+  public static final String RESULTS_FOLDER = "../results/";
 
   private boolean saveOutput = false;
 
@@ -26,7 +26,7 @@ class Ranker {
   
   public void saveOutput() throws FileNotFoundException {
     System.out.println("Processing query file to " + RESULTS_FOLDER + " folder");
-    String inputQueryPath   = "./data/queries.tsv";
+    String inputQueryPath   = "../data/queries.tsv";
 
     // output file names
     String vsmFileName      = "hw1.1-vsm.tsv";  // vector space model

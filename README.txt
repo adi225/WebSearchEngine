@@ -3,8 +3,10 @@ Group 14
 
 /////////////// RUNNING THE SEARCH ENGINE ///////////////
 
+The followings assume that you are currently in the "src" folder. Please adjust the path in the source codes respectively (in the Evaluator, Ranker, and QueryHandler files) if you are not executing within the "src" folder.
+
 In order to run the SearchEngine, you can issue:
-java edu.nyu.cs.cs2580.SearchEngine 25814 ../data/corpus.tsv  (assuming that you are currently in the "src" folder)
+java edu.nyu.cs.cs2580.SearchEngine 25814 ../data/corpus.tsv  
 
 You can then go to the browser and enter:
 http://localhost:25814/search?query%3Dgoogle%26ranker%3Dphrase%26format%3Dhtml

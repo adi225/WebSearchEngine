@@ -123,7 +123,7 @@ class QueryHandler implements HttpHandler {
           if(query_map.containsKey("documentId") && query_map.containsKey("query")) {
               // writing out to files
               String logFileName = "hw1.4-log.tsv";
-              FileWriter logFileWriter = new FileWriter("./results/" + logFileName, true);
+              FileWriter logFileWriter = new FileWriter("../results/" + logFileName, true);
               PrintWriter vsmWriter = new PrintWriter(new BufferedWriter(logFileWriter));
               String logEntry = sessionId + "\t"+ URLDecoder.decode(query_map.get("query"), "UTF-8") +
                       "\t" + query_map.get("documentId") + "\tclick\t" + System.currentTimeMillis();
