@@ -1,12 +1,7 @@
-
 .classpath
-
 .project
-
 .settings/org.eclipse.jdt.core.prefs
-
 *.class
-
-WebSearchEngine.iml
-
+*.iml
 .idea
+data/wiki/

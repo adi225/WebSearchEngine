@@ -1,6 +1,5 @@
 package edu.nyu.cs.cs2580;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.File;
 import java.io.FileReader;
@@ -9,8 +8,6 @@ import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Vector;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -43,7 +40,7 @@ class Evaluator {
   public static void saveOutput(HashMap < String , HashMap < Integer , Double > > relevance_judgments) throws IOException {
   	// please change this path accordingly
 	String index_path = "./data/corpus.tsv";
-	Ranker ranker = new Ranker(index_path);
+	RankerHW1 ranker = new RankerHW1(index_path);
 	
 	// please change the input path accordingly
     String input_query_path = "./data/queries.tsv";
@@ -95,27 +92,27 @@ class Evaluator {
     
     // writing out to files
     
-    File vsm_file = new File(Ranker.RESULTS_FOLDER + vsm_file_name);
+    File vsm_file = new File(RankerHW1.RESULTS_FOLDER + vsm_file_name);
     PrintWriter vsm_writer = new PrintWriter(vsm_file);
     vsm_writer.write(vsm_evaluation);
     vsm_writer.close();
     
-    File ql_file = new File(Ranker.RESULTS_FOLDER + ql_file_name);
+    File ql_file = new File(RankerHW1.RESULTS_FOLDER + ql_file_name);
     PrintWriter ql_writer = new PrintWriter(ql_file);
     ql_writer.write(ql_evaluation);
     ql_writer.close();
     
-    File phrase_file = new File(Ranker.RESULTS_FOLDER + phrase_file_name);
+    File phrase_file = new File(RankerHW1.RESULTS_FOLDER + phrase_file_name);
     PrintWriter phrase_writer = new PrintWriter(phrase_file);
     phrase_writer.write(phrase_evaluation);
     phrase_writer.close();
     
-    File numviews_file = new File(Ranker.RESULTS_FOLDER + numview_file_name);
+    File numviews_file = new File(RankerHW1.RESULTS_FOLDER + numview_file_name);
     PrintWriter numviews_writer = new PrintWriter(numviews_file);
     numviews_writer.write(numview_evaluation);
     numviews_writer.close();
     
-    File linear_file = new File(Ranker.RESULTS_FOLDER + linear_file_name);
+    File linear_file = new File(RankerHW1.RESULTS_FOLDER + linear_file_name);
     PrintWriter linear_writer = new PrintWriter(linear_file);
     linear_writer.write(linear_evaluation);
     linear_writer.close();

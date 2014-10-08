@@ -18,7 +18,7 @@ class Index {
         String line = null;
         int did = 0;
         while ((line = reader.readLine()) != null){
-          Document d = new Document(did, line);
+          Document d = new Document(did);
           _documents.add(d);
           did++;
         }
@@ -31,15 +31,11 @@ class Index {
     System.out.println("Done indexing " + Integer.toString(_documents.size()) + " documents...");
   }
 
-  public int documentFrequency(String s){
-    return Document.documentFrequency(s);
-  }
+  public int documentFrequency(String s){ return 0; }
   public int termFrequency(String s){
-    return Document.termFrequency(s);
+    return 0;
   }
-  public int termFrequency(){
-    return Document.termFrequency();
-  }
+  public int termFrequency(){ return 0; }
   public int numDocs(){
     return _documents.size();
   }
