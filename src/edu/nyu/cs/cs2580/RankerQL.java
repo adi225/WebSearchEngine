@@ -21,7 +21,7 @@ public class RankerQL extends Ranker {
     public Vector<ScoredDocument> runQuery(Query query, int numResults) {
         Vector<ScoredDocument> all = new Vector<ScoredDocument>();
         for (int i = 0; i < _indexer.numDocs(); ++i) {
-            all.add(scoreDocument(query, i));
+            all.add(new ScoredDocument(_indexer.getDoc(i), scoreDocument(query, i)));
         }
         Collections.sort(all, Collections.reverseOrder());
         Vector<ScoredDocument> results = new Vector<ScoredDocument>();
@@ -31,7 +31,7 @@ public class RankerQL extends Ranker {
         return results;
     }
 
-    private ScoredDocument scoreDocument(Query query, int did) {
+    protected double scoreDocument(Query query, int did) {
         // TODO Check that double processing is ok. (Query Handler also processes it).
         // Process the raw query into tokens.
         query.processQuery();
@@ -67,7 +67,7 @@ public class RankerQL extends Ranker {
                     lambda * ((double) wordFrequencyInCorpus) / totalWordsInCorpus);
         }
 
-        return new ScoredDocument(doc, score);
+        return score;
     }
 }
 
