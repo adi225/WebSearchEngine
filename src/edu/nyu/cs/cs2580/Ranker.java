@@ -68,8 +68,7 @@ public abstract class Ranker {
       case FAVORITE:
         return new RankerFavorite(options, arguments, indexer);
       case COSINE:
-        // Plug in your cosine Ranker
-        break;
+        return new RankerCosine(options, arguments, indexer);
       case QL:
         // Plug in your QL Ranker
         break;
