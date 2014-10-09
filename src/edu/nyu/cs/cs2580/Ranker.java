@@ -70,8 +70,7 @@ public abstract class Ranker {
       case COSINE:
         return new RankerCosine(options, arguments, indexer);
       case QL:
-        // Plug in your QL Ranker
-        break;
+        return new RankerQL(options, arguments, indexer);
       case PHRASE:
         // Plug in your phrase Ranker
         break;

@@ -11,7 +11,7 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
  * on the instructors' {@link IndexerFullScan}, instead it should use one of
  * your more efficient implementations.
  */
-public class RankerFavorite extends Ranker {
+public class RankerFavorite extends RankerCosine {
 
   public RankerFavorite(Options options,
       CgiArguments arguments, Indexer indexer) {
@@ -19,8 +19,4 @@ public class RankerFavorite extends Ranker {
     System.out.println("Using Ranker: " + this.getClass().getSimpleName());
   }
 
-  @Override
-  public Vector<ScoredDocument> runQuery(Query query, int numResults) {
-    return null;
-  }
 }

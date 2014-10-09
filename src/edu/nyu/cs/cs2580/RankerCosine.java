@@ -38,7 +38,7 @@ public class RankerCosine extends Ranker {
 
         // Get the document tokens.
         Document doc = _indexer.getDoc(did);
-        Vector<String> docTokens = ((DocumentFull) doc).getConvertedTitleTokens();
+        Vector<String> docTokens = ((DocumentFull) doc).getConvertedBodyTokens();
 
         double score = 0, q_sqr = 0, d_sqr = 0;
         int n = _indexer.numDocs();
@@ -54,7 +54,7 @@ public class RankerCosine extends Ranker {
             }
         }
 
-        // builds map of query word frequency
+        // builds map of document word frequency
         Map<String, Integer> documentMap = new HashMap<String, Integer>();
         for(String word : docTokens) {
             if(documentMap.containsKey(word)) {
