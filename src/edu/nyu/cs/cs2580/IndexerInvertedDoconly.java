@@ -9,10 +9,15 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.Vector;
+
+import de.l3s.boilerpipe.BoilerpipeProcessingException;
+import de.l3s.boilerpipe.extractors.ArticleExtractor;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
@@ -23,11 +28,22 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
 
-  // An index, which is a mapping between a term and a list of document IDs containing that term.
-  private Map<String,ArrayList<Integer>> _index = new HashMap<String,ArrayList<Integer>>();
+  // An index, which is a mapping between an integer representation of a term
+  // and a list of document IDs containing that term.
+  private Map<Integer,ArrayList<Integer>> _index = new HashMap<Integer,ArrayList<Integer>>();
 	
   // Stores all DocumentIndexed in memory.
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
+  
+  // Maps each term to their integer representation
+  private Map<String, Integer> _dictionary = new HashMap<String, Integer>();
+  // All unique terms appeared in corpus. Offsets are integer representations.
+  private Vector<String> _terms = new Vector<String>();
+
+  // Term frequency, key is the integer representation of the term and value is
+  // the number of times the term appears in the corpus.
+  private Map<Integer, Integer> _termCorpusFrequency =
+      new HashMap<Integer, Integer>();
   
   public IndexerInvertedDoconly(Options options) {
     super(options);
@@ -36,32 +52,29 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   @Override
   public void constructIndex() throws IOException {	
-	  String corpusFile = "./data/wiki";
-	  System.out.println("Construct index from: " + corpusFile);
+	  String corpusDirectory = "D:/NYU/Courses/Web Search Engine/Fall 2014/HW2/data/wiki";
+	  System.out.println("Construct index from: " + corpusDirectory);
     
-	  File dir = new File(corpusFile);
+	  File dir = new File(corpusDirectory);
 	  File[] directoryListing = dir.listFiles();
 	  if (directoryListing != null) {
-	    for (File child : directoryListing) {
+	    for (File docFile : directoryListing) {
+	       StringBuffer text = new StringBuffer();  // the original text of the document
 	       
-	       // adding an indexed document 
-	       String fileName = child.getName();  // this will be set to a document's title
-	       DocumentIndexed docIndexed = new DocumentIndexed(_numDocs);
-	       docIndexed.setTitle(fileName);
-	       _documents.add(docIndexed);
-	    	
-	       BufferedReader reader = new BufferedReader(new FileReader(child));
+	       // getting the original text of the document
+	       BufferedReader reader = new BufferedReader(new FileReader(docFile));
            try {
-        	 StringBuffer text = new StringBuffer();;  // the original text of the document
-             
         	 String line = null;
              while ((line = reader.readLine()) != null) {
-               text.append(line);
+               text.append(line+"\n");
              }
              
-             processDocument(text.toString());
+             processDocument(text.toString());  // process the raw context of the document
              
-           } finally {
+           } catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
              reader.close();
            }
 	    }
@@ -88,43 +101,82 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   //   drop the processing of a certain inverted list.
   
   // The input of this method (String text) is the raw context of the document.
-  public void processDocument(String text){
+  public void processDocument(String text) throws Exception{
 	  String visibleContext = removeNonVisibleContext(text);  // step 1 of document processing
 	  
-	  Vector<String> docTokens = new Vector<String>();
-	  Scanner scanner = new Scanner(visibleContext);
-	  while(scanner.hasNext()){
-		  docTokens.add(scanner.next());
-	  }
+	  String stemmedContext = performStemming(visibleContext);  // step 2 of document processing
 	  
-	  performStemming(docTokens);  // step 2 of document processing
+      // adding an indexed document 
+      DocumentIndexed docIndexed = new DocumentIndexed(_numDocs);  // the current number of doc is ID for the current document
+      Vector<Integer> docTokensAsIntegers = new Vector<Integer>();
+      readTermVector(stemmedContext, docTokensAsIntegers);
+      docIndexed.setBodyTokens(docTokensAsIntegers);
+      _documents.add(docIndexed);
 	  
-	  for(String term : docTokens){
+      HashSet<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
+      for(Integer term : docTokensAsIntegers){
+    	  if(uniqueTokens.contains(term)==false){
+    		  uniqueTokens.add(term);
+    	  }
+    	  ++_totalTermFrequency;
+      }
+      
+      // Indexing
+	  for(Integer term : uniqueTokens){
 		  if(_index.containsKey(term)){
 			  ArrayList<Integer> postingList = _index.get(term);
-			  postingList.add(_numDocs);
+			  postingList.add(_numDocs);  // add the current doc into the posting list
 		  }
 		  else{
 			  ArrayList<Integer> postingList = new ArrayList<Integer>();
 			  postingList.add(_numDocs);
+			  _index.put(term, postingList);
 		  }
-		  ++_totalTermFrequency;
 	  }
 	  
+	  System.out.println("Finished indexing document id: "+_numDocs);
 	  ++_numDocs;
+	  
   }
   
   // Non-visible page content is removed, e.g., those inside <script> tags.
-  public String removeNonVisibleContext(String text){
-	  
-	  return text;
+  // Right now, the 3rd party library "BoilerPiper" is used to perform the task.
+  public String removeNonVisibleContext(String text) throws Exception{
+	  String visibleContext = ArticleExtractor.INSTANCE.getText(text);
+	  return visibleContext;
   }
   
   // Tokens are stemmed with Step 1 of the Porter's algorithm.
-  public void performStemming(Vector<String> docTokens){
-	  
+  public String performStemming(String text){
+	  return text;
   }
 
+  /**
+   * Tokenize {@code content} into terms, translate terms into their integer
+   * representation, store the integers in {@code tokens}.
+   * @param content
+   * @param tokens
+   */
+  private void readTermVector(String content, Vector<Integer> tokens) {
+    Scanner s = new Scanner(content);  // Uses white space by default.
+    while (s.hasNext()) {
+      String token = s.next();
+      int idx = -1;
+      if (_dictionary.containsKey(token)) {
+        idx = _dictionary.get(token);
+        _termCorpusFrequency.put(idx, _termCorpusFrequency.get(idx) + 1);
+      } else {
+        idx = _terms.size();  // offsets are the integer representations
+        _terms.add(token);
+        _dictionary.put(token, idx);
+        _termCorpusFrequency.put(idx, 1);
+      }
+      tokens.add(idx);
+    }
+    return;
+  }
+  
+ 
   @Override
   public void loadIndex() throws IOException, ClassNotFoundException {
   }
