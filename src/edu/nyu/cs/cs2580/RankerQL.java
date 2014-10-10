@@ -45,6 +45,7 @@ public class RankerQL extends Ranker {
         double lambda = 0.5;
         double score = 0;
 
+                
         // builds map of document word frequency
         Map<String, Integer> documentMap = new HashMap<String, Integer>();
         for(String word : docTokens) {
@@ -55,7 +56,7 @@ public class RankerQL extends Ranker {
             }
         }
 
-        for(String word : docTokens) {
+        for(String word : query._tokens) {
             int wordFrequencyInDocument = documentMap.containsKey(word) ? documentMap.get(word) : 0;
             int wordFrequencyInCorpus = _indexer.corpusTermFrequency(word);
 
