@@ -3,6 +3,7 @@ package edu.nyu.cs.cs2580;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Vector;
 
 /**
@@ -17,20 +18,44 @@ public class RankerCosine extends Ranker {
         System.out.println("Using Ranker: " + this.getClass().getSimpleName());
     }
 
+    // SLIDE'S IMPLEMENTATION
     // This should be done according to the lecture slide 3, page 52
     // (Document-at-a-time Query Processing), or page 54
     // (Term-at-a-time Query Processing). The former is prefered in practice.
     @Override
     public Vector<ScoredDocument> runQuery(Query query, int numResults) {
-        Vector<ScoredDocument> all = new Vector<ScoredDocument>();
-        for (int i = 0; i < _indexer.numDocs(); ++i) {
-            all.add(new ScoredDocument(_indexer.getDoc(i), scoreDocument(query, i)));
-        }
-        Collections.sort(all, Collections.reverseOrder());
+//	Commented below is the previous implementation of query processing, which needed to be changed.
+
+//    	 Vector<ScoredDocument> all = new Vector<ScoredDocument>();
+//    	 for (int i = 0; i < _indexer.numDocs(); ++i) {
+//    		 all.add(new ScoredDocument(_indexer.getDoc(i), scoreDocument(query, i)));
+//    	 }
+//    	 Collections.sort(all, Collections.reverseOrder());
+//    	 Vector<ScoredDocument> results = new Vector<ScoredDocument>();
+//    	 for (int i = 0; i < all.size() && i < numResults; ++i) {
+//    		 results.add(all.get(i));
+//    	 }
+//    	 return results;
+    	
+    	
         Vector<ScoredDocument> results = new Vector<ScoredDocument>();
-        for (int i = 0; i < all.size() && i < numResults; ++i) {
-            results.add(all.get(i));
+      
+        PriorityQueue<ScoredDocument> scoredDocuments = new PriorityQueue<ScoredDocument>();
+        Document doc = _indexer.nextDoc(query, -1);
+        
+        while(doc!=null){
+        	Double score = scoreDocument(query,doc._docid);
+        	scoredDocuments.add(new ScoredDocument(doc,score));
+        	if(scoredDocuments.size()>numResults){
+        		scoredDocuments.poll();
+        	}
+        	doc = _indexer.nextDoc(query, doc._docid);
         }
+        
+        while(!scoredDocuments.isEmpty()){
+        	results.add(scoredDocuments.poll());
+        }
+        
         return results;
     }
 
