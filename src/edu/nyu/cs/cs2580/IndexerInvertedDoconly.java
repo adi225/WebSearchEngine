@@ -7,9 +7,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Vector;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
@@ -22,8 +24,11 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   private static final long serialVersionUID = 1077111905740085030L;
 
   // An index, which is a mapping between a term and a list of document IDs containing that term.
-  private Map<String,List<Integer>> _index = new HashMap<String,List<Integer>>();
+  private Map<String,ArrayList<Integer>> _index = new HashMap<String,ArrayList<Integer>>();
 	
+  // Stores all DocumentIndexed in memory.
+  private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
+  
   public IndexerInvertedDoconly(Options options) {
     super(options);
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
@@ -38,6 +43,13 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	  File[] directoryListing = dir.listFiles();
 	  if (directoryListing != null) {
 	    for (File child : directoryListing) {
+	       
+	       // adding an indexed document 
+	       String fileName = child.getName();  // this will be set to a document's title
+	       DocumentIndexed docIndexed = new DocumentIndexed(_numDocs);
+	       docIndexed.setTitle(fileName);
+	       _documents.add(docIndexed);
+	    	
 	       BufferedReader reader = new BufferedReader(new FileReader(child));
            try {
         	 StringBuffer text = new StringBuffer();;  // the original text of the document
@@ -70,7 +82,46 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	  writer.close();
   }
   
+  
+
+  //   No stop word is removed, you need to dynamically determine whether to
+  //   drop the processing of a certain inverted list.
+  
+  // The input of this method (String text) is the raw context of the document.
   public void processDocument(String text){
+	  String visibleContext = removeNonVisibleContext(text);  // step 1 of document processing
+	  
+	  Vector<String> docTokens = new Vector<String>();
+	  Scanner scanner = new Scanner(visibleContext);
+	  while(scanner.hasNext()){
+		  docTokens.add(scanner.next());
+	  }
+	  
+	  performStemming(docTokens);  // step 2 of document processing
+	  
+	  for(String term : docTokens){
+		  if(_index.containsKey(term)){
+			  ArrayList<Integer> postingList = _index.get(term);
+			  postingList.add(_numDocs);
+		  }
+		  else{
+			  ArrayList<Integer> postingList = new ArrayList<Integer>();
+			  postingList.add(_numDocs);
+		  }
+		  ++_totalTermFrequency;
+	  }
+	  
+	  ++_numDocs;
+  }
+  
+  // Non-visible page content is removed, e.g., those inside <script> tags.
+  public String removeNonVisibleContext(String text){
+	  
+	  return text;
+  }
+  
+  // Tokens are stemmed with Step 1 of the Porter's algorithm.
+  public void performStemming(Vector<String> docTokens){
 	  
   }
 
@@ -89,6 +140,13 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   @Override
   public Document nextDoc(Query query, int docid) {
     return null;
+  }
+  
+  // Just like in the lecture slide, this helper method returns the next document id
+  // after the given docid
+  public int next(String term, int docid){
+	  
+	  return -1;
   }
 
   @Override

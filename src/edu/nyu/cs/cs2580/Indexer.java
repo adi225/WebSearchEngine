@@ -78,7 +78,7 @@ public abstract class Indexer {
    * be stored (either in a hidden file or in a temporary directory). We will
    * construct your index on one machine and move the index to a different
    * machine for serving, so do NOT try to play tricks. 
-   */
+   */ 
   public abstract void constructIndex() throws IOException;
 
   /**

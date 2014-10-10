@@ -17,6 +17,9 @@ public class RankerCosine extends Ranker {
         System.out.println("Using Ranker: " + this.getClass().getSimpleName());
     }
 
+    // This should be done according to the lecture slide 3, page 52
+    // (Document-at-a-time Query Processing), or page 54
+    // (Term-at-a-time Query Processing). The former is prefered in practice.
     @Override
     public Vector<ScoredDocument> runQuery(Query query, int numResults) {
         Vector<ScoredDocument> all = new Vector<ScoredDocument>();
