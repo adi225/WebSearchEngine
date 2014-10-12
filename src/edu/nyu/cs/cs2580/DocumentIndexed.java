@@ -10,32 +10,32 @@ public class DocumentIndexed extends Document {
   private static final long serialVersionUID = 9184892508124423115L;
 
    
-  private Vector<Integer> _titleTokens = new Vector<Integer>();
-  private Vector<Integer> _bodyTokens = new Vector<Integer>();
+//  private Vector<Integer> _titleTokens = new Vector<Integer>();
+//  private Vector<Integer> _bodyTokens = new Vector<Integer>();
   
   public DocumentIndexed(int docid) {
     super(docid);
   }
   
-  public void setTitleTokens(Vector<Integer> titleTokens) {
-    _titleTokens = titleTokens;
-  }
+//  public void setTitleTokens(Vector<Integer> titleTokens) {
+//    _titleTokens = titleTokens;
+//  }
 
-  public Vector<Integer> getTitleTokens() {
-    return _titleTokens;
-  }
+//  public Vector<Integer> getTitleTokens() {
+//    return _titleTokens;
+//  }
 
 //  public Vector<String> getConvertedTitleTokens() {
 //    return _indexer.getTermVector(_titleTokens);
 //  }
 
-  public void setBodyTokens(Vector<Integer> bodyTokens) {
-    _bodyTokens = bodyTokens;
-  }
+//  public void setBodyTokens(Vector<Integer> bodyTokens) {
+//    _bodyTokens = bodyTokens;
+//  }
 
-  public Vector<Integer> getBodyTokens() {
-    return _bodyTokens;
-  }
+//  public Vector<Integer> getBodyTokens() {
+//   return _bodyTokens;
+//  }
 
 //  public Vector<String> getConvertedBodyTokens() {
 //    return _indexer.getTermVector(_bodyTokens);

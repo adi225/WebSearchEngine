@@ -7,14 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import de.l3s.boilerpipe.extractors.ArticleExtractor;
@@ -66,12 +59,19 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	       // getting the original text of the document
 	       BufferedReader reader = new BufferedReader(new FileReader(docFile));
            try {
-        	 String line = null;
+             String line = null;
              while ((line = reader.readLine()) != null) {
                text.append(line+"\n");
              }
-             
-             processDocument(text.toString());  // process the raw context of the document
+
+             // adding an indexed document
+             int docId = _numDocs++;     // the current number of doc is ID for the current document
+             DocumentIndexed docIndexed = new DocumentIndexed(docId);
+             docIndexed.setTitle(docFile.getName());
+             docIndexed.setUrl(docFile.getAbsolutePath());
+             _documents.add(docIndexed);
+
+             processDocument(docId, text.toString());  // process the raw context of the document
              
            } catch (Exception e) {
                throw new IOException("File" + docFile.getPath() + " could not be read.");
@@ -100,41 +100,34 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   //   drop the processing of a certain inverted list.
   
   // The input of this method (String text) is the raw context of the document.
-  public void processDocument(String text) throws Exception{
+  public void processDocument(int docId, String text) throws Exception{
 	  String visibleContext = removeNonVisibleContext(text);  // step 1 of document processing
 	  String stemmedContext = performStemming(visibleContext);  // step 2 of document processing
+      visibleContext = null; // for garbage collection
 	  
-      // adding an indexed document 
-      DocumentIndexed docIndexed = new DocumentIndexed(_numDocs);  // the current number of doc is ID for the current document
-      Vector<Integer> docTokensAsIntegers = new Vector<Integer>();
-      readTermVector(stemmedContext, docTokensAsIntegers);
-      docIndexed.setBodyTokens(docTokensAsIntegers);
+      // adding an indexed document
+      DocumentIndexed docIndexed = new DocumentIndexed(docId);
+      Vector<Integer> docTokensAsIntegers = readTermVector(stemmedContext);
       _documents.add(docIndexed);
 	  
-      HashSet<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
-      for(Integer term : docTokensAsIntegers){
-    	  if(uniqueTokens.contains(term)==false){
-    		  uniqueTokens.add(term);
-    	  }
-    	  _totalTermFrequency++;
-      }
+      Set<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
+      uniqueTokens.addAll(docTokensAsIntegers);
+      _totalTermFrequency += docTokensAsIntegers.size();
       
       // Indexing
 	  for(Integer term : uniqueTokens) {
 		  if(_index.containsKey(term)) {
 			  List<Integer> postingList = _index.get(term);
-			  postingList.add(_numDocs);  // add the current doc into the posting list
+			  postingList.add(docId);  // add the current doc into the posting list
 		  }
 		  else {
-			  List<Integer> postingList = new ArrayList<Integer>();
-			  postingList.add(_numDocs);
+			  List<Integer> postingList = new LinkedList<Integer>();
+			  postingList.add(docId);
 			  _index.put(term, postingList);
 		  }
 	  }
 	  
-	  System.out.println("Finished indexing document id: "+_numDocs);
-	  _numDocs++;
-	  
+	  System.out.println("Finished indexing document id: " + docId);
   }
   
   // Non-visible page content is removed, e.g., those inside <script> tags.
@@ -153,9 +146,9 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
    * Tokenize {@code content} into terms, translate terms into their integer
    * representation, store the integers in {@code tokens}.
    * @param content
-   * @param tokens
    */
-  private void readTermVector(String content, Vector<Integer> tokens) {
+  private Vector<Integer> readTermVector(String content) {
+    Vector<Integer> tokens = new Vector<Integer>();
     Scanner s = new Scanner(content);  // Uses white space by default.
     while (s.hasNext()) {
       String token = s.next();
@@ -165,13 +158,14 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
         _termCorpusFrequency.put(idx, _termCorpusFrequency.get(idx) + 1);
       } else {
         idx = _terms.size();  // offsets are the integer representations
+        // TODO Do we need _terms? Isn't it equal to the set of keys in _dictionary?
         _terms.add(token);
         _dictionary.put(token, idx);
         _termCorpusFrequency.put(idx, 1);
       }
       tokens.add(idx);
     }
-    return;
+    return tokens;
   }
   
  
