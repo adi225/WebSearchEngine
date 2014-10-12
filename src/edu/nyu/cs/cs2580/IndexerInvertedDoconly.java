@@ -30,32 +30,34 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   // An index, which is a mapping between an integer representation of a term
   // and a list of document IDs containing that term.
-  private Map<Integer,ArrayList<Integer>> _index = new HashMap<Integer,ArrayList<Integer>>();
+  private Map<Integer, List<Integer>> _index = new HashMap<Integer, List<Integer>>();
 	
   // Stores all DocumentIndexed in memory.
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   
   // Maps each term to their integer representation
   private Map<String, Integer> _dictionary = new HashMap<String, Integer>();
+
   // All unique terms appeared in corpus. Offsets are integer representations.
   private Vector<String> _terms = new Vector<String>();
 
   // Term frequency, key is the integer representation of the term and value is
   // the number of times the term appears in the corpus.
-  private Map<Integer, Integer> _termCorpusFrequency =
-      new HashMap<Integer, Integer>();
+  private Map<Integer, Integer> _termCorpusFrequency = new HashMap<Integer, Integer>();
+
+  private final String CORPUS_PREFIX;
   
   public IndexerInvertedDoconly(Options options) {
     super(options);
+    CORPUS_PREFIX = options._corpusPrefix;
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
   }
 
   @Override
-  public void constructIndex() throws IOException {	
-	  String corpusDirectory = "D:/NYU/Courses/Web Search Engine/Fall 2014/HW2/data/wiki";
-	  System.out.println("Construct index from: " + corpusDirectory);
+  public void constructIndex() throws IOException {
+	  System.out.println("Construct index from: " + CORPUS_PREFIX);
     
-	  File dir = new File(corpusDirectory);
+	  File dir = new File(CORPUS_PREFIX);
 	  File[] directoryListing = dir.listFiles();
 	  if (directoryListing != null) {
 	    for (File docFile : directoryListing) {
@@ -72,14 +74,12 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
              processDocument(text.toString());  // process the raw context of the document
              
            } catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
+               throw new IOException("File" + docFile.getPath() + " could not be read.");
+  		   } finally {
              reader.close();
            }
 	    }
-	  }
-	  else {
+	  } else {
 		  throw new IOException("Invalid directory.");
 	  }
     
@@ -89,8 +89,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	
 	  String indexFile = _options._indexPrefix + "/corpus.idx";
 	  System.out.println("Store index to: " + indexFile);
-	  ObjectOutputStream writer =
-	      new ObjectOutputStream(new FileOutputStream(indexFile));
+	  ObjectOutputStream writer = new ObjectOutputStream(new FileOutputStream(indexFile));
 	  writer.writeObject(this);
 	  writer.close();
   }
@@ -103,7 +102,6 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   // The input of this method (String text) is the raw context of the document.
   public void processDocument(String text) throws Exception{
 	  String visibleContext = removeNonVisibleContext(text);  // step 1 of document processing
-	  
 	  String stemmedContext = performStemming(visibleContext);  // step 2 of document processing
 	  
       // adding an indexed document 
@@ -118,24 +116,24 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     	  if(uniqueTokens.contains(term)==false){
     		  uniqueTokens.add(term);
     	  }
-    	  ++_totalTermFrequency;
+    	  _totalTermFrequency++;
       }
       
       // Indexing
-	  for(Integer term : uniqueTokens){
-		  if(_index.containsKey(term)){
-			  ArrayList<Integer> postingList = _index.get(term);
+	  for(Integer term : uniqueTokens) {
+		  if(_index.containsKey(term)) {
+			  List<Integer> postingList = _index.get(term);
 			  postingList.add(_numDocs);  // add the current doc into the posting list
 		  }
-		  else{
-			  ArrayList<Integer> postingList = new ArrayList<Integer>();
+		  else {
+			  List<Integer> postingList = new ArrayList<Integer>();
 			  postingList.add(_numDocs);
 			  _index.put(term, postingList);
 		  }
 	  }
 	  
 	  System.out.println("Finished indexing document id: "+_numDocs);
-	  ++_numDocs;
+	  _numDocs++;
 	  
   }
   
