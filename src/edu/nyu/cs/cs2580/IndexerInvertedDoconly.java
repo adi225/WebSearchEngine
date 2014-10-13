@@ -135,30 +135,30 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
       _utilityIndexFlatSize++;
 
       if(_utilityIndexFlatSize > UTILITY_INDEX_FLAT_SIZE_THRESHOLD) {
-        RandomAccessFile partialIndexFile =
-                new RandomAccessFile(_options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++, "rw");
-        List<Integer> words = new ArrayList(_utilityIndex.keySet());
-        Collections.sort(words);
-        _index = new HashMap<Integer, FileRange>();
-        for (Integer word : words) {
-          List<Integer> postingsList = _utilityIndex.get(word);
-          long offset = partialIndexFile.getFilePointer();
-          long length = postingsList.size();
-          _index.put(word, new FileRange(offset, length));
-          for (int posting : postingsList) {
-            partialIndexFile.writeInt(posting);
-          }
-        }
-        partialIndexFile.close();
-        for (Integer word : words) {
-          System.out.println(word + ": " + _index.get(word));
-        }
+        String filePath = _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++;
+
+        System.out.println("Check value: " + _utilityIndex.get(35).get(8));
+
+        dumpIndexToFile(_utilityIndex, filePath);
 
         // CLEANUP
         _utilityIndexFlatSize = 0;
         _utilityIndex = new HashMap<Integer, List<Integer>>();
-        _index = null;
-        System.exit(-13);
+        System.gc();
+/*
+        Map<Integer, FileRange> index = new HashMap<Integer, FileRange>();
+        long offset = loadFromFileIntoIndex(filePath, index);
+        System.out.println("Size: " + index.size());
+        System.out.println("Offset: " + offset);
+
+        long location = index.get(35).offset;
+        RandomAccessFile file = new RandomAccessFile(filePath, "r");
+        file.seek(offset + location);
+        for(int i = 0; i < 8; i++) file.readInt();
+        int docId2 = file.readInt();
+        System.out.println("Checked value: " + docId2);
+        System.exit(-1);
+*/
       }
     }
     System.out.println("Finished indexing document id: " + docId);
@@ -250,6 +250,59 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     SearchEngine.Check(false, "Not implemented!");
     return 0;
   }
+
+  private void dumpIndexToFile(Map<Integer, List<Integer>> index, String filePath) throws IOException {
+    Map<Integer, FileRange> indexJumpMap = new HashMap<Integer, FileRange>();
+
+    // Write actual index to auxiliary file
+    RandomAccessFile partialIndexFileAux = new RandomAccessFile(filePath + "_aux", "rw");
+    List<Integer> words = new ArrayList(index.keySet());
+    Collections.sort(words);
+    for (Integer word : words) {
+      List<Integer> postingsList = index.get(word);
+      long offset = partialIndexFileAux.getFilePointer();
+      long length = postingsList.size();
+      indexJumpMap.put(word, new FileRange(offset, length));
+      for (int posting : postingsList) {
+        partialIndexFileAux.writeInt(posting);
+      }
+    }
+
+    // Write pointer map to beginning of index file.
+    RandomAccessFile partialIndexFile = new RandomAccessFile(filePath, "rw");
+    partialIndexFile.writeInt(words.size());
+    for (Integer word : words) {
+      FileRange fileRange = indexJumpMap.get(word);
+      partialIndexFile.writeInt(word);
+      partialIndexFile.writeLong(fileRange.offset);
+      partialIndexFile.writeLong(fileRange.length);
+    }
+
+    int buf;
+    partialIndexFileAux.seek(0);
+    while((buf = partialIndexFileAux.read()) >= 0) {
+      partialIndexFile.write(buf);
+    }
+
+    File file = new File(filePath + "_aux");
+    file.delete();
+  }
+
+  private long loadFromFileIntoIndex(String fileURL, Map<Integer, FileRange> index) throws IOException {
+    index.clear();
+    RandomAccessFile file = new RandomAccessFile(fileURL, "r");
+    int wordsSize = file.readInt();
+    for(int i = 0; i < wordsSize; i++) {
+      int word = file.readInt();
+      long offset = file.readLong();
+      long length = file.readLong();
+      index.put(word, new FileRange(offset, length));
+    }
+    long filePointer = file.getFilePointer();
+    file.close();
+    return filePointer;
+  }
+
 
   class FileRange {
     public long offset;
