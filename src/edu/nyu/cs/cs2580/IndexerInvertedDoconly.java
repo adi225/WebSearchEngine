@@ -258,9 +258,21 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     return nextDoc(query,docIDNew-1);
   }
   
-  // Just like in the lecture slide, this helper method returns the next document id
+  // Just like in the lecture slide 3, page 14, this helper method returns the next document id
   // after the given docid. It returns -1 if not found.
   public int next(String term, int docid){
+	  int termInt = _dictionary.get(term);  // an integer representation of a term
+	  List<Integer> postingList = _utilityIndex.get(termInt);
+	  
+	  if(postingList.size()==0 || postingList.get(postingList.size()-1) <= docid){
+		  return -1;
+	  }
+	  
+	  for(int i=0;i<postingList.size();i++){
+		  if(postingList.get(i) > docid){
+			  return postingList.get(i);
+		  }
+	  }
 	  
 	  return -1;
   }
