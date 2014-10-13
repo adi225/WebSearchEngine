@@ -274,7 +274,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	  
 	  int termInt = _dictionary.get(term);  // an integer representation of a term
 	  FileRange postingList = _index.get(termInt);
-	  file.seek(postingList.offset);
+	  file.seek(postingList.offset);  // plus the postinglist offset
 	  
 	  for(int i=0; i < postingList.length; i++){
 		  int posting = file.readInt();
@@ -290,9 +290,15 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   public int corpusDocFrequencyByTerm(String term) {
 	  try{
 		  int termInt = _dictionary.get(term);  // an integer representation of a term
-		  return _utilityIndex.get(termInt).size();
+		  
+		  RandomAccessFile file = new RandomAccessFile(_options._indexPrefix + "index.idx", "r");
+		  
+		  FileRange postingList = _index.get(termInt);
+		  file.seek(postingList.offset);  // plus the postinglist offset
+		  
+		  return (int)postingList.length;
 	  }
-	  catch(NullPointerException e){
+	  catch(Exception e){
 		  return 0;
 	  }
 
