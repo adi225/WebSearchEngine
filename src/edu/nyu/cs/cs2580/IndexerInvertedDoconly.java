@@ -29,7 +29,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	
   // Stores all DocumentIndexed in memory.
   // HashMap is used for fast lookup; key is the docid and value is the DocumentIndexed.
-  private HashMap<Integer,DocumentIndexed> _documents = new HashMap<Integer,DocumentIndexed>();
+  private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   
   // Maps each term to their integer representation
   private Map<String, Integer> _dictionary = new HashMap<String, Integer>();
@@ -80,7 +80,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
           DocumentIndexed docIndexed = new DocumentIndexed(docId);
           docIndexed.setTitle(docFile.getName());
           docIndexed.setUrl(docFile.getAbsolutePath());
-          _documents.put(docId,docIndexed);
+          _documents.add(docIndexed);
 
           try {
             processDocument(docId, text.toString());  // process the raw context of the document
@@ -218,7 +218,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   @Override
   public Document getDoc(int docid) {
-    return _documents.get(docid);
+    return (docid >= _documents.size() || docid < 0) ? null : _documents.get(docid);
   }
 
   /**
@@ -238,7 +238,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    return 0;
+	    return 0;
   }
 
   @Override
