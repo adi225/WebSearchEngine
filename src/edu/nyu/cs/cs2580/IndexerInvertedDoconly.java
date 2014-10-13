@@ -279,12 +279,25 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-	    return 0;
+	  try{
+		  int termInt = _dictionary.get(term);  // an integer representation of a term
+		  return _utilityIndex.get(termInt).size();
+	  }
+	  catch(NullPointerException e){
+		  return 0;
+	  }
+
   }
 
   @Override
   public int corpusTermFrequency(String term) {
-    return 0;
+	  try{
+		  int termInt = _dictionary.get(term);  // an integer representation of a term
+		  return _termCorpusFrequency.get(termInt);
+	  }
+	  catch(NullPointerException e){
+		  return 0;
+	  }
   }
 
   @Override
