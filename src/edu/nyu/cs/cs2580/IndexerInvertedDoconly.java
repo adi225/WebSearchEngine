@@ -223,54 +223,63 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   /**
    * In HW2, you should be using {@link DocumentIndexed}
+ * @throws IOException 
    */
   @Override
   // This implementation follows that in the lecture 3 slide, page 13.
   public Document nextDoc(Query query, int docid) {
 	// Assuming that the query has already been processed.
 	// query.processQuery();
-	List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
-	for(String token : query._tokens){
-		int docID = next(token,docid);
-		if(docID == -1){
-			return null;
+	try {
+		List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
+		for(String token : query._tokens){
+			int docID = next(token,docid);
+			if(docID == -1){
+				return null;
+			}
+			docIDs.add(docID);
 		}
-		docIDs.add(docID);
-	}
-	
-	boolean foundDocID = true;
-	int docIDFixed = docIDs.get(0); 
-	int docIDNew = Integer.MIN_VALUE;
-	
-	for(Integer docID : docIDs){  // check if all the doc IDs are equal
-		if(docID != docIDFixed){
-			foundDocID = false;
+		
+		boolean foundDocID = true;
+		int docIDFixed = docIDs.get(0); 
+		int docIDNew = Integer.MIN_VALUE;
+		
+		for(Integer docID : docIDs){  // check if all the doc IDs are equal
+			if(docID != docIDFixed){
+				foundDocID = false;
+			}
+			if(docID > docIDNew){
+				docIDNew = docID;
+			}
 		}
-		if(docID > docIDNew){
-			docIDNew = docID;
+		
+		if(foundDocID){
+			return _documents.get(docIDFixed);
 		}
+		
+		return nextDoc(query,docIDNew-1);
+	} catch (IOException e) {
+	  return null;
 	}
-	
-	if(foundDocID){
-		return _documents.get(docIDFixed);
-	}
-	
-    return nextDoc(query,docIDNew-1);
   }
   
   // Just like in the lecture slide 3, page 14, this helper method returns the next document id
   // after the given docid. It returns -1 if not found.
-  public int next(String term, int docid){
-	  int termInt = _dictionary.get(term);  // an integer representation of a term
-	  List<Integer> postingList = _utilityIndex.get(termInt);
-	  
-	  if(postingList.size()==0 || postingList.get(postingList.size()-1) <= docid){
+  public int next(String term, int docid) throws IOException {
+	  if(!_dictionary.containsKey(term)) {
 		  return -1;
 	  }
 	  
-	  for(int i=0;i<postingList.size();i++){
-		  if(postingList.get(i) > docid){
-			  return postingList.get(i);
+	  RandomAccessFile file = new RandomAccessFile(_options._indexPrefix + "index.idx", "r");
+	  
+	  int termInt = _dictionary.get(term);  // an integer representation of a term
+	  FileRange postingList = _index.get(termInt);
+	  file.seek(postingList.offset);
+	  
+	  for(int i=0; i < postingList.length; i++){
+		  int posting = file.readInt();
+		  if(posting > docid){
+			  return posting;
 		  }
 	  }
 	  
