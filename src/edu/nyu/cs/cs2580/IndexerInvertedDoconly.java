@@ -1,12 +1,6 @@
 package edu.nyu.cs.cs2580;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
@@ -20,10 +14,18 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
+  private static final String WORDS_DIR = "/words";
+  private static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 100000;
+
+  private RandomAccessFile _indexFile;
 
   // An index, which is a mapping between an integer representation of a term
   // and a list of document IDs containing that term.
-  private Map<Integer, List<Integer>> _index = new HashMap<Integer, List<Integer>>();
+  private Map<Integer, List<Integer>>_utilityIndex = new HashMap<Integer, List<Integer>>();
+  private long _utilityIndexFlatSize = 0;
+  private long _utilityPartialIndexCounter = 0;
+
+  private Map<Integer, FileRange> _index = new HashMap<Integer, FileRange>();
 	
   // Stores all DocumentIndexed in memory.
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
@@ -32,61 +34,76 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   private Map<String, Integer> _dictionary = new HashMap<String, Integer>();
 
   // All unique terms appeared in corpus. Offsets are integer representations.
-  private Vector<String> _terms = new Vector<String>();
+  // private Vector<String> _terms = new Vector<String>();
 
   // Term frequency, key is the integer representation of the term and value is
   // the number of times the term appears in the corpus.
   private Map<Integer, Integer> _termCorpusFrequency = new HashMap<Integer, Integer>();
 
-  private final String CORPUS_PREFIX;
-  
   public IndexerInvertedDoconly(Options options) {
     super(options);
-    CORPUS_PREFIX = options._corpusPrefix;
+    try {
+      File indexFile = new File(_options._indexPrefix + "/index.idx");
+      _indexFile = new RandomAccessFile(indexFile, "rw");
+    } catch (IOException e) {
+      System.err.println("Could not open index file.");
+      System.exit(-1);
+    }
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
   }
 
   @Override
   public void constructIndex() throws IOException {
-	  System.out.println("Construct index from: " + CORPUS_PREFIX);
-    
-	  File dir = new File(CORPUS_PREFIX);
+	  System.out.println("Construct index from: " + _options._corpusPrefix);
+      new File(_options._indexPrefix + WORDS_DIR).mkdir();
+
+      // TODO Remove debug code.
+      int debugCounter = 0;
+
+	  File dir = new File(_options._corpusPrefix);
 	  File[] directoryListing = dir.listFiles();
 	  if (directoryListing != null) {
 	    for (File docFile : directoryListing) {
-	       StringBuffer text = new StringBuffer();  // the original text of the document
-	       
-	       // getting the original text of the document
-	       BufferedReader reader = new BufferedReader(new FileReader(docFile));
-           try {
-             String line = null;
-             while ((line = reader.readLine()) != null) {
-               text.append(line+"\n");
-             }
+          StringBuffer text = new StringBuffer();  // the original text of the document
 
-             // adding an indexed document
-             int docId = _numDocs++;     // the current number of doc is ID for the current document
-             DocumentIndexed docIndexed = new DocumentIndexed(docId);
-             docIndexed.setTitle(docFile.getName());
-             docIndexed.setUrl(docFile.getAbsolutePath());
-             _documents.add(docIndexed);
+          // getting the original text of the document
+          BufferedReader reader = new BufferedReader(new FileReader(docFile));
+          String line = null;
+          while ((line = reader.readLine()) != null) {
+            text.append(line + "\n");
+          }
+          reader.close();
 
-             processDocument(docId, text.toString());  // process the raw context of the document
-             
-           } catch (Exception e) {
-               throw new IOException("File" + docFile.getPath() + " could not be read.");
-  		   } finally {
-             reader.close();
-           }
+          // adding an indexed document
+          int docId = _numDocs++;     // the current number of doc is ID for the current document
+          DocumentIndexed docIndexed = new DocumentIndexed(docId);
+          docIndexed.setTitle(docFile.getName());
+          docIndexed.setUrl(docFile.getAbsolutePath());
+          _documents.add(docIndexed);
+
+          try {
+            processDocument(docId, text.toString());  // process the raw context of the document
+          } catch (BoilerpipeProcessingException e) {
+            throw new IOException("File format could not be processed by Boilerplate.");
+          }
+
+          //if(debugCounter++ >= 10) { break; }
 	    }
 	  } else {
 		  throw new IOException("Invalid directory.");
 	  }
-    
+
 	  System.out.println(
 	      "Indexed " + Integer.toString(_numDocs) + " docs with " +
 	      Long.toString(_totalTermFrequency) + " terms.");
-	
+
+      System.out.println(_dictionary.size());
+      int wordCounter = 0;
+      for(String word : _dictionary.keySet()) {
+        System.out.print(word + " ");
+        wordCounter++;
+      }
+
 	  String indexFile = _options._indexPrefix + "/corpus.idx";
 	  System.out.println("Store index to: " + indexFile);
 	  ObjectOutputStream writer = new ObjectOutputStream(new FileOutputStream(indexFile));
@@ -96,45 +113,68 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   
   
 
-  //   No stop word is removed, you need to dynamically determine whether to
-  //   drop the processing of a certain inverted list.
+  //   TODO No stop word is removed, you need to dynamically determine whether to drop the processing of a certain inverted list.
   
   // The input of this method (String text) is the raw context of the document.
-  public void processDocument(int docId, String text) throws Exception{
-	  String visibleContext = removeNonVisibleContext(text);  // step 1 of document processing
-	  String stemmedContext = performStemming(visibleContext);  // step 2 of document processing
-      visibleContext = null; // for garbage collection
-	  
-      // adding an indexed document
-      DocumentIndexed docIndexed = new DocumentIndexed(docId);
-      Vector<Integer> docTokensAsIntegers = readTermVector(stemmedContext);
-      _documents.add(docIndexed);
-	  
-      Set<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
-      uniqueTokens.addAll(docTokensAsIntegers);
-      _totalTermFrequency += docTokensAsIntegers.size();
-      
-      // Indexing
-	  for(Integer term : uniqueTokens) {
-		  if(_index.containsKey(term)) {
-			  List<Integer> postingList = _index.get(term);
-			  postingList.add(docId);  // add the current doc into the posting list
-		  }
-		  else {
-			  List<Integer> postingList = new LinkedList<Integer>();
-			  postingList.add(docId);
-			  _index.put(term, postingList);
-		  }
-	  }
-	  
-	  System.out.println("Finished indexing document id: " + docId);
+  public void processDocument(int docId, String text) throws IOException, BoilerpipeProcessingException {
+    text = removeNonVisibleContext(text);  // step 1 of document processing
+    text = removePunctuation(text).toLowerCase();
+    text = performStemming(text);  // step 2 of document processing
+
+    Vector<Integer> docTokensAsIntegers = readTermVector(text);
+
+    Set<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
+    uniqueTokens.addAll(docTokensAsIntegers);
+
+    // Indexing
+    for(Integer term : uniqueTokens) {
+      if(!_utilityIndex.containsKey(term)) {
+        _utilityIndex.put(term, new LinkedList<Integer>());
+      }
+      _utilityIndex.get(term).add(docId);
+      _utilityIndexFlatSize++;
+
+      if(_utilityIndexFlatSize > UTILITY_INDEX_FLAT_SIZE_THRESHOLD) {
+        RandomAccessFile partialIndexFile =
+                new RandomAccessFile(_options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++, "rw");
+        List<Integer> words = new ArrayList(_utilityIndex.keySet());
+        Collections.sort(words);
+        _index = new HashMap<Integer, FileRange>();
+        for (Integer word : words) {
+          List<Integer> postingsList = _utilityIndex.get(word);
+          long offset = partialIndexFile.getFilePointer();
+          long length = postingsList.size();
+          _index.put(word, new FileRange(offset, length));
+          for (int posting : postingsList) {
+            partialIndexFile.writeInt(posting);
+          }
+        }
+        partialIndexFile.close();
+        for (Integer word : words) {
+          System.out.println(word + ": " + _index.get(word));
+        }
+
+        // CLEANUP
+        _utilityIndexFlatSize = 0;
+        _utilityIndex = new HashMap<Integer, List<Integer>>();
+        _index = null;
+        System.exit(-13);
+      }
+    }
+    System.out.println("Finished indexing document id: " + docId);
   }
   
   // Non-visible page content is removed, e.g., those inside <script> tags.
   // Right now, the 3rd party library "BoilerPiper" is used to perform the task.
-  public String removeNonVisibleContext(String text) throws Exception{
-	  String visibleContext = ArticleExtractor.INSTANCE.getText(text);
-	  return visibleContext;
+  public String removeNonVisibleContext(String text) throws BoilerpipeProcessingException {
+	return ArticleExtractor.INSTANCE.getText(text);
+  }
+
+  public String removePunctuation(String text) {
+    return text.replaceAll("[^a-zA-Z0-9\n]", " ");
+    // TODO Treat abreviation specially (I.B.M.)
+    // TODO Think about how to treat hyphen. Ex: peer-to-peer, live-action, 978-0-06-192691-4, 1998-2002
+    // TODO Think about accented characters.
   }
   
   // Tokens are stemmed with Step 1 of the Porter's algorithm.
@@ -157,14 +197,16 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
         idx = _dictionary.get(token);
         _termCorpusFrequency.put(idx, _termCorpusFrequency.get(idx) + 1);
       } else {
-        idx = _terms.size();  // offsets are the integer representations
+        // idx = _terms.size();  // offsets are the integer representations
+        idx = _dictionary.keySet().size();
         // TODO Do we need _terms? Isn't it equal to the set of keys in _dictionary?
-        _terms.add(token);
+        // _terms.add(token);
         _dictionary.put(token, idx);
         _termCorpusFrequency.put(idx, 1);
       }
       tokens.add(idx);
     }
+    _totalTermFrequency += tokens.size();
     return tokens;
   }
   
@@ -207,5 +249,37 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   public int documentTermFrequency(String term, String url) {
     SearchEngine.Check(false, "Not implemented!");
     return 0;
+  }
+
+  class FileRange {
+    public long offset;
+    public long length;
+
+    public FileRange(long _offset, long _length) {
+      offset = _offset;
+      length = _length;
+    }
+
+    @Override
+    public String toString() {
+      return "(->" + offset + ", " + length + ")";
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      if(other instanceof FileRange) {
+        FileRange o = (FileRange)other;
+        if(o.offset == this.offset && o.length == this.length) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      long res = this.offset * 37 + this.length;
+      return (int)res;
+    }
   }
 }
