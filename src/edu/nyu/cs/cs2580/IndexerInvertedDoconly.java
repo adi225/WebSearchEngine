@@ -15,7 +15,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
   private static final String WORDS_DIR = "/words";
-  private static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 100000;
+  private static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
 
   private RandomAccessFile _indexFile;
 
@@ -47,6 +47,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     try {
       File indexFile = new File(_options._indexPrefix + "/index.idx");
       _indexFile = new RandomAccessFile(indexFile, "rw");
+      _indexFile.close();
     } catch (IOException e) {
       System.err.println("Could not open index file.");
       System.exit(-1);
@@ -89,17 +90,21 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
             throw new IOException("File format could not be processed by Boilerplate.");
           }
 
-          if(debugCounter++ >= 2000) { break; }
+          //if(debugCounter++ >= 1000) { break; }
 	    }
         if(_utilityIndexFlatSize > 0) {
           // dump any leftover partial index
           dumpIndexToFile(_utilityIndex, _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++);
+          _utilityIndexFlatSize = 0;
+          _utilityIndex = new HashMap<Integer, List<Integer>>();
+          System.gc();
         }
 	  } else {
 		  throw new IOException("Invalid directory.");
 	  }
 
       // Merge all partial indexes.
+      System.out.println("Generated " + _utilityPartialIndexCounter + " partial indexes.");
       String filePathBase = _options._indexPrefix + WORDS_DIR + "/";
       String filePath1 =  filePathBase + 0;
       for(int i = 1; i < _utilityPartialIndexCounter; i++) {
@@ -107,23 +112,26 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
         Map<Integer, FileRange> tempIndex = new HashMap<Integer, FileRange>();
         String resFilePath = filePath1 + i;
         System.gc();
+        System.out.println("Merging file #" + i);
         long offset = mergeFilesIntoIndexAndFile(filePath1, filePath2, tempIndex, resFilePath);
         filePath1 = resFilePath;
         if(i == _utilityPartialIndexCounter - 1) {
           _index = tempIndex;
           _indexOffset = offset;
+          new File(resFilePath).renameTo(new File(_options._indexPrefix + "/index.idx"));
         }
       }
+      System.out.println("Done merging files.");
 
 	  System.out.println(
 	      "Indexed " + Integer.toString(_numDocs) + " docs with " +
 	      Long.toString(_totalTermFrequency) + " terms.");
 
-	  String indexFile = _options._indexPrefix + "/corpus.idx";
-	  System.out.println("Store index to: " + indexFile);
-	  ObjectOutputStream writer = new ObjectOutputStream(new FileOutputStream(indexFile));
-	  writer.writeObject(this);
-	  writer.close();
+	  //String indexFile = _options._indexPrefix + "/corpus.idx";
+	  //System.out.println("Store index to: " + indexFile);
+	  //ObjectOutputStream writer = new ObjectOutputStream(new FileOutputStream(indexFile));
+	  //writer.writeObject(this);
+	  //writer.close();
   }
   
 
@@ -184,7 +192,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
             System.out.print(file.readInt() + " ");
           }
           file.close();
-          System.exit(-1);
+          //System.exit(-1);
         }
       }
     }
@@ -333,6 +341,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   }
 
   private void dumpIndexToFile(Map<Integer, List<Integer>> index, String filePath) throws IOException {
+    System.out.println("Generating partial index: " + filePath);
     Map<Integer, FileRange> indexJumpMap = new HashMap<Integer, FileRange>();
 
     // Write actual index to auxiliary file
@@ -365,6 +374,8 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
       partialIndexFile.write(buf);
     }
 
+    partialIndexFileAux.close();
+    partialIndexFile.close();
     File file = new File(filePath + "_aux");
     file.delete();
   }
@@ -402,7 +413,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     Collections.sort(index1Words);
     Collections.sort(index2Words);
     int index1WordsSize = index1Words.size();
-    int index2WordsSize = index1Words.size();
+    int index2WordsSize = index2Words.size();
     int totalSize = index1WordsSize + index2WordsSize;
     int i, li, ri;
     i = li = ri = 0;
