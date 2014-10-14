@@ -26,6 +26,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   private long _utilityPartialIndexCounter = 0;
 
   private Map<Integer, FileRange> _index = new HashMap<Integer, FileRange>();
+  private long _indexOffset = 0;
 	
   // Stores all DocumentIndexed in memory.
   // HashMap is used for fast lookup; key is the docid and value is the DocumentIndexed.
@@ -88,22 +89,35 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
             throw new IOException("File format could not be processed by Boilerplate.");
           }
 
-          //if(debugCounter++ >= 10) { break; }
+          if(debugCounter++ >= 2000) { break; }
 	    }
+        if(_utilityIndexFlatSize > 0) {
+          // dump any leftover partial index
+          dumpIndexToFile(_utilityIndex, _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++);
+        }
 	  } else {
 		  throw new IOException("Invalid directory.");
 	  }
 
+      // Merge all partial indexes.
+      String filePathBase = _options._indexPrefix + WORDS_DIR + "/";
+      String filePath1 =  filePathBase + 0;
+      for(int i = 1; i < _utilityPartialIndexCounter; i++) {
+        String filePath2 = filePathBase + i;
+        Map<Integer, FileRange> tempIndex = new HashMap<Integer, FileRange>();
+        String resFilePath = filePath1 + i;
+        System.gc();
+        long offset = mergeFilesIntoIndexAndFile(filePath1, filePath2, tempIndex, resFilePath);
+        filePath1 = resFilePath;
+        if(i == _utilityPartialIndexCounter - 1) {
+          _index = tempIndex;
+          _indexOffset = offset;
+        }
+      }
+
 	  System.out.println(
 	      "Indexed " + Integer.toString(_numDocs) + " docs with " +
 	      Long.toString(_totalTermFrequency) + " terms.");
-
-      System.out.println(_dictionary.size());
-      int wordCounter = 0;
-      for(String word : _dictionary.keySet()) {
-        System.out.print(word + " ");
-        wordCounter++;
-      }
 
 	  String indexFile = _options._indexPrefix + "/corpus.idx";
 	  System.out.println("Store index to: " + indexFile);
@@ -111,7 +125,6 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	  writer.writeObject(this);
 	  writer.close();
   }
-  
   
 
   //   TODO No stop word is removed, you need to dynamically determine whether to drop the processing of a certain inverted list.
@@ -138,7 +151,13 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
       if(_utilityIndexFlatSize > UTILITY_INDEX_FLAT_SIZE_THRESHOLD) {
         String filePath = _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++;
 
-        System.out.println("Check value: " + _utilityIndex.get(35).get(8));
+        /*
+        System.out.println("Check value: ");
+        List<Integer> debugPostingsList = _utilityIndex.get(567);
+        for(int posting : debugPostingsList) {
+          System.out.print(posting + " ");
+        }
+        */
 
         dumpIndexToFile(_utilityIndex, filePath);
 
@@ -146,20 +165,27 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
         _utilityIndexFlatSize = 0;
         _utilityIndex = new HashMap<Integer, List<Integer>>();
         System.gc();
-/*
-        Map<Integer, FileRange> index = new HashMap<Integer, FileRange>();
-        long offset = loadFromFileIntoIndex(filePath, index);
-        System.out.println("Size: " + index.size());
-        System.out.println("Offset: " + offset);
 
-        long location = index.get(35).offset;
-        RandomAccessFile file = new RandomAccessFile(filePath, "r");
-        file.seek(offset + location);
-        for(int i = 0; i < 8; i++) file.readInt();
-        int docId2 = file.readInt();
-        System.out.println("Checked value: " + docId2);
-        System.exit(-1);
-*/
+        if(false) {
+          Map<Integer, FileRange> index = new HashMap<Integer, FileRange>();
+          String filePath1 = _options._indexPrefix + WORDS_DIR + "/" + 0;
+          String filePath2 = _options._indexPrefix + WORDS_DIR + "/" + 1;
+          String filePathM = _options._indexPrefix + WORDS_DIR + "/" + "res";
+
+          long offset = mergeFilesIntoIndexAndFile(filePath1, filePath2, index, filePathM);
+          System.out.println("Size: " + index.size());
+          System.out.println("Offset: " + offset);
+
+          long location = index.get(567).offset;
+          RandomAccessFile file = new RandomAccessFile(filePathM, "r");
+          file.seek(offset + location);
+          System.out.println("Checked value: ");
+          for(int i = 0; i < index.get(567).length; i++) {
+            System.out.print(file.readInt() + " ");
+          }
+          file.close();
+          System.exit(-1);
+        }
       }
     }
     System.out.println("Finished indexing document id: " + docId);
@@ -363,6 +389,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
                                           Map<Integer, FileRange> index,
                                           String resFileURL) throws IOException {
     index.clear();
+    System.gc();
     Map<Integer, FileRange> index1 = new HashMap<Integer, FileRange>();
     Map<Integer, FileRange> index2 = new HashMap<Integer, FileRange>();
     long file1Offset = loadFromFileIntoIndex(file1URL, index1);
@@ -374,77 +401,133 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     List<Integer> index2Words = new ArrayList<Integer>(index2.keySet());
     Collections.sort(index1Words);
     Collections.sort(index2Words);
-    ListIterator<Integer> index1WordsIterator = index1Words.listIterator();
-    ListIterator<Integer> index2WordsIterator = index2Words.listIterator();
+    int index1WordsSize = index1Words.size();
+    int index2WordsSize = index1Words.size();
+    int totalSize = index1WordsSize + index2WordsSize;
+    int i, li, ri;
+    i = li = ri = 0;
 
-    int word1 = index1WordsIterator.next();
-    int word2 = index2WordsIterator.next();
     file1.seek(file1Offset);
     file2.seek(file2Offset);
-    while (index1WordsIterator.hasNext() && index2WordsIterator.hasNext()) {
-      if(word1 < word2) {
-        FileRange word1Range = index1.get(word1);
-        index.put(word1, new FileRange(aux.getFilePointer() , word1Range.length));
-        for(int i = 0; i < word1Range.length; i++) {
-          aux.writeInt(file1.readInt());
-        }
-        word1 = index1WordsIterator.next();
-      } else if (word2 > word1) {
-        FileRange word2Range = index2.get(word2);
-        index.put(word2, new FileRange(aux.getFilePointer() , word2Range.length));
-        for(int i = 0; i < word2Range.length; i++) {
-          aux.writeInt(file2.readInt());
-        }
-        word2 = index2WordsIterator.next();
-      } else {
-        FileRange word1Range = index1.get(word1);
-        FileRange word2Range = index2.get(word2);
-        int postingWord1 = file1.readInt();
-        int postingWord2 = file2.readInt();
-        int word1Counter = 0;
-        int word2Counter = 0;
-        index.put(word1, new FileRange(aux.getFilePointer(), word1Range.length + word2Range.length));
-        while(word1Counter < word1Range.length && word2Counter < word2Range.length) {
-          if(postingWord1 < postingWord2) {
-            aux.writeInt(postingWord1);
-            if(++word1Counter < word1Range.length) postingWord1 = file1.readInt();
-          } else if (postingWord1 > postingWord2) {
-            aux.writeInt(postingWord2);
-            if(++word2Counter < word2Range.length) postingWord2 = file2.readInt();
-          } else {
-            throw new IllegalArgumentException("Two lists should not have redundant data.");
+
+    while (i < totalSize) {
+      if(li < index1WordsSize && ri < index2WordsSize) {
+        int word1 = index1Words.get(li);
+        int word2 = index2Words.get(ri);
+        if (word1 < word2) {
+          FileRange word1Range = index1.get(word1);
+          index.put(word1, new FileRange(aux.getFilePointer() , word1Range.length));
+          for (int t = 0; t < word1Range.length; t++) {
+            aux.writeInt(file1.readInt());
+          }
+          li++; i++;
+        } else if (word2 > word1) {
+          FileRange word2Range = index2.get(word2);
+          index.put(word2, new FileRange(aux.getFilePointer(), word2Range.length));
+          for (int t = 0; t < word2Range.length; t++) {
+            aux.writeInt(file2.readInt());
+          }
+          ri++; i++;
+        } else {
+          li++; ri++; i+=2;
+          FileRange word1Range = index1.get(word1);
+          FileRange word2Range = index2.get(word2);
+          long postingList1Size = word1Range.length;
+          long postingList2Size = word2Range.length;
+          long postingListTotalSize = postingList1Size + postingList2Size;
+          long postingLI, postingRI, postingI;
+          postingLI = postingRI = postingI = 0;
+          index.put(word1, new FileRange(aux.getFilePointer(), postingListTotalSize));
+
+          int postingWord1 = -1;
+          int postingWord2 = -1;
+
+          while(postingI < postingListTotalSize) {
+            if (postingLI < postingList1Size && postingRI < postingList2Size) {
+              if (postingWord1 < 0) postingWord1 = file1.readInt();
+              if (postingWord2 < 0) postingWord2 = file2.readInt();
+
+              if (postingWord1 < postingWord2) {
+                aux.writeInt(postingWord1);
+                postingI++;
+                postingLI++;
+                postingWord1 = -1;
+              } else if (postingWord1 > postingWord2) {
+                aux.writeInt(postingWord2);
+                postingI++;
+                postingRI++;
+                postingWord2 = -1;
+              } else {
+                throw new IllegalArgumentException("Two lists should not have redundant data.");
+              }
+            } else {
+              if (postingLI < postingList1Size) {
+                if (postingWord1 < 0) postingWord1 = file1.readInt();
+                aux.writeInt(postingWord1);
+                postingI++;
+                postingLI++;
+                postingWord1 = -1;
+              }
+              if (postingRI < postingList2Size) {
+                if (postingWord2 < 0) postingWord2 = file2.readInt();
+                aux.writeInt(postingWord2);
+                postingI++;
+                postingLI++;
+                postingWord2 = -1;
+              }
+            }
           }
         }
-        while(word1Counter < word1Range.length) {
-          aux.writeInt(postingWord1);
-          if(++word1Counter < word1Range.length) postingWord1 = file1.readInt();
+      } else {
+        if(li < index1WordsSize) {
+          int word1 = index1Words.get(li);
+          FileRange word1Range = index1.get(word1);
+          index.put(word1, new FileRange(aux.getFilePointer() , word1Range.length));
+          for (int t = 0; t < word1Range.length; t++) {
+            aux.writeInt(file1.readInt());
+          }
+          li++; i++;
         }
-        while(word2Counter < word2Range.length) {
-          aux.writeInt(postingWord2);
-          if(++word2Counter < word2Range.length) postingWord2 = file2.readInt();
+        if(ri < index2WordsSize) {
+          int word2 = index2Words.get(ri);
+          FileRange word2Range = index2.get(word2);
+          index.put(word2, new FileRange(aux.getFilePointer() , word2Range.length));
+          for (int t = 0; t < word2Range.length; t++) {
+            aux.writeInt(file2.readInt());
+          }
+          ri++; i++;
         }
-        word1 = index1WordsIterator.next();
-        word2 = index2WordsIterator.next();
       }
     }
-    while(index1WordsIterator.hasNext()) {
-      FileRange word1Range = index1.get(word1);
-      index.put(word1, new FileRange(aux.getFilePointer() , word1Range.length));
-      for(int i = 0; i < word1Range.length; i++) {
-        aux.writeInt(file1.readInt());
-      }
-      word1 = index1WordsIterator.next();
+
+    // Write pointer map to beginning of index file.
+    RandomAccessFile combinedIndexFile = new RandomAccessFile(resFileURL, "rw");
+    Set<Integer> words = index.keySet();
+    combinedIndexFile.writeInt(words.size());
+    for (Integer word : words) {
+      FileRange fileRange = index.get(word);
+      combinedIndexFile.writeInt(word);
+      combinedIndexFile.writeLong(fileRange.offset);
+      combinedIndexFile.writeLong(fileRange.length);
+
     }
-    while(index2WordsIterator.hasNext()) {
-      FileRange word2Range = index2.get(word2);
-      index.put(word2, new FileRange(aux.getFilePointer() , word2Range.length));
-      for(int i = 0; i < word2Range.length; i++) {
-        aux.writeInt(file2.readInt());
-      }
-      word2 = index2WordsIterator.next();
+    long offset = combinedIndexFile.getFilePointer();
+
+    int buf;
+    aux.seek(0);
+    while((buf = aux.read()) >= 0) {
+      combinedIndexFile.write(buf);
     }
-    // TODO Add the map first, then the aux file data.
-    return 0;
+
+    aux.close();
+    file1.close();
+    file2.close();
+    combinedIndexFile.close();
+    new File(resFileURL + "_aux").delete();
+    new File(file1URL).delete();
+    new File(file2URL).delete();
+
+    return offset;
   }
 
 
