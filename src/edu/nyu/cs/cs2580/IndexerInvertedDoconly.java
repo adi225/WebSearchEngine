@@ -45,10 +45,54 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   public IndexerInvertedDoconly(Options options) {
     super(options);
     try {
-      File indexFile = new File(_options._indexPrefix + "/index.idx");
+      File indexFile = new File(_options._indexPrefix + "/hello.idx");
       _indexFile = new RandomAccessFile(indexFile, "rw");
+    /*
+      Map<Integer, FileRange> vecky = new HashMap<Integer, FileRange>();
+      vecky.put(3, new FileRange(0, 3));
+      vecky.put(6, new FileRange(0, 6));
+      vecky.put(9, new FileRange(0, 9));
+      vecky.put(12, new FileRange(0, 12));
+
+      Vector<Integer> vecky2 = new Vector<Integer>();
+      vecky2.add(2);
+      vecky2.add(4);
+      vecky2.add(8);
+
+      Map<Integer, FileRange> becky;
+      Vector<Integer> becky2;
+
+      long offsetVecky = writeToFile(vecky, _indexFile);
+      long offsetVecky2 = writeToFile(vecky2, _indexFile);
+
+      _indexFile.seek(0);
+      try {
+        becky = readFromFile(_indexFile);
+        becky2 = readFromFile(_indexFile);
+        System.out.println("vecky offset: " + offsetVecky);
+        for(int item : vecky.keySet()) {
+          System.out.print(item + " " + vecky.get(item) + " | ");
+        }
+        System.out.println("\n Becky items:");
+        for(int item : becky.keySet()) {
+          System.out.print(item + " " + becky.get(item) + " | ");
+        }
+
+        System.out.println("vecky2 offset: " + offsetVecky2);
+        for(int item : vecky2) {
+          System.out.print(item + " | ");
+        }
+        System.out.println("\n Becky2 items:");
+        for(int item : becky2) {
+          System.out.print(item + " | ");
+        }
+      } catch (ClassNotFoundException e) {
+        System.err.println("ClassNotFoundException: could not read becky!");
+      }
       _indexFile.close();
+      System.exit(-1); */
     } catch (IOException e) {
+      e.printStackTrace();
       System.err.println("Could not open index file.");
       System.exit(-1);
     }
@@ -119,6 +163,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
           _index = tempIndex;
           _indexOffset = offset;
           new File(resFilePath).renameTo(new File(_options._indexPrefix + "/index.idx"));
+          new File(_options._indexPrefix + WORDS_DIR).delete();
         }
       }
       System.out.println("Done merging files.");
@@ -541,8 +586,27 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     return offset;
   }
 
+  private <T> long writeToFile(T store, RandomAccessFile file) throws IOException {
+    ByteArrayOutputStream b = new ByteArrayOutputStream();
+    ObjectOutputStream o = new ObjectOutputStream(b);
+    o.writeObject(store);
+    byte[] bytes = b.toByteArray();
+    file.writeInt(bytes.length);
+    file.write(bytes);
+    return file.getFilePointer();
+  }
 
-  class FileRange {
+  private <T> T readFromFile(RandomAccessFile file) throws IOException, ClassNotFoundException {
+    int size = file.readInt();
+    byte[] bytes = new byte[size];
+    file.read(bytes);
+    ByteArrayInputStream b = new ByteArrayInputStream(bytes);
+    ObjectInputStream o = new ObjectInputStream(b);
+    return (T) o.readObject();
+  }
+
+  static class FileRange implements Serializable {
+    private static final long serialVersionUID = 7526472295622776147L;
     public long offset;
     public long length;
 
