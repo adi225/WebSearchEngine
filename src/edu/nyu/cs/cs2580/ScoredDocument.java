@@ -26,8 +26,13 @@ class ScoredDocument implements Comparable<ScoredDocument> {
   /**
    * @CS2580: Student should implement {@code asHtmlResult} for final project.
    */
-  public String asHtmlResult() {
-    return "";
+  public String asHtmlResult(String query) {
+	StringBuffer buf = new StringBuffer();
+    buf.append("<a href=\"./clicktrack?documentId=").append(_doc._docid);
+    buf.append("&query=").append(query).append("\">");
+    buf.append(_doc.getTitle());
+    buf.append("</a><br/>\n");
+    return buf.toString();
   }
 
   @Override

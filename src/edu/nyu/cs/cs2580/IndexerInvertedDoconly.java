@@ -30,11 +30,13 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   private long _indexOffset = 0;
 	
   // Stores all DocumentIndexed in memory.
-  // HashMap is used for fast lookup; key is the docid and value is the DocumentIndexed.
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   
   // Maps each term to their integer representation
   private Map<String, Integer> _dictionary = new HashMap<String, Integer>();
+
+  // All unique terms appeared in corpus. Offsets are integer representations.
+  private Vector<String> _terms = new Vector<String>();
 
   // Term frequency, key is the integer representation of the term and value is
   // the number of times the term appears in the corpus.
@@ -134,6 +136,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
     Set<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
     uniqueTokens.addAll(docTokensAsIntegers);
+    _documents.get(docId).setUniqueBodyTokens(uniqueTokens);  // setting the unique tokens for a document
 
     // Indexing
     for(Integer term : uniqueTokens) {
@@ -184,10 +187,11 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
         idx = _dictionary.get(token);
         _termCorpusFrequency.put(idx, _termCorpusFrequency.get(idx) + 1);
       } else {
-        // idx = _terms.size();  // offsets are the integer representations
+        idx = _terms.size();  // offsets are the integer representations
         idx = _dictionary.keySet().size();
         // TODO Do we need _terms? Isn't it equal to the set of keys in _dictionary?
-        // _terms.add(token);
+        // Need _terms in order to convert the integer representation back to String
+        _terms.add(token);
         _dictionary.put(token, idx);
         _termCorpusFrequency.put(idx, 1);
       }
@@ -203,60 +207,69 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   }
 
   @Override
-  public Document getDoc(int docid) {
+  public DocumentIndexed getDoc(int docid) {
     return (docid >= _documents.size() || docid < 0) ? null : _documents.get(docid);
   }
 
   /**
    * In HW2, you should be using {@link DocumentIndexed}
+ * @throws IOException 
    */
   @Override
   // This implementation follows that in the lecture 3 slide, page 13.
-  public Document nextDoc(Query query, int docid) {
+  public DocumentIndexed nextDoc(Query query, int docid) {
 	// Assuming that the query has already been processed.
 	// query.processQuery();
-	List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
-	for(String token : query._tokens){
-		int docID = next(token,docid);
-		if(docID == -1){
-			return null;
+	try {
+		List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
+		for(String token : query._tokens){
+			int docID = next(token,docid);
+			if(docID == -1){
+				return null;
+			}
+			docIDs.add(docID);
 		}
-		docIDs.add(docID);
-	}
-	
-	boolean foundDocID = true;
-	int docIDFixed = docIDs.get(0); 
-	int docIDNew = Integer.MIN_VALUE;
-	
-	for(Integer docID : docIDs){  // check if all the doc IDs are equal
-		if(docID != docIDFixed){
-			foundDocID = false;
+		
+		boolean foundDocID = true;
+		int docIDFixed = docIDs.get(0); 
+		int docIDNew = Integer.MIN_VALUE;
+		
+		for(Integer docID : docIDs){  // check if all the doc IDs are equal
+			if(docID != docIDFixed){
+				foundDocID = false;
+			}
+			if(docID > docIDNew){
+				docIDNew = docID;
+			}
 		}
-		if(docID > docIDNew){
-			docIDNew = docID;
+		
+		if(foundDocID){
+			return _documents.get(docIDFixed);
 		}
+		
+		return nextDoc(query,docIDNew-1);
+	} catch (IOException e) {
+	  return null;
 	}
-	
-	if(foundDocID){
-		return _documents.get(docIDFixed);
-	}
-	
-    return nextDoc(query,docIDNew-1);
   }
   
   // Just like in the lecture slide 3, page 14, this helper method returns the next document id
   // after the given docid. It returns -1 if not found.
-  public int next(String term, int docid){
-	  int termInt = _dictionary.get(term);  // an integer representation of a term
-	  List<Integer> postingList = _utilityIndex.get(termInt);
-	  
-	  if(postingList.size()==0 || postingList.get(postingList.size()-1) <= docid){
+  public int next(String term, int docid) throws IOException {
+	  if(!_dictionary.containsKey(term)) {
 		  return -1;
 	  }
 	  
-	  for(int i=0;i<postingList.size();i++){
-		  if(postingList.get(i) > docid){
-			  return postingList.get(i);
+	  RandomAccessFile file = new RandomAccessFile(_options._indexPrefix + "index.idx", "r");
+	  
+	  int termInt = _dictionary.get(term);  // an integer representation of a term
+	  FileRange postingList = _index.get(termInt);
+	  file.seek(postingList.offset);  // plus the postinglist offset
+	  
+	  for(int i=0; i < postingList.length; i++){
+		  int posting = file.readInt();
+		  if(posting > docid){
+			  return posting;
 		  }
 	  }
 	  
@@ -267,9 +280,15 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   public int corpusDocFrequencyByTerm(String term) {
 	  try{
 		  int termInt = _dictionary.get(term);  // an integer representation of a term
-		  return _utilityIndex.get(termInt).size();
+		  
+		  RandomAccessFile file = new RandomAccessFile(_options._indexPrefix + "index.idx", "r");
+		  
+		  FileRange postingList = _index.get(termInt);
+		  file.seek(postingList.offset);  // plus the postinglist offset
+		  
+		  return (int)postingList.length;
 	  }
-	  catch(NullPointerException e){
+	  catch(Exception e){
 		  return 0;
 	  }
 

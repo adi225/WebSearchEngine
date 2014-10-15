@@ -1,13 +1,16 @@
 package edu.nyu.cs.cs2580;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.util.UUID;
 import java.util.Vector;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import java.util.UUID;
 
 /**
  * Handles each incoming query, students do not need to change this class except
@@ -105,6 +108,16 @@ class QueryHandler implements HttpHandler {
     responseBody.write(message.getBytes());
     responseBody.close();
   }
+  
+  private void respondWithHTML(HttpExchange exchange, final String message)
+      throws IOException {
+    Headers responseHeaders = exchange.getResponseHeaders();
+    responseHeaders.set("Content-Type", "text/html");
+    exchange.sendResponseHeaders(200, 0); // arbitrary number of bytes
+    OutputStream responseBody = exchange.getResponseBody();
+    responseBody.write(message.getBytes());
+    responseBody.close();
+	  }
 
   private void constructTextOutput(final Vector<ScoredDocument> docs, StringBuffer response) {
     for (ScoredDocument doc : docs) {
@@ -112,6 +125,14 @@ class QueryHandler implements HttpHandler {
       response.append(doc.asTextResult());
     }
     response.append(response.length() > 0 ? "\n" : "");
+  }
+  
+  private void constructHTMLOutput(final Vector<ScoredDocument> docs, StringBuffer response, String query) {
+	  for (ScoredDocument doc : docs) {
+      response.append(response.length() > 0 ? "<br/>" : "");
+      response.append(doc.asHtmlResult(query));
+    }
+    response.append(response.length() > 0 ? "<br/>" : "");
   }
 
   public void handle(HttpExchange exchange) throws IOException {
@@ -150,6 +171,36 @@ class QueryHandler implements HttpHandler {
     } else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack")) {
         respondWithMsg(exchange, "Only /search is handled!");
     }
+    else if(uriPath.equalsIgnoreCase("/clicktrack")) 
+    {
+
+      // writing out to files
+      String logFileName = "hw2.4-log.tsv";
+      FileWriter logFileWriter = new FileWriter("results/" + logFileName, true);
+      PrintWriter vsmWriter = new PrintWriter(new BufferedWriter(logFileWriter));
+      String[] params = uriQuery.split("&");
+      String documentId = "ERROR";
+      String query = "ERROR";
+      if(params.length == 2)
+      {
+    	  documentId = params[0].split("=").length == 2 ?  params[0].split("=")[1] : "ERROR";
+    	  query = params[1].split("=").length == 2 ?  params[1].split("=")[1] : "ERROR";
+      }
+      
+      String logEntry = sessionId +
+    		  "\t" + query +
+              "\t" + documentId + 
+              "\tclick\t" + System.currentTimeMillis();
+      vsmWriter.write(logEntry + "\n");
+      vsmWriter.close();
+      // Construct a simple response.
+      responseHeaders.set("Location", exchange.getRequestHeaders().getFirst("Referer"));
+      exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
+      exchange.getResponseBody().close();
+      return;
+      }
+    else
+    {
     System.out.println("Query: " + uriQuery);
 
     // Process the CGI arguments.
@@ -174,36 +225,16 @@ class QueryHandler implements HttpHandler {
     switch (cgiArgs._outputFormat) {
         case TEXT:
             constructTextOutput(scoredDocs, response);
+            respondWithMsg(exchange, response.toString());
             break;
         case HTML:
-            // @CS2580: Plug in your HTML output
+        	constructHTMLOutput(scoredDocs, response, cgiArgs._query);
+        	respondWithHTML(exchange, response.toString());
             break;
         default:
             // nothing
     }
-    respondWithMsg(exchange, response.toString());
     System.out.println("Finished query: " + cgiArgs._query);
-
-      /*
-    if(uriPath.equalsIgnoreCase("/clicktrack")) {
-          Map<String,String> query_map = cgiArgs;
-          if(query_map.containsKey("documentId") && query_map.containsKey("query")) {
-              // writing out to files
-              String logFileName = "hw1.4-log.tsv";
-              FileWriter logFileWriter = new FileWriter("../results/" + logFileName, true);
-              PrintWriter vsmWriter = new PrintWriter(new BufferedWriter(logFileWriter));
-              String logEntry = sessionId + "\t"+ URLDecoder.decode(query_map.get("query"), "UTF-8") +
-                      "\t" + query_map.get("documentId") + "\tclick\t" + System.currentTimeMillis();
-              vsmWriter.write(logEntry + "\n");
-              vsmWriter.close();
-              // Construct a simple response.
-              responseHeaders.set("Location", exchange.getRequestHeaders().getFirst("Referer"));
-              exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
-              exchange.getResponseBody().close();
-              return;
-          }
-      }
     }
-*/
   }
-}
+  }
