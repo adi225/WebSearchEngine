@@ -19,12 +19,13 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   private RandomAccessFile _indexFile;
 
-  // An index, which is a mapping between an integer representation of a term
-  // and a list of document IDs containing that term.
-  private Map<Integer, List<Integer>>_utilityIndex = new HashMap<Integer, List<Integer>>();
+  // Utility index is only used during index construction.
+  private Map<Integer, List<Integer>> _utilityIndex = new HashMap<Integer, List<Integer>>();
   private long _utilityIndexFlatSize = 0;
   private long _utilityPartialIndexCounter = 0;
 
+  // An index, which is a mapping between an integer representation of a term
+  // and a list of document IDs containing that term.
   private Map<Integer, FileRange> _index = new HashMap<Integer, FileRange>();
   private long _indexOffset = 0;
 	
@@ -35,9 +36,6 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   // Maps each term to their integer representation
   private Map<String, Integer> _dictionary = new HashMap<String, Integer>();
 
-  // All unique terms appeared in corpus. Offsets are integer representations.
-  // private Vector<String> _terms = new Vector<String>();
-
   // Term frequency, key is the integer representation of the term and value is
   // the number of times the term appears in the corpus.
   private Map<Integer, Integer> _termCorpusFrequency = new HashMap<Integer, Integer>();
@@ -47,50 +45,6 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     try {
       File indexFile = new File(_options._indexPrefix + "/hello.idx");
       _indexFile = new RandomAccessFile(indexFile, "rw");
-    /*
-      Map<Integer, FileRange> vecky = new HashMap<Integer, FileRange>();
-      vecky.put(3, new FileRange(0, 3));
-      vecky.put(6, new FileRange(0, 6));
-      vecky.put(9, new FileRange(0, 9));
-      vecky.put(12, new FileRange(0, 12));
-
-      Vector<Integer> vecky2 = new Vector<Integer>();
-      vecky2.add(2);
-      vecky2.add(4);
-      vecky2.add(8);
-
-      Map<Integer, FileRange> becky;
-      Vector<Integer> becky2;
-
-      long offsetVecky = writeToFile(vecky, _indexFile);
-      long offsetVecky2 = writeToFile(vecky2, _indexFile);
-
-      _indexFile.seek(0);
-      try {
-        becky = readFromFile(_indexFile);
-        becky2 = readFromFile(_indexFile);
-        System.out.println("vecky offset: " + offsetVecky);
-        for(int item : vecky.keySet()) {
-          System.out.print(item + " " + vecky.get(item) + " | ");
-        }
-        System.out.println("\n Becky items:");
-        for(int item : becky.keySet()) {
-          System.out.print(item + " " + becky.get(item) + " | ");
-        }
-
-        System.out.println("vecky2 offset: " + offsetVecky2);
-        for(int item : vecky2) {
-          System.out.print(item + " | ");
-        }
-        System.out.println("\n Becky2 items:");
-        for(int item : becky2) {
-          System.out.print(item + " | ");
-        }
-      } catch (ClassNotFoundException e) {
-        System.err.println("ClassNotFoundException: could not read becky!");
-      }
-      _indexFile.close();
-      System.exit(-1); */
     } catch (IOException e) {
       e.printStackTrace();
       System.err.println("Could not open index file.");
@@ -101,82 +55,70 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   @Override
   public void constructIndex() throws IOException {
-	  System.out.println("Construct index from: " + _options._corpusPrefix);
-      new File(_options._indexPrefix + WORDS_DIR).mkdir();
+	System.out.println("Construct index from: " + _options._corpusPrefix);
+    new File(_options._indexPrefix + WORDS_DIR).mkdir();
+    File dir = new File(_options._corpusPrefix);
+    File[] directoryListing = dir.listFiles();
 
-      // TODO Remove debug code.
-      int debugCounter = 0;
+    if (directoryListing != null) {
+      for (File docFile : directoryListing) {
+        StringBuffer text = new StringBuffer();  // the original text of the document
 
-	  File dir = new File(_options._corpusPrefix);
-	  File[] directoryListing = dir.listFiles();
-	  if (directoryListing != null) {
-	    for (File docFile : directoryListing) {
-          StringBuffer text = new StringBuffer();  // the original text of the document
-
-          // getting the original text of the document
-          BufferedReader reader = new BufferedReader(new FileReader(docFile));
-          String line = null;
-          while ((line = reader.readLine()) != null) {
-            text.append(line + "\n");
-          }
-          reader.close();
-
-          // adding an indexed document
-          int docId = _numDocs++;     // the current number of doc is ID for the current document
-          DocumentIndexed docIndexed = new DocumentIndexed(docId);
-          docIndexed.setTitle(docFile.getName());
-          docIndexed.setUrl(docFile.getAbsolutePath());
-          _documents.add(docIndexed);
-
-          try {
-            processDocument(docId, text.toString());  // process the raw context of the document
-          } catch (BoilerpipeProcessingException e) {
-            throw new IOException("File format could not be processed by Boilerplate.");
-          }
-
-          //if(debugCounter++ >= 1000) { break; }
-	    }
-        if(_utilityIndexFlatSize > 0) {
-          // dump any leftover partial index
-          dumpIndexToFile(_utilityIndex, _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++);
-          _utilityIndexFlatSize = 0;
-          _utilityIndex = new HashMap<Integer, List<Integer>>();
-          System.gc();
+        // getting the original text of the document
+        BufferedReader reader = new BufferedReader(new FileReader(docFile));
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+          text.append(line + "\n");
         }
-	  } else {
-		  throw new IOException("Invalid directory.");
-	  }
+        reader.close();
 
-      // Merge all partial indexes.
-      System.out.println("Generated " + _utilityPartialIndexCounter + " partial indexes.");
-      String filePathBase = _options._indexPrefix + WORDS_DIR + "/";
-      String filePath1 =  filePathBase + 0;
-      for(int i = 1; i < _utilityPartialIndexCounter; i++) {
-        String filePath2 = filePathBase + i;
-        Map<Integer, FileRange> tempIndex = new HashMap<Integer, FileRange>();
-        String resFilePath = filePath1 + i;
-        System.gc();
-        System.out.println("Merging file #" + i);
-        long offset = mergeFilesIntoIndexAndFile(filePath1, filePath2, tempIndex, resFilePath);
-        filePath1 = resFilePath;
-        if(i == _utilityPartialIndexCounter - 1) {
-          _index = tempIndex;
-          _indexOffset = offset;
-          new File(resFilePath).renameTo(new File(_options._indexPrefix + "/index.idx"));
-          new File(_options._indexPrefix + WORDS_DIR).delete();
+        // adding an indexed document
+        int docId = _numDocs++;     // the current number of doc is ID for the current document
+        DocumentIndexed docIndexed = new DocumentIndexed(docId);
+        docIndexed.setTitle(docFile.getName());
+        docIndexed.setUrl(docFile.getAbsolutePath());
+        _documents.add(docIndexed);
+
+        try {
+          processDocument(docId, text.toString());  // process the raw context of the document
+        } catch (BoilerpipeProcessingException e) {
+          throw new IOException("File format could not be processed by Boilerplate.");
         }
       }
-      System.out.println("Done merging files.");
 
-	  System.out.println(
-	      "Indexed " + Integer.toString(_numDocs) + " docs with " +
-	      Long.toString(_totalTermFrequency) + " terms.");
+      // dump any leftover partial index
+      if(_utilityIndexFlatSize > 0) {
+        dumpUtilityIndexToFileAndClearFromMemory(
+                _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++);
+      }
+    } else {
+        throw new IOException("Invalid directory.");
+    }
 
-	  //String indexFile = _options._indexPrefix + "/corpus.idx";
-	  //System.out.println("Store index to: " + indexFile);
-	  //ObjectOutputStream writer = new ObjectOutputStream(new FileOutputStream(indexFile));
-	  //writer.writeObject(this);
-	  //writer.close();
+    // Merge all partial indexes.
+    System.out.println("Generated " + _utilityPartialIndexCounter + " partial indexes.");
+    String filePathBase = _options._indexPrefix + WORDS_DIR + "/";
+    String filePath1 =  filePathBase + 0;
+    for(int i = 1; i < _utilityPartialIndexCounter; i++) {
+      String filePath2 = filePathBase + i;
+      Map<Integer, FileRange> tempIndex = new HashMap<Integer, FileRange>();
+      String resFilePath = filePath1 + i;
+      System.gc();
+      System.out.println("Merging file #" + i);
+      long offset = mergeFilesIntoIndexAndFile(filePath1, filePath2, tempIndex, resFilePath);
+      filePath1 = resFilePath;
+      if(i == _utilityPartialIndexCounter - 1) {
+        _index = tempIndex;
+        _indexOffset = offset;
+        new File(resFilePath).renameTo(new File(_options._indexPrefix + "/index.idx"));
+        new File(_options._indexPrefix + WORDS_DIR).delete();
+      }
+    }
+    System.out.println("Done merging files.");
+
+    System.out.println(
+        "Indexed " + Integer.toString(_numDocs) + " docs with " +
+        Long.toString(_totalTermFrequency) + " terms.");
   }
   
 
@@ -203,42 +145,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
       if(_utilityIndexFlatSize > UTILITY_INDEX_FLAT_SIZE_THRESHOLD) {
         String filePath = _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++;
-
-        /*
-        System.out.println("Check value: ");
-        List<Integer> debugPostingsList = _utilityIndex.get(567);
-        for(int posting : debugPostingsList) {
-          System.out.print(posting + " ");
-        }
-        */
-
-        dumpIndexToFile(_utilityIndex, filePath);
-
-        // CLEANUP
-        _utilityIndexFlatSize = 0;
-        _utilityIndex = new HashMap<Integer, List<Integer>>();
-        System.gc();
-
-        if(false) {
-          Map<Integer, FileRange> index = new HashMap<Integer, FileRange>();
-          String filePath1 = _options._indexPrefix + WORDS_DIR + "/" + 0;
-          String filePath2 = _options._indexPrefix + WORDS_DIR + "/" + 1;
-          String filePathM = _options._indexPrefix + WORDS_DIR + "/" + "res";
-
-          long offset = mergeFilesIntoIndexAndFile(filePath1, filePath2, index, filePathM);
-          System.out.println("Size: " + index.size());
-          System.out.println("Offset: " + offset);
-
-          long location = index.get(567).offset;
-          RandomAccessFile file = new RandomAccessFile(filePathM, "r");
-          file.seek(offset + location);
-          System.out.println("Checked value: ");
-          for(int i = 0; i < index.get(567).length; i++) {
-            System.out.print(file.readInt() + " ");
-          }
-          file.close();
-          //System.exit(-1);
-        }
+        dumpUtilityIndexToFileAndClearFromMemory(filePath);
       }
     }
     System.out.println("Finished indexing document id: " + docId);
@@ -252,7 +159,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   public String removePunctuation(String text) {
     return text.replaceAll("[^a-zA-Z0-9\n]", " ");
-    // TODO Treat abreviation specially (I.B.M.)
+    // TODO Treat abbreviation specially (I.B.M.)
     // TODO Think about how to treat hyphen. Ex: peer-to-peer, live-action, 978-0-06-192691-4, 1998-2002
     // TODO Think about accented characters.
   }
@@ -385,74 +292,82 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     return 0;
   }
 
-  private void dumpIndexToFile(Map<Integer, List<Integer>> index, String filePath) throws IOException {
-    System.out.println("Generating partial index: " + filePath);
-    Map<Integer, FileRange> indexJumpMap = new HashMap<Integer, FileRange>();
+  private void dumpUtilityIndexToFileAndClearFromMemory(String filePath) throws IOException {
+    dumpIndexToFile(_utilityIndex, new File(filePath));
+    _utilityIndex = new HashMap<Integer, List<Integer>>();
+    _utilityIndexFlatSize = 0;
+    System.gc();
+  }
+
+  protected static long dumpIndexToFile(Map<Integer, List<Integer>> partialIndex, File _file) throws IOException {
+    System.out.println("Generating partial index: " + _file.getAbsolutePath());
+    Map<Integer, FileRange> indexPointerMap = new HashMap<Integer, FileRange>();
 
     // Write actual index to auxiliary file
-    RandomAccessFile partialIndexFileAux = new RandomAccessFile(filePath + "_aux", "rw");
-    List<Integer> words = new ArrayList(index.keySet());
+    File aux = new File(_file.getAbsolutePath() + "_aux");
+    long filePointer = 0;
+    DataOutputStream auxDOS = new DataOutputStream(new FileOutputStream(aux));
+
+    List<Integer> words = new ArrayList(partialIndex.keySet());
     Collections.sort(words);
     for (Integer word : words) {
-      List<Integer> postingsList = index.get(word);
-      long offset = partialIndexFileAux.getFilePointer();
-      long length = postingsList.size();
-      indexJumpMap.put(word, new FileRange(offset, length));
+      List<Integer> postingsList = partialIndex.get(word);
+      indexPointerMap.put(word, new FileRange(filePointer, postingsList.size()));
       for (int posting : postingsList) {
-        partialIndexFileAux.writeInt(posting);
+        auxDOS.writeInt(posting);
       }
+      filePointer += postingsList.size() * 4;
     }
+    auxDOS.close();
 
-    // Write pointer map to beginning of index file.
-    RandomAccessFile partialIndexFile = new RandomAccessFile(filePath, "rw");
-    partialIndexFile.writeInt(words.size());
-    for (Integer word : words) {
-      FileRange fileRange = indexJumpMap.get(word);
-      partialIndexFile.writeInt(word);
-      partialIndexFile.writeLong(fileRange.offset);
-      partialIndexFile.writeLong(fileRange.length);
-    }
+    // Append pointer map to file before actual index.
+    long offset = writeObjectToFile(indexPointerMap, _file);
 
-    int buf;
-    partialIndexFileAux.seek(0);
-    while((buf = partialIndexFileAux.read()) >= 0) {
-      partialIndexFile.write(buf);
-    }
-
-    partialIndexFileAux.close();
-    partialIndexFile.close();
-    File file = new File(filePath + "_aux");
-    file.delete();
+    // Stream actual index from aux file to end of index file.
+    FileOutputStream partialIndexFileOS = new FileOutputStream(_file, true);
+    FileInputStream partialIndexFileAuxIS = new FileInputStream(aux);
+    copyStream(partialIndexFileAuxIS, partialIndexFileOS);
+    partialIndexFileAuxIS.close();
+    partialIndexFileOS.close();
+    aux.delete();
+    return offset;
   }
 
-  private long loadFromFileIntoIndex(String fileURL, Map<Integer, FileRange> index) throws IOException {
+  protected static long loadFromFileIntoIndex(DataInputStream _fileDIS, Map<Integer, FileRange> index) throws IOException {
     index.clear();
-    RandomAccessFile file = new RandomAccessFile(fileURL, "r");
-    int wordsSize = file.readInt();
-    for(int i = 0; i < wordsSize; i++) {
-      int word = file.readInt();
-      long offset = file.readLong();
-      long length = file.readLong();
-      index.put(word, new FileRange(offset, length));
+    try {
+      List<Object> metadata = new ArrayList<Object>();
+      long filePointer = readObjectsFromFileIntoList(_fileDIS, metadata);
+      index.putAll((Map<Integer, FileRange>) metadata.get(0));
+      return filePointer;
+    } catch (ClassNotFoundException e) {
+      e.printStackTrace();
+      throw new IllegalArgumentException("File is not correctly deserializable.");
     }
-    long filePointer = file.getFilePointer();
-    file.close();
-    return filePointer;
   }
 
-  private long mergeFilesIntoIndexAndFile(String file1URL,
+  protected static long mergeFilesIntoIndexAndFile(String file1URL,
                                           String file2URL,
                                           Map<Integer, FileRange> index,
                                           String resFileURL) throws IOException {
+    return mergeFilesIntoIndexAndFile(new File(file1URL), new File(file2URL), index, new File(resFileURL));
+  }
+
+  protected static long mergeFilesIntoIndexAndFile(File _file1,
+                                                 File _file2,
+                                                 Map<Integer, FileRange> index,
+                                                 File _resFile) throws IOException {
     index.clear();
-    System.gc();
+    File aux = new File(_resFile.getAbsolutePath() + "_aux");
     Map<Integer, FileRange> index1 = new HashMap<Integer, FileRange>();
     Map<Integer, FileRange> index2 = new HashMap<Integer, FileRange>();
-    long file1Offset = loadFromFileIntoIndex(file1URL, index1);
-    long file2Offset = loadFromFileIntoIndex(file2URL, index2);
-    RandomAccessFile file1 = new RandomAccessFile(file1URL, "r");
-    RandomAccessFile file2 = new RandomAccessFile(file2URL, "r");
-    RandomAccessFile aux = new RandomAccessFile(resFileURL + "_aux", "rw");
+    DataInputStream file1DIS = new DataInputStream(new FileInputStream(_file1));
+    DataInputStream file2DIS = new DataInputStream(new FileInputStream(_file2));
+    DataOutputStream auxDOS = new DataOutputStream(new FileOutputStream(aux));
+
+    loadFromFileIntoIndex(file1DIS, index1);
+    loadFromFileIntoIndex(file2DIS, index2);
+
     List<Integer> index1Words = new ArrayList<Integer>(index1.keySet());
     List<Integer> index2Words = new ArrayList<Integer>(index2.keySet());
     Collections.sort(index1Words);
@@ -462,9 +377,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     int totalSize = index1WordsSize + index2WordsSize;
     int i, li, ri;
     i = li = ri = 0;
-
-    file1.seek(file1Offset);
-    file2.seek(file2Offset);
+    long fileOffset = 0;
 
     while (i < totalSize) {
       if(li < index1WordsSize && ri < index2WordsSize) {
@@ -472,137 +385,138 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
         int word2 = index2Words.get(ri);
         if (word1 < word2) {
           FileRange word1Range = index1.get(word1);
-          index.put(word1, new FileRange(aux.getFilePointer() , word1Range.length));
-          for (int t = 0; t < word1Range.length; t++) {
-            aux.writeInt(file1.readInt());
-          }
+          index.put(word1, new FileRange(fileOffset, word1Range.length));
+          byte[] buf = new byte[(int)word1Range.length * 4];
+          fileOffset += buf.length;
+          file1DIS.read(buf);
+          auxDOS.write(buf);
           li++; i++;
-        } else if (word2 > word1) {
+        } else if (word2 < word1) {
           FileRange word2Range = index2.get(word2);
-          index.put(word2, new FileRange(aux.getFilePointer(), word2Range.length));
-          for (int t = 0; t < word2Range.length; t++) {
-            aux.writeInt(file2.readInt());
-          }
+          index.put(word2, new FileRange(fileOffset, word2Range.length));
+          byte[] buf = new byte[(int)word2Range.length * 4];
+          fileOffset += buf.length;
+          file2DIS.read(buf);
+          auxDOS.write(buf);
           ri++; i++;
         } else {
-          li++; ri++; i+=2;
           FileRange word1Range = index1.get(word1);
           FileRange word2Range = index2.get(word2);
-          long postingList1Size = word1Range.length;
-          long postingList2Size = word2Range.length;
-          long postingListTotalSize = postingList1Size + postingList2Size;
-          long postingLI, postingRI, postingI;
-          postingLI = postingRI = postingI = 0;
-          index.put(word1, new FileRange(aux.getFilePointer(), postingListTotalSize));
-
-          int postingWord1 = -1;
-          int postingWord2 = -1;
-
-          while(postingI < postingListTotalSize) {
-            if (postingLI < postingList1Size && postingRI < postingList2Size) {
-              if (postingWord1 < 0) postingWord1 = file1.readInt();
-              if (postingWord2 < 0) postingWord2 = file2.readInt();
-
-              if (postingWord1 < postingWord2) {
-                aux.writeInt(postingWord1);
-                postingI++;
-                postingLI++;
-                postingWord1 = -1;
-              } else if (postingWord1 > postingWord2) {
-                aux.writeInt(postingWord2);
-                postingI++;
-                postingRI++;
-                postingWord2 = -1;
-              } else {
-                throw new IllegalArgumentException("Two lists should not have redundant data.");
-              }
-            } else {
-              if (postingLI < postingList1Size) {
-                if (postingWord1 < 0) postingWord1 = file1.readInt();
-                aux.writeInt(postingWord1);
-                postingI++;
-                postingLI++;
-                postingWord1 = -1;
-              }
-              if (postingRI < postingList2Size) {
-                if (postingWord2 < 0) postingWord2 = file2.readInt();
-                aux.writeInt(postingWord2);
-                postingI++;
-                postingLI++;
-                postingWord2 = -1;
-              }
-            }
-          }
+          long postingListTotalSize = word1Range.length + word2Range.length;
+          index.put(word1, new FileRange(fileOffset, postingListTotalSize));
+          byte[] buf1 = new byte[(int)word1Range.length * 4];
+          byte[] buf2 = new byte[(int)word2Range.length * 4];
+          fileOffset += buf1.length + buf2.length;
+          file1DIS.read(buf1);
+          file2DIS.read(buf2);
+          auxDOS.write(buf1);
+          auxDOS.write(buf2);
+          li++; ri++; i+=2;
         }
       } else {
         if(li < index1WordsSize) {
           int word1 = index1Words.get(li);
           FileRange word1Range = index1.get(word1);
-          index.put(word1, new FileRange(aux.getFilePointer() , word1Range.length));
-          for (int t = 0; t < word1Range.length; t++) {
-            aux.writeInt(file1.readInt());
-          }
+          index.put(word1, new FileRange(fileOffset, word1Range.length));
+          byte[] buf = new byte[(int)word1Range.length * 4];
+          fileOffset += buf.length;
+          file1DIS.read(buf);
+          auxDOS.write(buf);
           li++; i++;
         }
         if(ri < index2WordsSize) {
           int word2 = index2Words.get(ri);
           FileRange word2Range = index2.get(word2);
-          index.put(word2, new FileRange(aux.getFilePointer() , word2Range.length));
-          for (int t = 0; t < word2Range.length; t++) {
-            aux.writeInt(file2.readInt());
-          }
+          index.put(word2, new FileRange(fileOffset , word2Range.length));
+          byte[] buf = new byte[(int)word2Range.length * 4];
+          fileOffset += buf.length;
+          file2DIS.read(buf);
+          auxDOS.write(buf);
           ri++; i++;
         }
       }
     }
 
-    // Write pointer map to beginning of index file.
-    RandomAccessFile combinedIndexFile = new RandomAccessFile(resFileURL, "rw");
-    Set<Integer> words = index.keySet();
-    combinedIndexFile.writeInt(words.size());
-    for (Integer word : words) {
-      FileRange fileRange = index.get(word);
-      combinedIndexFile.writeInt(word);
-      combinedIndexFile.writeLong(fileRange.offset);
-      combinedIndexFile.writeLong(fileRange.length);
+    file1DIS.close();
+    file2DIS.close();
+    auxDOS.close();
 
-    }
-    long offset = combinedIndexFile.getFilePointer();
+    // Append pointer map to file before actual index.
+    long offset = writeObjectToFile(index, _resFile);
 
-    int buf;
-    aux.seek(0);
-    while((buf = aux.read()) >= 0) {
-      combinedIndexFile.write(buf);
-    }
-
-    aux.close();
-    file1.close();
-    file2.close();
-    combinedIndexFile.close();
-    new File(resFileURL + "_aux").delete();
-    new File(file1URL).delete();
-    new File(file2URL).delete();
-
+    // Stream actual index from aux file to end of index file.
+    FileOutputStream mergedIndexFileOS = new FileOutputStream(_resFile, true);
+    FileInputStream mergedIndexFileAuxIS = new FileInputStream(aux);
+    copyStream(mergedIndexFileAuxIS, mergedIndexFileOS);
+    mergedIndexFileAuxIS.close();
+    mergedIndexFileOS.close();
+    aux.delete();
+    _file1.delete();
+    _file2.delete();
     return offset;
   }
 
-  private <T> long writeToFile(T store, RandomAccessFile file) throws IOException {
-    ByteArrayOutputStream b = new ByteArrayOutputStream();
-    ObjectOutputStream o = new ObjectOutputStream(b);
-    o.writeObject(store);
-    byte[] bytes = b.toByteArray();
-    file.writeInt(bytes.length);
-    file.write(bytes);
-    return file.getFilePointer();
+  protected static <T> long writeObjectToFile(T object, File _file) throws IOException {
+    List<Object> list = new ArrayList<Object>();
+    list.add(object);
+    return writeObjectsToFile(list, _file);
   }
 
-  private <T> T readFromFile(RandomAccessFile file) throws IOException, ClassNotFoundException {
-    int size = file.readInt();
-    byte[] bytes = new byte[size];
-    file.read(bytes);
-    ByteArrayInputStream b = new ByteArrayInputStream(bytes);
-    ObjectInputStream o = new ObjectInputStream(b);
-    return (T) o.readObject();
+  protected static long writeObjectsToFile(List<Object> stores, File _file) throws IOException {
+    DataOutputStream fileDOS = new DataOutputStream(new FileOutputStream(_file, true));
+    //long totalSize = 0;
+    for(Object store : stores) {
+      ByteArrayOutputStream b = new ByteArrayOutputStream();
+      ObjectOutputStream o = new ObjectOutputStream(b);
+      o.writeObject(store);
+      byte[] bytes = b.toByteArray();
+      //totalSize += bytes.length;
+      fileDOS.writeInt(bytes.length);
+      fileDOS.write(bytes);
+    }
+    fileDOS.writeInt(0);
+    fileDOS.close();
+    //return totalSize + stores.size() * 4 + 4;
+    return _file.length();
+  }
+
+  protected static long readObjectsFromFileIntoList(File file, List<Object> store) throws IOException, ClassNotFoundException {
+    DataInputStream fileDIS = new DataInputStream(new FileInputStream(file));
+    return readObjectsFromFileIntoList(fileDIS, store);
+  }
+
+  protected static long readObjectsFromFileIntoList(DataInputStream fileDIS, List<Object> store) throws IOException, ClassNotFoundException {
+    if(store == null) throw new IllegalArgumentException("Cannot read into null list.");
+    store.clear();
+    int size = fileDIS.readInt();
+    long totalSize = size;
+    while(size > 0) {
+      byte[] bytes = new byte[size];
+      fileDIS.read(bytes);
+      ObjectInputStream o = new ObjectInputStream(new ByteArrayInputStream(bytes));
+      store.add(o.readObject());
+      size = fileDIS.readInt();
+      totalSize += size;
+    }
+    // TODO This may mislead if fileDIS is not starting from offset 0.
+    return totalSize + store.size() * 4 + 4;
+  }
+
+  public static long copyStream(InputStream from, OutputStream to) throws IOException {
+    final int BUF_SIZE = 0x1000; // 4K
+    if(from == null) throw new IllegalArgumentException("Input Stream must be specified.");
+    if(to == null) throw new IllegalArgumentException("Output Stream must be specified");
+    byte[] buf = new byte[BUF_SIZE];
+    long total = 0;
+    while (true) {
+      int r = from.read(buf);
+      if (r == -1) {
+        break;
+      }
+      to.write(buf, 0, r);
+      total += r;
+    }
+    return total;
   }
 
   static class FileRange implements Serializable {
