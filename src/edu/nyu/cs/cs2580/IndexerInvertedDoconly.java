@@ -28,7 +28,6 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   private Map<Integer, FileRange> _index = new HashMap<Integer, FileRange>();
 	
   // Stores all DocumentIndexed in memory.
-  // HashMap is used for fast lookup; key is the docid and value is the DocumentIndexed.
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   
   // Maps each term to their integer representation
@@ -217,7 +216,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   }
 
   @Override
-  public Document getDoc(int docid) {
+  public DocumentIndexed getDoc(int docid) {
     return (docid >= _documents.size() || docid < 0) ? null : _documents.get(docid);
   }
 
@@ -227,7 +226,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
    */
   @Override
   // This implementation follows that in the lecture 3 slide, page 13.
-  public Document nextDoc(Query query, int docid) {
+  public DocumentIndexed nextDoc(Query query, int docid) {
 	// Assuming that the query has already been processed.
 	// query.processQuery();
 	try {
