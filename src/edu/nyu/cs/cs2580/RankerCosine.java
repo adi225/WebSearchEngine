@@ -60,10 +60,17 @@ public class RankerCosine extends Ranker {
     }
 
     protected double scoreDocument(Query query, int did) {
+    	// if the inverted-doconly is used, just return 1.0 as a score
+    	if(_indexer._options._indexerType.equalsIgnoreCase("inverted-doconly")){
+    		return 1.0;
+    	}
+    	
         // TODO Check that double processing is ok. (Query Handler also processes it).
         // Process the raw query into tokens.
-        query.processQuery();
+        // query.processQuery();
 
+    	// How to rebuild a document vector (String) from index file?
+    	// Should we store unique terms in DocumentIndexed?
         // Get the document tokens.
         Document doc = _indexer.getDoc(did);
         Vector<String> docTokens = ((DocumentFull) doc).getConvertedBodyTokens();
