@@ -1,5 +1,7 @@
 package edu.nyu.cs.cs2580;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Vector;
 
 /**
@@ -11,7 +13,7 @@ public class DocumentIndexed extends Document {
 
    
 //  private Vector<Integer> _titleTokens = new Vector<Integer>();
-//  private Vector<Integer> _bodyTokens = new Vector<Integer>();
+  private Set<Integer> _uniqueBodyTokens = new HashSet<Integer>();
   
   public DocumentIndexed(int docid) {
     super(docid);
@@ -29,13 +31,13 @@ public class DocumentIndexed extends Document {
 //    return _indexer.getTermVector(_titleTokens);
 //  }
 
-//  public void setBodyTokens(Vector<Integer> bodyTokens) {
-//    _bodyTokens = bodyTokens;
-//  }
+  public void setUniqueBodyTokens(Set<Integer> bodyTokens) {
+    _uniqueBodyTokens = bodyTokens;
+  }
 
-//  public Vector<Integer> getBodyTokens() {
-//   return _bodyTokens;
-//  }
+  public Set<Integer> getUniqueBodyTokens() {
+   return _uniqueBodyTokens;
+  }
 
 //  public Vector<String> getConvertedBodyTokens() {
 //    return _indexer.getTermVector(_bodyTokens);

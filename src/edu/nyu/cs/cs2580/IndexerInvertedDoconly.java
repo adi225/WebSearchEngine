@@ -34,7 +34,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   private Map<String, Integer> _dictionary = new HashMap<String, Integer>();
 
   // All unique terms appeared in corpus. Offsets are integer representations.
-  // private Vector<String> _terms = new Vector<String>();
+  private Vector<String> _terms = new Vector<String>();
 
   // Term frequency, key is the integer representation of the term and value is
   // the number of times the term appears in the corpus.
@@ -125,6 +125,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
     Set<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
     uniqueTokens.addAll(docTokensAsIntegers);
+    _documents.get(docId).setUniqueBodyTokens(uniqueTokens);  // setting the unique tokens for a document
 
     // Indexing
     for(Integer term : uniqueTokens) {
@@ -197,10 +198,11 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
         idx = _dictionary.get(token);
         _termCorpusFrequency.put(idx, _termCorpusFrequency.get(idx) + 1);
       } else {
-        // idx = _terms.size();  // offsets are the integer representations
+        idx = _terms.size();  // offsets are the integer representations
         idx = _dictionary.keySet().size();
         // TODO Do we need _terms? Isn't it equal to the set of keys in _dictionary?
-        // _terms.add(token);
+        // Need _terms in order to convert the integer representation back to String
+        _terms.add(token);
         _dictionary.put(token, idx);
         _termCorpusFrequency.put(idx, 1);
       }
