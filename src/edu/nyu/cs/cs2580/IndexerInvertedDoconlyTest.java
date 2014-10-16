@@ -96,10 +96,10 @@ public class IndexerInvertedDoconlyTest {
     vector.add(7L);
 
     File file = new File(testDirectory, "testFileOJIHUIUYGJOI");
-    long writeOffset1 = IndexerInvertedDoconly.writeObjectToFile(map, file);
-    assertEquals(file.length(), writeOffset1);
-    long writeOffset2 = IndexerInvertedDoconly.writeObjectToFile(vector, file);
-    assertEquals(file.length(), writeOffset2);
+    long bytesWritten1 = IndexerInvertedDoconly.writeObjectToFile(map, file);
+    assertEquals(file.length(), bytesWritten1);
+    long bytesWritten2 = IndexerInvertedDoconly.writeObjectToFile(vector, file);
+    assertEquals(file.length() - bytesWritten1, bytesWritten2);
   }
 
   @Test
@@ -113,21 +113,17 @@ public class IndexerInvertedDoconlyTest {
     File file = new File(testDirectory, "testFileOJIHUIUYGJOI");
     File file2 = new File(testDirectory, "testFileOJIHhtrhtJOI");
     long offs = IndexerInvertedDoconly.writeObjectToFile(map, file);
-    assertEquals(file.length(), offs);
+    long fileLength = file.length();
+    assertEquals(fileLength, offs);
     offs = IndexerInvertedDoconly.writeObjectToFile(map, file2);
-    assertEquals(file2.length(), offs);
+    assertEquals(fileLength, offs);
 
-    FileOutputStream partialIndexFileOS = new FileOutputStream(file2, true);
-    FileInputStream partialIndexFileAuxIS = new FileInputStream(file);
-    IndexerInvertedDoconly.copyStream(partialIndexFileAuxIS, partialIndexFileOS);
-    partialIndexFileAuxIS.close();
-    partialIndexFileOS.close();
-
-    assertEquals(file.length() * 2, file2.length());
+    IndexerInvertedDoconly.appendFileToFile(file, file2);
+    assertEquals(fileLength * 2, file2.length());
 
     List<Object> list = new ArrayList<Object>();
     long offset = IndexerInvertedDoconly.readObjectsFromFileIntoList(file2, list);
-    assertEquals(offset, file.length());
+    assertEquals(offset, fileLength);
     Map<Integer, String> mapConfirm = (Map<Integer, String>) list.get(0);
 
     assertEquals(map.get(1), mapConfirm.get(1));

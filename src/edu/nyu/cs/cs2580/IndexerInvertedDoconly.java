@@ -14,10 +14,10 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
-  private static final String WORDS_DIR = "/words";
+  private static final String WORDS_DIR = "/partials";
   private static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
 
-  private RandomAccessFile _indexFile;
+  private RandomAccessFile _indexRAF;
 
   // Utility index is only used during index construction.
   private Map<Integer, List<Integer>> _utilityIndex = new HashMap<Integer, List<Integer>>();
@@ -25,14 +25,16 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   private long _utilityPartialIndexCounter = 0;
 
   // An index, which is a mapping between an integer representation of a term
-  // and a list of document IDs containing that term.
+  // and a byte range in the file where the postings list for the term is located.
   private Map<Integer, FileRange> _index = new HashMap<Integer, FileRange>();
+
+  // An offset in the file where the postings lists begin (after all metadata).
   private long _indexOffset = 0;
 	
-  // Stores all DocumentIndexed in memory.
+  // Metadata of documents.
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   
-  // Maps each term to their integer representation
+  // Maps each term to its integer representation
   private Map<String, Integer> _dictionary = new HashMap<String, Integer>();
 
   // All unique terms appeared in corpus. Offsets are integer representations.
@@ -44,20 +46,23 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   public IndexerInvertedDoconly(Options options) {
     super(options);
-    try {
-      File indexFile = new File(_options._indexPrefix + "/hello.idx");
-      _indexFile = new RandomAccessFile(indexFile, "rw");
-    } catch (IOException e) {
-      e.printStackTrace();
-      System.err.println("Could not open index file.");
-      System.exit(-1);
-    }
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
   }
 
   @Override
   public void constructIndex() throws IOException {
 	System.out.println("Construct index from: " + _options._corpusPrefix);
+
+    File indexFile = new File(_options._indexPrefix + "/index.idx");
+    File indexAuxFile = new File(indexFile.getAbsolutePath() + "_aux");
+    if(indexFile.exists()) {
+      indexFile.delete();
+      indexFile = new File(_options._indexPrefix + "/index.idx");
+    }
+    if(indexAuxFile.exists()) {
+      indexAuxFile.delete();
+      indexAuxFile = new File(indexFile.getAbsolutePath() + "_aux");
+    }
     new File(_options._indexPrefix + WORDS_DIR).mkdir();
     File dir = new File(_options._corpusPrefix);
     File[] directoryListing = dir.listFiles();
@@ -112,17 +117,43 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
       if(i == _utilityPartialIndexCounter - 1) {
         _index = tempIndex;
         _indexOffset = offset;
-        new File(resFilePath).renameTo(new File(_options._indexPrefix + "/index.idx"));
+        new File(resFilePath).renameTo(indexAuxFile);
         new File(_options._indexPrefix + WORDS_DIR).delete();
       }
     }
     System.out.println("Done merging files.");
 
+    // Add metadata to file.
+    List<Object> indexMetadata = new ArrayList<Object>();
+    indexMetadata.add(_documents);
+    indexMetadata.add(_terms);
+    indexMetadata.add(_dictionary);
+    indexMetadata.add(_termCorpusFrequency);
+
+    writeObjectsToFile(indexMetadata, indexFile);
+    appendFileToFile(indexAuxFile, indexFile);
+
     System.out.println(
-        "Indexed " + Integer.toString(_numDocs) + " docs with " +
-        Long.toString(_totalTermFrequency) + " terms.");
+            "Indexed " + Integer.toString(_numDocs) + " docs with " +
+                    Long.toString(_totalTermFrequency) + " terms.");
   }
-  
+
+  @Override
+  public void loadIndex() throws IOException, ClassNotFoundException {
+    File indexFile = new File(_options._indexPrefix + "/index.idx");
+    List<Object> indexMetadata = new ArrayList<Object>();
+    DataInputStream indexFileDIS = new DataInputStream(new FileInputStream(indexFile));
+    long bytesRead = readObjectsFromFileIntoList(indexFileDIS, indexMetadata);
+    _documents           = (Vector<DocumentIndexed>)indexMetadata.get(0);
+    _terms               = (Vector<String>)indexMetadata.get(1);
+    _dictionary          = (Map<String, Integer>)indexMetadata.get(2);
+    _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(3);
+    bytesRead += loadFromFileIntoIndex(indexFileDIS, _index);
+    indexFileDIS.close();
+    _indexOffset = bytesRead;
+    _indexRAF = new RandomAccessFile(indexFile, "r");
+    _indexRAF.seek(_indexOffset);
+  }
 
   //   TODO No stop word is removed, you need to dynamically determine whether to drop the processing of a certain inverted list.
   
@@ -199,11 +230,6 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     }
     _totalTermFrequency += tokens.size();
     return tokens;
-  }
-  
- 
-  @Override
-  public void loadIndex() throws IOException, ClassNotFoundException {
   }
 
   @Override
@@ -343,12 +369,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     long offset = writeObjectToFile(indexPointerMap, _file);
 
     // Stream actual index from aux file to end of index file.
-    FileOutputStream partialIndexFileOS = new FileOutputStream(_file, true);
-    FileInputStream partialIndexFileAuxIS = new FileInputStream(aux);
-    copyStream(partialIndexFileAuxIS, partialIndexFileOS);
-    partialIndexFileAuxIS.close();
-    partialIndexFileOS.close();
-    aux.delete();
+    appendFileToFile(aux, _file);
     return offset;
   }
 
@@ -464,12 +485,8 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     long offset = writeObjectToFile(index, _resFile);
 
     // Stream actual index from aux file to end of index file.
-    FileOutputStream mergedIndexFileOS = new FileOutputStream(_resFile, true);
-    FileInputStream mergedIndexFileAuxIS = new FileInputStream(aux);
-    copyStream(mergedIndexFileAuxIS, mergedIndexFileOS);
-    mergedIndexFileAuxIS.close();
-    mergedIndexFileOS.close();
-    aux.delete();
+    appendFileToFile(aux, _resFile);
+
     _file1.delete();
     _file2.delete();
     return offset;
@@ -483,20 +500,20 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   protected static long writeObjectsToFile(List<Object> stores, File _file) throws IOException {
     DataOutputStream fileDOS = new DataOutputStream(new FileOutputStream(_file, true));
-    //long totalSize = 0;
+    long totalSize = 0;
     for(Object store : stores) {
       ByteArrayOutputStream b = new ByteArrayOutputStream();
       ObjectOutputStream o = new ObjectOutputStream(b);
       o.writeObject(store);
       byte[] bytes = b.toByteArray();
-      //totalSize += bytes.length;
+      totalSize += bytes.length;
       fileDOS.writeInt(bytes.length);
       fileDOS.write(bytes);
     }
     fileDOS.writeInt(0);
     fileDOS.close();
-    //return totalSize + stores.size() * 4 + 4;
-    return _file.length();
+    return totalSize + stores.size() * 4 + 4;
+    //return _file.length();
   }
 
   protected static long readObjectsFromFileIntoList(File file, List<Object> store) throws IOException, ClassNotFoundException {
@@ -517,8 +534,17 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
       size = fileDIS.readInt();
       totalSize += size;
     }
-    // TODO This may mislead if fileDIS is not starting from offset 0.
     return totalSize + store.size() * 4 + 4;
+  }
+
+  public static long appendFileToFile(File appendedFile, File appendToFile) throws IOException {
+    FileOutputStream appendToFileOS = new FileOutputStream(appendToFile, true);
+    FileInputStream appendedFileIS = new FileInputStream(appendedFile);
+    long bytesWritten = copyStream(appendedFileIS, appendToFileOS);
+    appendedFileIS.close();
+    appendToFileOS.close();
+    appendedFile.delete();
+    return bytesWritten;
   }
 
   public static long copyStream(InputStream from, OutputStream to) throws IOException {
