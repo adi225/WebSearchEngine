@@ -4,6 +4,7 @@ import org.junit.*;
 
 import java.io.*;
 import java.util.*;
+import edu.nyu.cs.cs2580.FileUtils.FileRange;
 
 import static org.junit.Assert.*;
 
@@ -26,10 +27,10 @@ public class IndexerInvertedDoconlyTest {
     map.put(4, "d");
 
     File file = new File(testDirectory, "testFileOJIHUIUYGJOI");
-    long writeOffset = IndexerInvertedDoconly.writeObjectToFile(map, file);
+    long writeOffset = FileUtils.writeObjectToFile(map, file);
 
     List<Object> list = new ArrayList<Object>();
-    long readOffset = IndexerInvertedDoconly.readObjectsFromFileIntoList(file, list);
+    long readOffset = FileUtils.readObjectsFromFileIntoList(file, list);
     assertEquals(file.length(), writeOffset);
     assertEquals(file.length(), readOffset);
     Map<Integer, String> mapConfirm = (Map<Integer, String>) list.get(0);
@@ -59,10 +60,10 @@ public class IndexerInvertedDoconlyTest {
     list.add(vector);
 
     File file = new File(testDirectory, "testFileOJIHUIUYGJOI");
-    long writeOffset = IndexerInvertedDoconly.writeObjectsToFile(list, file);
+    long writeOffset = FileUtils.writeObjectsToFile(list, file);
 
     List<Object> list2 = new ArrayList<Object>();
-    long readOffset = IndexerInvertedDoconly.readObjectsFromFileIntoList(file, list2);
+    long readOffset = FileUtils.readObjectsFromFileIntoList(file, list2);
     assertEquals(file.length(), writeOffset);
     assertEquals(file.length(), readOffset);
 
@@ -96,9 +97,9 @@ public class IndexerInvertedDoconlyTest {
     vector.add(7L);
 
     File file = new File(testDirectory, "testFileOJIHUIUYGJOI");
-    long bytesWritten1 = IndexerInvertedDoconly.writeObjectToFile(map, file);
+    long bytesWritten1 = FileUtils.writeObjectToFile(map, file);
     assertEquals(file.length(), bytesWritten1);
-    long bytesWritten2 = IndexerInvertedDoconly.writeObjectToFile(vector, file);
+    long bytesWritten2 = FileUtils.writeObjectToFile(vector, file);
     assertEquals(file.length() - bytesWritten1, bytesWritten2);
   }
 
@@ -112,17 +113,17 @@ public class IndexerInvertedDoconlyTest {
 
     File file = new File(testDirectory, "testFileOJIHUIUYGJOI");
     File file2 = new File(testDirectory, "testFileOJIHhtrhtJOI");
-    long offs = IndexerInvertedDoconly.writeObjectToFile(map, file);
+    long offs = FileUtils.writeObjectToFile(map, file);
     long fileLength = file.length();
     assertEquals(fileLength, offs);
-    offs = IndexerInvertedDoconly.writeObjectToFile(map, file2);
+    offs = FileUtils.writeObjectToFile(map, file2);
     assertEquals(fileLength, offs);
 
-    IndexerInvertedDoconly.appendFileToFile(file, file2);
+    FileUtils.appendFileToFile(file, file2);
     assertEquals(fileLength * 2, file2.length());
 
     List<Object> list = new ArrayList<Object>();
-    long offset = IndexerInvertedDoconly.readObjectsFromFileIntoList(file2, list);
+    long offset = FileUtils.readObjectsFromFileIntoList(file2, list);
     assertEquals(offset, fileLength);
     Map<Integer, String> mapConfirm = (Map<Integer, String>) list.get(0);
 
@@ -144,11 +145,11 @@ public class IndexerInvertedDoconlyTest {
     fullIndex.put(30, c);
 
     File file = new File(testDirectory, "testFileOJIHUIUYGJOI");
-    long writeOffset = IndexerInvertedDoconly.dumpIndexToFile(fullIndex, file);
+    long writeOffset = FileUtils.dumpIndexToFile(fullIndex, file);
 
     DataInputStream fileDIS = new DataInputStream(new FileInputStream(file));
-    Map<Integer, IndexerInvertedDoconly.FileRange> index = new HashMap<Integer, IndexerInvertedDoconly.FileRange>();
-    long readOffset = IndexerInvertedDoconly.loadFromFileIntoIndex(fileDIS, index);
+    Map<Integer, FileRange> index = new HashMap<Integer, FileRange>();
+    long readOffset = FileUtils.loadFromFileIntoIndex(fileDIS, index);
     assertEquals(writeOffset, readOffset);
     assertEquals(fullIndex.keySet(), index.keySet());
 
@@ -157,7 +158,7 @@ public class IndexerInvertedDoconlyTest {
     for(int key : index.keySet()) {
       List<Integer> list = fullIndex.get(key);
       List<Integer> listConfirm = new ArrayList<Integer>();
-      IndexerInvertedDoconly.FileRange fileRange = index.get(key);
+      FileRange fileRange = index.get(key);
       indexFile.seek(readOffset + fileRange.offset);
       for(int i = 0; i < fileRange.length; i++) {
         listConfirm.add(indexFile.readInt());
@@ -186,15 +187,15 @@ public class IndexerInvertedDoconlyTest {
     fullIndex2.put(25, f);
 
     File file1 = new File(testDirectory, "testFileOJIHUIUYGJOI");
-    IndexerInvertedDoconly.dumpIndexToFile(fullIndex1, file1);
+    FileUtils.dumpIndexToFile(fullIndex1, file1);
     File file2 = new File(testDirectory, "testFileOJYUGTRHUGUJOI");
-    IndexerInvertedDoconly.dumpIndexToFile(fullIndex2, file2);
+    FileUtils.dumpIndexToFile(fullIndex2, file2);
     File mergedFile = new File(testDirectory, "testFileOJYUGTRHUFYGUGTUJOI");
-    Map<Integer, IndexerInvertedDoconly.FileRange> mergedIndex = new HashMap<Integer, IndexerInvertedDoconly.FileRange>();
-    long offset = IndexerInvertedDoconly.mergeFilesIntoIndexAndFile(file1, file2, mergedIndex, mergedFile);
-    Map<Integer, IndexerInvertedDoconly.FileRange> readMergedIndex = new HashMap<Integer, IndexerInvertedDoconly.FileRange>();
+    Map<Integer, FileRange> mergedIndex = new HashMap<Integer, FileRange>();
+    long offset = FileUtils.mergeFilesIntoIndexAndFile(file1, file2, mergedIndex, mergedFile);
+    Map<Integer, FileRange> readMergedIndex = new HashMap<Integer, FileRange>();
     DataInputStream mergeDIS = new DataInputStream(new FileInputStream(mergedFile));
-    long readOffset = IndexerInvertedDoconly.loadFromFileIntoIndex(mergeDIS, readMergedIndex);
+    long readOffset = FileUtils.loadFromFileIntoIndex(mergeDIS, readMergedIndex);
 
     assertEquals(readOffset, offset);
 
@@ -213,7 +214,7 @@ public class IndexerInvertedDoconlyTest {
       if (fullIndex2.containsKey(key)) list.addAll(fullIndex2.get(key));
 
       List<Integer> listConfirm = new ArrayList<Integer>();
-      IndexerInvertedDoconly.FileRange fileRange = mergedIndex.get(key);
+      FileRange fileRange = mergedIndex.get(key);
       indexFile.seek(offset + fileRange.offset);
       for(int i = 0; i < fileRange.length; i++) {
         listConfirm.add(indexFile.readInt());
