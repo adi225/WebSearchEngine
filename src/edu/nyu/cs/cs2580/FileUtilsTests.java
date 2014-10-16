@@ -8,7 +8,7 @@ import edu.nyu.cs.cs2580.FileUtils.FileRange;
 
 import static org.junit.Assert.*;
 
-public class IndexerInvertedDoconlyTest {
+public class FileUtilsTests {
 
   File testDirectory;
 
