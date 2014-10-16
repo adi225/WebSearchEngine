@@ -317,7 +317,6 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	  catch(Exception e){
 		  return 0;
 	  }
-
   }
 
   @Override
@@ -335,6 +334,17 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   public int documentTermFrequency(String term, String url) {
     SearchEngine.Check(false, "Not implemented!");
     return 0;
+  }
+
+  // This method may be deprecated in later versions. Use with caution!
+  private List<Integer> postingsListForWord(int word) throws IOException {
+    List<Integer> postingsList = new LinkedList<Integer>();
+    FileRange fileRange = _index.get(word);
+    _indexRAF.seek(_indexOffset + fileRange.offset);
+    for(int i = 0; i < fileRange.length; i++) {
+      postingsList.add(_indexRAF.readInt());
+    }
+    return postingsList;
   }
 
   private void dumpUtilityIndexToFileAndClearFromMemory(String filePath) throws IOException {
