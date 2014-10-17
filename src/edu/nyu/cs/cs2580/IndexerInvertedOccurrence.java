@@ -81,6 +81,10 @@ public class IndexerInvertedOccurrence extends IndexerInvertedDoconly implements
    */
   @Override
   public Document nextDoc(Query query, int docid) {
+	// 3 cases to handle:
+	// 1.) query containing only conjunctive terms (easily dealt with nextDocConjunctive)
+	// 2.) query containing only the phrase portion
+	// 3.) query containing both conjunctive and phrase parts
     return null;
   }
   
@@ -146,9 +150,38 @@ public class IndexerInvertedOccurrence extends IndexerInvertedDoconly implements
   
   // Lecture 3 slide, page 23
   // This method returns the next position of the phrase after pos within the docid.
-  public int nextPhrase(QueryPhrase query, int docid, int pos){
+  public int nextPhrase(QueryPhrase queryPhrase, int docid, int pos){
+	  // need to pass the phrase portion into the query
+	  Query query = new Query(""); // put the phrase information here
+	  query.processQuery();
+	  Document docVerify = nextDocConjunctive(query, docid-1);
+	  if(docVerify == null){
+		  return -1;  // if the document does not contain all the terms, then there is certainly no phrase
+	  }
 	  
-	  return -1;
+	  List<Integer> positions = new ArrayList<Integer>();
+	  int maxPosition = Integer.MIN_VALUE;
+	  for(int i=0; i<query._tokens.size(); i++){
+		  int termPosition = nextPosition(query._tokens.get(i), docid, pos);
+		  if(termPosition == -1){
+			  return -1;
+		  }
+		  maxPosition = Math.max(maxPosition, termPosition);
+		  positions.add(termPosition);
+	  }
+	  
+	  boolean foundPhrase = true;
+	  for(int i=1; i<positions.size(); i++){
+		  if(positions.get(i) != positions.get(i-1) + 1){
+			  foundPhrase = false;
+			  break;
+		  }
+	  }
+	  
+	  if(foundPhrase){
+		  positions.get(0);
+	  }
+	  return nextPhrase(queryPhrase, docid, maxPosition);
   }
   
   // This method returns the next occurrence of the term in docid after pos
