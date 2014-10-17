@@ -34,7 +34,7 @@ public class RankerQL extends Ranker {
     protected double scoreDocument(Query query, int did) {
         // TODO Check that double processing is ok. (Query Handler also processes it).
         // Process the raw query into tokens.
-        query.processQuery();
+        // query.processQuery();
 
         // Get the document tokens.
         Document doc = _indexer.getDoc(did);

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -176,6 +177,105 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
   public Document nextDoc(Query query, int docid) {
     return null;
   }
+  
+  // This method returns the next docid after the given docid that contains all terms in the query conjunctive.
+  // This is equivalent to the nextDoc method in the IndexerInvertedDoconly class.
+  public Document nextDocConjunctive(Query query, int docid){
+	// query is already processed before getting passed into this method	
+	try {
+		List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
+		for(String token : query._tokens){
+			int docID = next(token,docid);
+			if(docID == -1){
+				return null;
+			}
+			docIDs.add(docID);
+		}
+		
+		boolean foundDocID = true;
+		int docIDFixed = docIDs.get(0); 
+		int docIDNew = Integer.MIN_VALUE;
+		
+		for(Integer docID : docIDs){  // check if all the doc IDs are equal
+			if(docID != docIDFixed){
+				foundDocID = false;
+			}
+			if(docID > docIDNew){
+				docIDNew = docID;
+			}
+		}
+		
+		if(foundDocID){
+			return _documents.get(docIDFixed);
+		}
+		
+		return nextDoc(query,docIDNew-1);
+	} catch (IOException e) {
+	  return null;
+	}
+  }
+  
+  // Just like in the lecture slide 3, page 14, this helper method returns the next document id
+  // after the given docid. It returns -1 if not found.
+  public int next(String term, int docid) throws IOException {
+	  if(!_dictionary.containsKey(term)) {
+		  return -1;
+	  }
+	    
+	  int termInt = _dictionary.get(term);  // an integer representation of a term
+	  List<Integer> postingList = postingsListForWord(termInt);
+	  
+	  int occurrenceIndex = 1;  // the first index of occurrence position in the list
+	  while(occurrenceIndex < postingList.size()){
+		  int docIndex = occurrenceIndex - 1;
+		  if(postingList.get(docIndex) > docid){
+			  return postingList.get(docIndex);
+		  }
+		  int occurrence = postingList.get(occurrenceIndex);
+		  occurrenceIndex += occurrence + 2;  // jump to the next occurrence position
+	  }
+  
+	  return -1;
+  }
+  
+  // Lecture 3 slide, page 23
+  // This method returns the next position of the phrase after pos within the docid.
+  public int nextPhrase(QueryPhrase query, int docid, int pos){
+	  
+	  return -1;
+  }
+  
+  // This method returns the next occurrence of the term in docid after pos
+  public int nextPosition(String term, int docid, int pos){
+	  try{
+		  int termInt = _dictionary.get(term);  // an integer representation of a term
+		  
+		  List<Integer> postingList = postingsListForWord(termInt);
+		  int occurrenceIndex = 1;  // the first index of occurrence position in the list
+		  while(occurrenceIndex < postingList.size()){
+			  int docIndex = occurrenceIndex - 1;
+			  if(postingList.get(docIndex) > docid){
+				  return -1;
+			  }
+			  int occurrence = postingList.get(occurrenceIndex);
+			  if(postingList.get(docIndex) == docid){  // found the docid
+				// iterating through the positions of docid
+				for(int posIndex=occurrenceIndex+1; posIndex < occurrenceIndex+1+occurrence; posIndex++){
+					if(postingList.get(posIndex) > pos){
+						return postingList.get(posIndex);
+					}
+				}
+				return -1;
+			  }
+			  occurrenceIndex += occurrence + 2;  // jump to the next occurrence position
+		  }
+		  
+		  return -1; // not found
+	  }
+	  catch(Exception e){
+		  return -1;
+	  }
+  }
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
@@ -184,11 +284,11 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
 		  
 		  List<Integer> postingList = postingsListForWord(termInt);
 		  int docCount = 0;
-		  int index = 1;  // the first index of occurrence position in the list
-		  while(index < postingList.size()){
-			  int occurrence = postingList.get(index);
+		  int occurrenceIndex = 1;  // the first index of occurrence position in the list
+		  while(occurrenceIndex < postingList.size()){
+			  int occurrence = postingList.get(occurrenceIndex);
 			  docCount++;
-			  index += occurrence + 2;  // jump to the next occurrence position
+			  occurrenceIndex += occurrence + 2;  // jump to the next occurrence position
 		  }
 		  
 		  return docCount;
@@ -205,11 +305,11 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
 		  
 		  List<Integer> postingList = postingsListForWord(termInt);
 		  int termFrequency = 0;
-		  int index = 1;  // the first index of occurrence position in the list
-		  while(index < postingList.size()){
-			  int occurrence = postingList.get(index);
+		  int occurrenceIndex = 1;  // the first index of occurrence position in the list
+		  while(occurrenceIndex < postingList.size()){
+			  int occurrence = postingList.get(occurrenceIndex);
 			  termFrequency += occurrence;
-			  index += occurrence + 2;  // jump to the next occurrence position
+			  occurrenceIndex += occurrence + 2;  // jump to the next occurrence position
 		  }
 		  
 		  return termFrequency;
