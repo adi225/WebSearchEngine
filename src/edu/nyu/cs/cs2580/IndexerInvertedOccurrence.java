@@ -78,19 +78,38 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
     uniqueTokens.addAll(docTokensAsIntegers);
     _documents.get(docId).setUniqueBodyTokens(uniqueTokens);  // setting the unique tokens for a document
 
-    // Indexing
-    for(Integer term : uniqueTokens) {
-      if(!_utilityIndex.containsKey(term)) {
-        _utilityIndex.put(term, new LinkedList<Integer>());
-      }
-      _utilityIndex.get(term).add(docId);
-      _utilityIndexFlatSize++;
+    // indexing
+    Map<Integer,Integer> existingTokens = new HashMap<Integer,Integer>();  // this set is to keep track of the existing term, key is term id and value is the number of occurrence
+    
+    for(int position=0; position < docTokensAsIntegers.size(); position++){
+    	int termId = docTokensAsIntegers.get(position);
+    	if(!existingTokens.containsKey(termId)){
+    	  if(!_utilityIndex.containsKey(termId)){
+    	    _utilityIndex.put(termId, new LinkedList<Integer>());    		  
+    	  }
+    	  List<Integer> postingList = _utilityIndex.get(termId);
+    	  postingList.add(docId);  // add docId to the end of the list followed by the occurrence and the position
+    	  postingList.add(1);  // first time that this termId appears in the current docId, so the occurrence is 1
+    	  postingList.add(position);  // appending position to the posting list
+    	  existingTokens.put(termId, 1);
+    	}
+    	else{ // the posting list already contains the termId
+    	  List<Integer> postingList = _utilityIndex.get(termId);
+    	  int occurrence = existingTokens.get(termId);
+    	  int occurrenceIndex = postingList.size()-occurrence-1; // the index that needs to get updated
+    	  postingList.set(occurrenceIndex, postingList.get(occurrenceIndex)+1);  // updating the occurrence (+1)
+    	  postingList.add(position);  // appending position to the posting list
+    	  existingTokens.put(termId, existingTokens.get(termId)+1);
+    	}
+    	
+        _utilityIndexFlatSize++;
 
-      if(_utilityIndexFlatSize > UTILITY_INDEX_FLAT_SIZE_THRESHOLD) {
-        String filePath = _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++;
-        dumpUtilityIndexToFileAndClearFromMemory(filePath);
-      }
+        if(_utilityIndexFlatSize > UTILITY_INDEX_FLAT_SIZE_THRESHOLD) {
+          String filePath = _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++;
+          dumpUtilityIndexToFileAndClearFromMemory(filePath);
+        }
     }
+    
     System.out.println("Finished indexing document id: " + docId);
   }
   
