@@ -15,10 +15,11 @@ import edu.nyu.cs.cs2580.FileUtils.FileRange;
 public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
-  private static final String WORDS_DIR = "/partials";
+  private static final String WORDS_DIR = "/.partials";
   private static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
 
   private RandomAccessFile _indexRAF;
+  private final String indexFilePath = _options._indexPrefix + "/index.idx";
 
   // Utility index is only used during index construction.
   private Map<Integer, List<Integer>> _utilityIndex = new HashMap<Integer, List<Integer>>();
@@ -53,12 +54,11 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   @Override
   public void constructIndex() throws IOException {
 	System.out.println("Construct index from: " + _options._corpusPrefix);
-
-    File indexFile = new File(_options._indexPrefix + "/index.idx");
+    File indexFile = new File(indexFilePath);
     File indexAuxFile = new File(indexFile.getAbsolutePath() + "_aux");
     if(indexFile.exists()) {
       indexFile.delete();
-      indexFile = new File(_options._indexPrefix + "/index.idx");
+      indexFile = new File(indexFilePath);
     }
     if(indexAuxFile.exists()) {
       indexAuxFile.delete();
@@ -141,7 +141,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   @Override
   public void loadIndex() throws IOException, ClassNotFoundException {
-    File indexFile = new File(_options._indexPrefix + "/index.idx");
+    File indexFile = new File(indexFilePath);
     List<Object> indexMetadata = new ArrayList<Object>();
     DataInputStream indexFileDIS = new DataInputStream(new FileInputStream(indexFile));
     long bytesRead = FileUtils.readObjectsFromFileIntoList(indexFileDIS, indexMetadata);
@@ -342,7 +342,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     List<Integer> postingsList = new LinkedList<Integer>();
     FileRange fileRange = _index.get(word);
     _indexRAF.seek(_indexOffset + fileRange.offset);
-    for(int i = 0; i < fileRange.length; i++) {
+    for(int i = 0; i < fileRange.length / 4; i++) {
       postingsList.add(_indexRAF.readInt());
     }
     return postingsList;

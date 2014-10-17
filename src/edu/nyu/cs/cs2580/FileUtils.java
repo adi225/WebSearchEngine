@@ -42,10 +42,10 @@ public class FileUtils {
   }
 
   protected static long dumpIndexToFile(Map<Integer, List<Integer>> partialIndex, File _file) throws IOException {
-//    return dumpIndexToFile(VByteUtils.integerPostingListAsBytes(partialIndex), _file);
-//  }
+    return dumpIndexToFileBytes(VByteUtils.integerPostingListAsBytes(partialIndex), _file);
+  }
 
-//  protected static long dumpIndexToFile(Map<Integer, List<Byte>> partialIndex, File _file) throws IOException {
+  protected static long dumpIndexToFileBytes(Map<Integer, List<Byte>> partialIndex, File _file) throws IOException {
     System.out.println("Generating partial index: " + _file.getAbsolutePath());
     Map<Integer, FileRange> indexPointerMap = new HashMap<Integer, FileRange>();
 
@@ -57,12 +57,13 @@ public class FileUtils {
     List<Integer> words = new ArrayList(partialIndex.keySet());
     Collections.sort(words);
     for (Integer word : words) {
-      List<Integer> postingsList = partialIndex.get(word);
-      indexPointerMap.put(word, new FileRange(filePointer, postingsList.size()));
-      for (int posting : postingsList) {
-        auxDOS.writeInt(posting);
-      }
-      filePointer += postingsList.size() * 4;
+      byte[] postingsList = VByteUtils.byteListAsArray(partialIndex.get(word));
+      indexPointerMap.put(word, new FileRange(filePointer, postingsList.length));
+      auxDOS.write(postingsList);
+      //for (byte posting : postingsList) {
+      //  auxDOS.writeByte(posting);
+      //}
+      filePointer += postingsList.length;
     }
     auxDOS.close();
 
@@ -127,7 +128,7 @@ public class FileUtils {
         if (word1 < word2) {
           FileRange word1Range = index1.get(word1);
           index.put(word1, new FileRange(fileOffset, word1Range.length));
-          byte[] buf = new byte[(int)word1Range.length * 4];
+          byte[] buf = new byte[(int)word1Range.length];
           fileOffset += buf.length;
           file1DIS.read(buf);
           auxDOS.write(buf);
@@ -135,7 +136,7 @@ public class FileUtils {
         } else if (word2 < word1) {
           FileRange word2Range = index2.get(word2);
           index.put(word2, new FileRange(fileOffset, word2Range.length));
-          byte[] buf = new byte[(int)word2Range.length * 4];
+          byte[] buf = new byte[(int)word2Range.length];
           fileOffset += buf.length;
           file2DIS.read(buf);
           auxDOS.write(buf);
@@ -145,8 +146,8 @@ public class FileUtils {
           FileRange word2Range = index2.get(word2);
           long postingListTotalSize = word1Range.length + word2Range.length;
           index.put(word1, new FileRange(fileOffset, postingListTotalSize));
-          byte[] buf1 = new byte[(int)word1Range.length * 4];
-          byte[] buf2 = new byte[(int)word2Range.length * 4];
+          byte[] buf1 = new byte[(int)word1Range.length];
+          byte[] buf2 = new byte[(int)word2Range.length];
           fileOffset += buf1.length + buf2.length;
           file1DIS.read(buf1);
           file2DIS.read(buf2);
@@ -159,7 +160,7 @@ public class FileUtils {
           int word1 = index1Words.get(li);
           FileRange word1Range = index1.get(word1);
           index.put(word1, new FileRange(fileOffset, word1Range.length));
-          byte[] buf = new byte[(int)word1Range.length * 4];
+          byte[] buf = new byte[(int)word1Range.length];
           fileOffset += buf.length;
           file1DIS.read(buf);
           auxDOS.write(buf);
@@ -169,7 +170,7 @@ public class FileUtils {
           int word2 = index2Words.get(ri);
           FileRange word2Range = index2.get(word2);
           index.put(word2, new FileRange(fileOffset , word2Range.length));
-          byte[] buf = new byte[(int)word2Range.length * 4];
+          byte[] buf = new byte[(int)word2Range.length];
           fileOffset += buf.length;
           file2DIS.read(buf);
           auxDOS.write(buf);

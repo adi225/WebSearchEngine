@@ -1,5 +1,7 @@
 package edu.nyu.cs.cs2580;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.junit.*;
 
 import java.io.*;
@@ -137,12 +139,13 @@ public class FileUtilsTests {
   @Test
   public void testPartialIndexDumpAndRead() throws Exception {
     Map<Integer, List<Integer>> fullIndex = new HashMap<Integer, List<Integer>>();
-    List<Integer> a = Arrays.asList(new Integer[] { 1, 2, 3, 4, 8});
-    List<Integer> b = Arrays.asList(new Integer[] { 5, 6, 9});
-    List<Integer> c = Arrays.asList(new Integer[] { 7, 8, 9});
+    List<Integer> a = Lists.newArrayList(1, 2, 3, 4, 8);
+    List<Integer> b = Lists.newArrayList(5, 6, 9);
+    List<Integer> c = Lists.newArrayList(7, 8, 9);
     fullIndex.put(10, a);
     fullIndex.put(20, b);
     fullIndex.put(30, c);
+    Map<Integer, List<Integer>> fullIndex2 = Maps.newHashMap(fullIndex);
 
     File file = new File(testDirectory, "testFileOJIHUIUYGJOI");
     long writeOffset = FileUtils.dumpIndexToFile(fullIndex, file);
@@ -151,16 +154,16 @@ public class FileUtilsTests {
     Map<Integer, FileRange> index = new HashMap<Integer, FileRange>();
     long readOffset = FileUtils.loadFromFileIntoIndex(fileDIS, index);
     assertEquals(writeOffset, readOffset);
-    assertEquals(fullIndex.keySet(), index.keySet());
+    assertEquals(fullIndex2.keySet(), index.keySet());
 
     RandomAccessFile indexFile = new RandomAccessFile(file, "r");
 
     for(int key : index.keySet()) {
-      List<Integer> list = fullIndex.get(key);
+      List<Integer> list = fullIndex2.get(key);
       List<Integer> listConfirm = new ArrayList<Integer>();
       FileRange fileRange = index.get(key);
       indexFile.seek(readOffset + fileRange.offset);
-      for(int i = 0; i < fileRange.length; i++) {
+      for(int i = 0; i < fileRange.length / 4; i++) {
         listConfirm.add(indexFile.readInt());
       }
       assertEquals(list, listConfirm);
@@ -187,9 +190,11 @@ public class FileUtilsTests {
     fullIndex2.put(25, f);
 
     File file1 = new File(testDirectory, "testFileOJIHUIUYGJOI");
-    FileUtils.dumpIndexToFile(fullIndex1, file1);
+    Map<Integer, List<Integer>> fullIndex1Use = Maps.newHashMap(fullIndex1);
+    FileUtils.dumpIndexToFile(fullIndex1Use, file1);
     File file2 = new File(testDirectory, "testFileOJYUGTRHUGUJOI");
-    FileUtils.dumpIndexToFile(fullIndex2, file2);
+    Map<Integer, List<Integer>> fullIndex2Use = Maps.newHashMap(fullIndex2);
+    FileUtils.dumpIndexToFile(fullIndex2Use, file2);
     File mergedFile = new File(testDirectory, "testFileOJYUGTRHUFYGUGTUJOI");
     Map<Integer, FileRange> mergedIndex = new HashMap<Integer, FileRange>();
     long offset = FileUtils.mergeFilesIntoIndexAndFile(file1, file2, mergedIndex, mergedFile);
@@ -216,7 +221,7 @@ public class FileUtilsTests {
       List<Integer> listConfirm = new ArrayList<Integer>();
       FileRange fileRange = mergedIndex.get(key);
       indexFile.seek(offset + fileRange.offset);
-      for(int i = 0; i < fileRange.length; i++) {
+      for(int i = 0; i < fileRange.length / 4; i++) {
         listConfirm.add(indexFile.readInt());
       }
       assertEquals(list, listConfirm);

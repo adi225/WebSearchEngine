@@ -72,13 +72,14 @@ public class VByteUtils {
   }
 
   protected static Map<Integer, List<Byte>> integerPostingListAsBytes(Map<Integer, List<Integer>> partialIndex) {
+    boolean canRemove = partialIndex.get(partialIndex.keySet().iterator().next()) instanceof LinkedList;
     Map<Integer, List<Byte>> partialIndexAsBytes = new HashMap<Integer, List<Byte>>();
     for (Integer key : partialIndex.keySet()) {
       List<Integer> list = partialIndex.get(key);
       LinkedList<Byte> listAsBytes = new LinkedList<Byte>();
       for (int i = list.size() - 1; i >= 0; i--) {
         int number = list.get(i);
-        list.remove(i);
+        if(canRemove) list.remove(i);
         byte[] bytes = VByteUtils.intToBytes(number);
         listAsBytes.addFirst(bytes[3]);
         listAsBytes.addFirst(bytes[2]);
@@ -88,6 +89,15 @@ public class VByteUtils {
       partialIndex.put(key, null);
       partialIndexAsBytes.put(key, listAsBytes);
     }
+    partialIndex.clear();
     return partialIndexAsBytes;
+  }
+
+  protected static byte[] byteListAsArray(List<Byte> list) {
+    byte[] result = new byte[list.size()];
+    for(int i = 0; i < list.size(); i++) {
+      result[i] = list.get(i);
+    }
+    return result;
   }
 }
