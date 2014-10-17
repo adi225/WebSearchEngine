@@ -286,17 +286,13 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	  if(!_dictionary.containsKey(term)) {
 		  return -1;
 	  }
-	  
-	  RandomAccessFile file = new RandomAccessFile(_options._indexPrefix + "index.idx", "r");
-	  
+	    
 	  int termInt = _dictionary.get(term);  // an integer representation of a term
-	  FileRange postingList = _index.get(termInt);
-	  file.seek(postingList.offset);  // plus the postinglist offset
+	  List<Integer> postingList = postingsListForWord(termInt);
 	  
-	  for(int i=0; i < postingList.length; i++){
-		  int posting = file.readInt();
-		  if(posting > docid){
-			  return posting;
+	  for(int i=0; i < postingList.size(); i++){
+		  if(postingList.get(i) > docid){
+			  return postingList.get(i);
 		  }
 	  }
 	  
@@ -308,12 +304,9 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	  try{
 		  int termInt = _dictionary.get(term);  // an integer representation of a term
 		  
-		  RandomAccessFile file = new RandomAccessFile(_options._indexPrefix + "index.idx", "r");
+		  List<Integer> postingList = postingsListForWord(termInt);
 		  
-		  FileRange postingList = _index.get(termInt);
-		  file.seek(postingList.offset);  // plus the postinglist offset
-		  
-		  return (int)postingList.length;
+		  return postingList.size();
 	  }
 	  catch(Exception e){
 		  return 0;

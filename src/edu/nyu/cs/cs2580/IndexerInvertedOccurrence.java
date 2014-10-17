@@ -166,7 +166,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
 
   @Override
   public Document getDoc(int docid) {
-    return null;
+	  return (docid >= _documents.size() || docid < 0) ? null : _documents.get(docid);
   }
 
   /**
@@ -179,12 +179,44 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    return 0;
+	  try{
+		  int termInt = _dictionary.get(term);  // an integer representation of a term
+		  
+		  List<Integer> postingList = postingsListForWord(termInt);
+		  int docCount = 0;
+		  int index = 1;  // the first index of occurrence position in the list
+		  while(index < postingList.size()){
+			  int occurrence = postingList.get(index);
+			  docCount++;
+			  index += occurrence + 2;  // jump to the next occurrence position
+		  }
+		  
+		  return docCount;
+	  }
+	  catch(Exception e){
+		  return 0;
+	  }
   }
 
   @Override
   public int corpusTermFrequency(String term) {
-    return 0;
+	  try{
+		  int termInt = _dictionary.get(term);  // an integer representation of a term
+		  
+		  List<Integer> postingList = postingsListForWord(termInt);
+		  int termFrequency = 0;
+		  int index = 1;  // the first index of occurrence position in the list
+		  while(index < postingList.size()){
+			  int occurrence = postingList.get(index);
+			  termFrequency += occurrence;
+			  index += occurrence + 2;  // jump to the next occurrence position
+		  }
+		  
+		  return termFrequency;
+	  }
+	  catch(Exception e){
+		  return 0;
+	  }
   }
 
   @Override
