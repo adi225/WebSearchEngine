@@ -317,6 +317,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 	  }
   }
 
+  // Need not be implemented because the information is not available in the index.
   @Override
   public int documentTermFrequency(String term, String url) {
     SearchEngine.Check(false, "Not implemented!");

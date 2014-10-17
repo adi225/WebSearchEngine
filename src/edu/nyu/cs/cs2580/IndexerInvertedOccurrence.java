@@ -321,7 +321,31 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
 
   @Override
   public int documentTermFrequency(String term, String url) {
-    SearchEngine.Check(false, "Not implemented!");
+    //SearchEngine.Check(_dictionary.containsKey(term), "The term "+term+" does not exist in corpus.");
+    
+    int docId = 0;  // get docid from url here, should we have a mapping from url to docid?
+    int termId = _dictionary.get(term);
+    
+    try {
+		List<Integer> postingList = postingsListForWord(termId);
+	    int termFrequency = 0;
+	    int occurrenceIndex = 1;  // the first index of occurrence position in the list
+	    while(occurrenceIndex < postingList.size()){
+	    	int docIndex = occurrenceIndex - 1;
+			if(postingList.get(docIndex) > docId){
+			  return 0;
+			}
+	    	int occurrence = postingList.get(occurrenceIndex);
+	    	if(postingList.get(docIndex) == docId){
+	    		return occurrence;
+	    	}
+	    	occurrenceIndex += occurrence + 2;  // jump to the next occurrence position
+	    }
+		
+	} catch (Exception e) {
+		return 0;
+	}
+    
     return 0;
   }
   
