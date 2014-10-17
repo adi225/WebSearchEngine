@@ -261,8 +261,9 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
   @Override
   public int documentTermFrequency(String term, String url) {
     //SearchEngine.Check(_dictionary.containsKey(term), "The term "+term+" does not exist in corpus.");
-    
-    int docId = 0;  // get docid from url here, should we have a mapping from url to docid?
+	  
+    // Assuming that the given url is valid. (Needs to handle later otherwise)
+    int docId = mapUrlToDocId(url);  // get docid from url here, should we have a mapping from url to docid?
     int termId = _dictionary.get(term);
     
     try {
@@ -285,5 +286,15 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
 		return 0;
 	}
     return 0;
+  }
+  
+  // This method returns the corresponding docid of the given url.
+  public int mapUrlToDocId(String url){
+	  for(Document doc : _documents){
+		  if(doc.getUrl().equals(url)){
+			  return doc._docid;
+		  }
+	  }
+	  return -1;
   }
 }
