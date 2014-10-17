@@ -17,33 +17,33 @@ import edu.nyu.cs.cs2580.FileUtils.FileRange;
 public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
-  private static final String WORDS_DIR = "/.partials";
-  private static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
+  protected static final String WORDS_DIR = "/.partials";
+  protected static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
 
-  private RandomAccessFile _indexRAF;
-  private final String indexFilePath = _options._indexPrefix + "/index.idx";
+  protected RandomAccessFile _indexRAF;
+  protected final String indexFilePath = _options._indexPrefix + "/index.idx";
 
   // Utility index is only used during index construction.
-  private Map<Integer, List<Integer>> _utilityIndex = new HashMap<Integer, List<Integer>>();
-  private long _utilityIndexFlatSize = 0;
-  private long _utilityPartialIndexCounter = 0;
+  protected Map<Integer, List<Integer>> _utilityIndex = new HashMap<Integer, List<Integer>>();
+  protected long _utilityIndexFlatSize = 0;
+  protected long _utilityPartialIndexCounter = 0;
 
   // An index, which is a mapping between an integer representation of a term
   // and a byte range in the file where the postings list for the term is located.
-  private Map<Integer, FileRange> _index = new HashMap<Integer, FileRange>();
+  protected Map<Integer, FileRange> _index = new HashMap<Integer, FileRange>();
 
   // An offset in the file where the postings lists begin (after all metadata).
-  private long _indexOffset = 0;
+  protected long _indexOffset = 0;
 	
   // Metadata of documents.
-  private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
+  protected Vector<Document> _documents = new Vector<Document>();
   
   // Maps each term to its integer representation
-  private BiMap<String, Integer> _dictionary = HashBiMap.create();
+  protected BiMap<String, Integer> _dictionary = HashBiMap.create();
 
   // Term frequency, key is the integer representation of the term and value is
   // the number of times the term appears in the corpus.
-  private Map<Integer, Integer> _termCorpusFrequency = new HashMap<Integer, Integer>();
+  protected Map<Integer, Integer> _termCorpusFrequency = new HashMap<Integer, Integer>();
 
   public IndexerInvertedDoconly(Options options) {
     super(options);
@@ -81,7 +81,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
         // adding an indexed document
         int docId = _numDocs++;     // the current number of doc is ID for the current document
-        DocumentIndexed docIndexed = new DocumentIndexed(docId);
+        Document docIndexed = new Document(docId);
         docIndexed.setTitle(docFile.getName());
         docIndexed.setUrl(docFile.getAbsolutePath());
         _documents.add(docIndexed);
@@ -143,7 +143,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     List<Object> indexMetadata = new ArrayList<Object>();
     DataInputStream indexFileDIS = new DataInputStream(new FileInputStream(indexFile));
     long bytesRead = FileUtils.readObjectsFromFileIntoList(indexFileDIS, indexMetadata);
-    _documents           = (Vector<DocumentIndexed>)indexMetadata.get(0);
+    _documents           = (Vector<Document>)indexMetadata.get(0);
     _dictionary          = (BiMap<String, Integer>)indexMetadata.get(1);
     _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
     bytesRead += FileUtils.loadFromFileIntoIndex(indexFileDIS, _index);
@@ -165,7 +165,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
     Set<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
     uniqueTokens.addAll(docTokensAsIntegers);
-    _documents.get(docId).setUniqueBodyTokens(uniqueTokens);  // setting the unique tokens for a document
+    //_documents.get(docId).setUniqueBodyTokens(uniqueTokens);  // setting the unique tokens for a document
 
     // Indexing
     for(Integer term : uniqueTokens) {
@@ -206,7 +206,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
    * representation, store the integers in {@code tokens}.
    * @param content
    */
-  private Vector<Integer> readTermVector(String content) {
+  protected Vector<Integer> readTermVector(String content) {
     Vector<Integer> tokens = new Vector<Integer>();
     Scanner s = new Scanner(content);  // Uses white space by default.
     while (s.hasNext()) {
@@ -227,7 +227,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   }
 
   @Override
-  public DocumentIndexed getDoc(int docid) {
+  public Document getDoc(int docid) {
     return (docid >= _documents.size() || docid < 0) ? null : _documents.get(docid);
   }
 
@@ -237,7 +237,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
    */
   @Override
   // This implementation follows that in the lecture 3 slide, page 13.
-  public DocumentIndexed nextDoc(Query query, int docid) {
+  public Document nextDoc(Query query, int docid) {
 	// Assuming that the query has already been processed.
 	// query.processQuery();
 	try {
@@ -325,7 +325,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   }
 
   // This method may be deprecated in later versions. Use with caution!
-  private List<Integer> postingsListForWord(int word) throws IOException {
+  protected List<Integer> postingsListForWord(int word) throws IOException {
     List<Integer> postingsList = new LinkedList<Integer>();
     FileRange fileRange = _index.get(word);
     _indexRAF.seek(_indexOffset + fileRange.offset);
@@ -335,7 +335,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     return postingsList;
   }
 
-  private void dumpUtilityIndexToFileAndClearFromMemory(String filePath) throws IOException {
+  protected void dumpUtilityIndexToFileAndClearFromMemory(String filePath) throws IOException {
     FileUtils.dumpIndexToFile(_utilityIndex, new File(filePath));
     _utilityIndex = new HashMap<Integer, List<Integer>>();
     _utilityIndexFlatSize = 0;
