@@ -41,8 +41,11 @@ public class FileUtils {
     }
   }
 
-
   protected static long dumpIndexToFile(Map<Integer, List<Integer>> partialIndex, File _file) throws IOException {
+//    return dumpIndexToFile(VByteUtils.integerPostingListAsBytes(partialIndex), _file);
+//  }
+
+//  protected static long dumpIndexToFile(Map<Integer, List<Byte>> partialIndex, File _file) throws IOException {
     System.out.println("Generating partial index: " + _file.getAbsolutePath());
     Map<Integer, FileRange> indexPointerMap = new HashMap<Integer, FileRange>();
 

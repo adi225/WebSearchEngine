@@ -1,5 +1,10 @@
 package edu.nyu.cs.cs2580;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 import static com.google.common.base.Preconditions.*;
 
 /**
@@ -46,4 +51,43 @@ public class VByteUtils {
     return decodedValue;
   }
 
+  protected static byte[] intToBytes(int i) {
+    byte[] result = new byte[4];
+    result[0] = (byte) (i >>> 24);
+    result[1] = (byte) (i >>> 16);
+    result[2] = (byte) (i >>> 8);
+    result[3] = (byte) (i);
+    return result;
+  }
+
+  protected static int bytesToInt(byte[] bytes) {
+    checkArgument(bytes.length == 4);
+    int i = 0;
+    for(byte aByte : bytes) {
+      int bByte = (int)aByte & 0b11111111; // careful converting byte with leading 1 to int (2's complement conversion)
+      i = (i << 8);
+      i = i | bByte;
+    }
+    return i;
+  }
+
+  protected static Map<Integer, List<Byte>> integerPostingListAsBytes(Map<Integer, List<Integer>> partialIndex) {
+    Map<Integer, List<Byte>> partialIndexAsBytes = new HashMap<Integer, List<Byte>>();
+    for (Integer key : partialIndex.keySet()) {
+      List<Integer> list = partialIndex.get(key);
+      LinkedList<Byte> listAsBytes = new LinkedList<Byte>();
+      for (int i = list.size() - 1; i >= 0; i--) {
+        int number = list.get(i);
+        list.remove(i);
+        byte[] bytes = VByteUtils.intToBytes(number);
+        listAsBytes.addFirst(bytes[3]);
+        listAsBytes.addFirst(bytes[2]);
+        listAsBytes.addFirst(bytes[1]);
+        listAsBytes.addFirst(bytes[0]);
+      }
+      partialIndex.put(key, null);
+      partialIndexAsBytes.put(key, listAsBytes);
+    }
+    return partialIndexAsBytes;
+  }
 }
