@@ -17,7 +17,7 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 /**
  * @CS2580: Implement this class for HW2.
  */
-public class IndexerInvertedOccurrence extends IndexerInvertedDoconly implements Serializable{
+public class IndexerInvertedOccurrence extends IndexerInverted implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
 	
@@ -285,5 +285,17 @@ public class IndexerInvertedOccurrence extends IndexerInvertedDoconly implements
 		return 0;
 	}
     return 0;
+  }
+
+  // This method may be deprecated in later versions. Use with caution!
+  @Override
+  protected List<Integer> postingsListForWord(int word) throws IOException {
+    List<Integer> postingsList = new LinkedList<Integer>();
+    FileUtils.FileRange fileRange = _index.get(word);
+    _indexRAF.seek(_indexOffset + fileRange.offset);
+    for(int i = 0; i < fileRange.length / 4; i++) {
+      postingsList.add(_indexRAF.readInt());
+    }
+    return postingsList;
   }
 }
