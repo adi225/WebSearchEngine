@@ -137,17 +137,4 @@ public class IndexerInvertedDoconly extends IndexerInverted {
     SearchEngine.Check(false, "Not implemented!");
     return 0;
   }
-
-  // This method may be deprecated in later versions. Use with caution!
-  @Override
-  protected List<Integer> postingsListForWord(int word) throws IOException {
-    List<Integer> postingsList = new LinkedList<Integer>();
-    FileUtils.FileRange fileRange = _index.get(word);
-    _indexRAF.seek(_indexOffset + fileRange.offset);
-    for(int i = 0; i < fileRange.length / 4; i++) {
-      postingsList.add(_indexRAF.readInt());
-    }
-    return postingsList;
-  }
-
 }

@@ -208,9 +208,18 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     System.gc();
   }
 
+  // This method may be deprecated in later versions. Use with caution!
+  protected List<Integer> postingsListForWord(int word) throws IOException {
+    List<Integer> postingsList = new LinkedList<Integer>();
+    FileUtils.FileRange fileRange = _index.get(word);
+    _indexRAF.seek(_indexOffset + fileRange.offset);
+    for(int i = 0; i < fileRange.length / 4; i++) {
+      postingsList.add(_indexRAF.readInt());
+    }
+    return postingsList;
+  }
+
   public abstract void processDocument(int docId, String text) throws IOException, BoilerpipeProcessingException;
 
   public abstract int next(String term, int docid) throws IOException;
-
-  protected abstract List<Integer> postingsListForWord(int word) throws IOException;
 }
