@@ -5,6 +5,7 @@ import java.util.*;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import de.l3s.boilerpipe.BoilerpipeExtractor;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import de.l3s.boilerpipe.extractors.ArticleExtractor;
 
@@ -16,7 +17,7 @@ import edu.nyu.cs.cs2580.FileUtils.FileRange;
 public abstract class IndexerInverted extends Indexer implements Serializable {
   private static final long serialVersionUID = 1077111905740085030L;
   protected static final String WORDS_DIR = "/.partials";
-  protected static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
+  protected static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 5000000;
 
   protected RandomAccessFile _indexRAF;
   protected final String indexFilePath = _options._indexPrefix + "/index.idx";
@@ -53,6 +54,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   @Override
   public void constructIndex() throws IOException {
 	System.out.println("Construct index from: " + _options._corpusPrefix);
+    long startTime = System.currentTimeMillis();
     File indexFile = new File(indexFilePath);
     File indexAuxFile = new File(indexFile.getAbsolutePath() + "_aux");
     if(indexFile.exists()) {
@@ -106,10 +108,12 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     System.out.println("Generated " + _utilityPartialIndexCounter + " partial indexes.");
     String filePathBase = _options._indexPrefix + WORDS_DIR + "/";
     String filePath1 =  filePathBase + 0;
+    String resFilePath = filePath1;
+    long mergeStart = System.currentTimeMillis();
     for(int i = 1; i < _utilityPartialIndexCounter; i++) {
       String filePath2 = filePathBase + i;
       Map<Integer, FileRange> tempIndex = new HashMap<Integer, FileRange>();
-      String resFilePath = filePath1 + i;
+      resFilePath = filePath1 + i;
       System.gc();
       System.out.println("Merging file #" + i);
       long offset = FileUtils.mergeFilesIntoIndexAndFile(filePath1, filePath2, tempIndex, resFilePath);
@@ -117,10 +121,10 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       if(i == _utilityPartialIndexCounter - 1) {
         _index = tempIndex;
         _indexOffset = offset;
-        new File(resFilePath).renameTo(indexAuxFile);
-        new File(_options._indexPrefix + WORDS_DIR).delete();
       }
     }
+    new File(resFilePath).renameTo(indexAuxFile);
+    new File(_options._indexPrefix + WORDS_DIR).delete();
     System.out.println("Done merging files.");
 
     // Add metadata to file.
@@ -135,6 +139,13 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     System.out.println(
             "Indexed " + Integer.toString(_numDocs) + " docs with " +
                     Long.toString(_totalTermFrequency) + " terms.");
+
+    long timeTaken = (System.currentTimeMillis() - startTime) / 60000;
+    long mergingTime = (System.currentTimeMillis() - mergeStart) / 60000;
+    System.out.println("Total indexing time: " + timeTaken + " min");
+    //System.out.println("Total document processing time: " + timeTaken + " min");
+    //System.out.println("Total partial index dumping time: " + timeTaken + " min");
+    System.out.println("Total partial index merging time: " + mergingTime + " min");
   }
 
   @Override

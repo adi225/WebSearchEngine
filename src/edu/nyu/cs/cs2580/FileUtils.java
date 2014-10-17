@@ -42,12 +42,17 @@ public class FileUtils {
   }
 
   protected static long dumpIndexToFile(Map<Integer, List<Integer>> partialIndex, File _file) throws IOException {
-    return dumpIndexToFileBytes(VByteUtils.integerPostingListAsBytes(partialIndex), _file);
+    long startTime = System.currentTimeMillis();
+    Map<Integer, List<Byte>> asBytes = VByteUtils.integerPostingListAsBytes(partialIndex);
+    long timeTaken = (System.currentTimeMillis() - startTime) / 1000;
+    System.out.println("Conversion to bytes complete: " + timeTaken + " sec");
+    return dumpIndexToFileBytes(asBytes, _file);
   }
 
   protected static long dumpIndexToFileBytes(Map<Integer, List<Byte>> partialIndex, File _file) throws IOException {
     System.out.println("Generating partial index: " + _file.getAbsolutePath());
     Map<Integer, FileRange> indexPointerMap = new HashMap<Integer, FileRange>();
+    long startTime = System.currentTimeMillis();
 
     // Write actual index to auxiliary file
     File aux = new File(_file.getAbsolutePath() + "_aux");
@@ -57,15 +62,17 @@ public class FileUtils {
     List<Integer> words = new ArrayList(partialIndex.keySet());
     Collections.sort(words);
     for (Integer word : words) {
-      byte[] postingsList = VByteUtils.byteListAsArray(partialIndex.get(word));
-      indexPointerMap.put(word, new FileRange(filePointer, postingsList.length));
-      auxDOS.write(postingsList);
-      //for (byte posting : postingsList) {
-      //  auxDOS.writeByte(posting);
-      //}
-      filePointer += postingsList.length;
+      List<Byte> postingsList = partialIndex.get(word);
+      indexPointerMap.put(word, new FileRange(filePointer, postingsList.size()));
+      for(byte b : postingsList) {
+        auxDOS.write(b);
+      }
+      filePointer += postingsList.size();
     }
     auxDOS.close();
+
+    long dumpTime = (System.currentTimeMillis() - startTime) / 1000;
+    System.out.println("Total dump time: " + dumpTime + " sec");
 
     // Append pointer map to file before actual index.
     long offset = writeObjectToFile(indexPointerMap, _file);

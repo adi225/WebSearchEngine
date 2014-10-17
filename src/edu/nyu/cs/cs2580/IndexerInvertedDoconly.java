@@ -12,7 +12,6 @@ public class IndexerInvertedDoconly extends IndexerInverted {
 
   public IndexerInvertedDoconly(SearchEngine.Options options) {
     super(options);
-    System.out.println("Using Indexer: " + this.getClass().getSimpleName());
   }
 
   // The input of this method (String text) is the raw context of the document.

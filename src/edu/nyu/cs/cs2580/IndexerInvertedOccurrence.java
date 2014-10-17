@@ -23,7 +23,6 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
 	
   public IndexerInvertedOccurrence(Options options) {
     super(options);
-    System.out.println("Using Indexer: " + this.getClass().getSimpleName());
   }
 
   //   TODO No stop word is removed, you need to dynamically determine whether to drop the processing of a certain inverted list.
