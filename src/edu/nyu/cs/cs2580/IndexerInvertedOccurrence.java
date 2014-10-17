@@ -175,6 +175,10 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
    */
   @Override
   public Document nextDoc(Query query, int docid) {
+	// 3 cases to handle:
+	// 1.) query containing only conjunctive terms (easily dealt with nextDocConjunctive)
+	// 2.) query containing only the phrase portion
+	// 3.) query containing both conjunctive and phrase parts
     return null;
   }
   
