@@ -148,6 +148,20 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     System.out.println("Total partial index merging time: " + mergingTime + " min");
   }
 
+  // TODO No stop word is removed, you need to dynamically determine whether to drop the processing of a certain inverted list.
+
+  public void processDocument(int docId, String text) throws IOException, BoilerpipeProcessingException {
+    text = removeNonVisibleContext(text);  // step 1 of document processing
+    text = removePunctuation(text).toLowerCase();
+    text = performStemming(text);  // step 2 of document processing
+
+    Vector<Integer> docTokensAsIntegers = readTermVector(text);
+
+    updatePostingsLists(docId, docTokensAsIntegers);
+
+    System.out.println("Finished indexing document id: " + docId);
+  }
+
   @Override
   public void loadIndex() throws IOException, ClassNotFoundException {
     File indexFile = new File(indexFilePath);
@@ -230,7 +244,8 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     return postingsList;
   }
 
-  public abstract void processDocument(int docId, String text) throws IOException, BoilerpipeProcessingException;
+
+  protected abstract void updatePostingsLists(int docId, Vector<Integer> docTokensAsIntegers) throws IOException;
 
   public abstract int next(String term, int docid) throws IOException;
 }

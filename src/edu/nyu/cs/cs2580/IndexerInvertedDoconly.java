@@ -14,18 +14,9 @@ public class IndexerInvertedDoconly extends IndexerInverted {
     super(options);
   }
 
-  // The input of this method (String text) is the raw context of the document.
-  @Override
-  public void processDocument(int docId, String text) throws IOException, BoilerpipeProcessingException {
-    text = removeNonVisibleContext(text);  // step 1 of document processing
-    text = removePunctuation(text).toLowerCase();
-    text = performStemming(text);  // step 2 of document processing
-
-    Vector<Integer> docTokensAsIntegers = readTermVector(text);
-
+  protected void updatePostingsLists(int docId, Vector<Integer> docTokensAsIntegers) throws IOException {
     Set<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
     uniqueTokens.addAll(docTokensAsIntegers);
-    //_documents.get(docId).setUniqueBodyTokens(uniqueTokens);  // setting the unique tokens for a document
 
     // Indexing
     for(Integer term : uniqueTokens) {
@@ -40,7 +31,6 @@ public class IndexerInvertedDoconly extends IndexerInverted {
         dumpUtilityIndexToFileAndClearFromMemory(filePath);
       }
     }
-    System.out.println("Finished indexing document id: " + docId);
   }
 
   /**

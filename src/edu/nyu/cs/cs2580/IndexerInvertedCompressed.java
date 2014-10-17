@@ -17,17 +17,7 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
     super(options);
   }
 
-  @Override
-  public void processDocument(int docId, String text) throws IOException, BoilerpipeProcessingException {
-    text = removeNonVisibleContext(text);  // step 1 of document processing
-    text = removePunctuation(text).toLowerCase();
-    text = performStemming(text);  // step 2 of document processing
-
-    Vector<Integer> docTokensAsIntegers = readTermVector(text);
-
-    Set<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
-    uniqueTokens.addAll(docTokensAsIntegers);
-
+  protected void updatePostingsLists(int docId, Vector<Integer> docTokensAsIntegers) throws IOException {
     // Indexing
     Map<Integer, List<Integer>> occurences = new HashMap<Integer,List<Integer>>();
 
@@ -72,11 +62,9 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
         dumpUtilityIndexToFileAndClearFromMemory(filePath);
       }
     }
-
-    System.out.println("Finished indexing document id: " + docId);
   }
 
-  // This method may be deprecated in later versions. Use with caution!
+    // This method may be deprecated in later versions. Use with caution!
   @Override
   protected List<Integer> postingsListForWord(int word) throws IOException {
     List<Integer> postingsList = new LinkedList<Integer>();

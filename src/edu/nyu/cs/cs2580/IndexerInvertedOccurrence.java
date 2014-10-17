@@ -25,24 +25,10 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
     super(options);
   }
 
-  //   TODO No stop word is removed, you need to dynamically determine whether to drop the processing of a certain inverted list.
-  
-  // The input of this method (String text) is the raw context of the document.
-  @Override
-  public void processDocument(int docId, String text) throws IOException, BoilerpipeProcessingException {
-    text = removeNonVisibleContext(text);  // step 1 of document processing
-    text = removePunctuation(text).toLowerCase();
-    text = performStemming(text);  // step 2 of document processing
-
-    Vector<Integer> docTokensAsIntegers = readTermVector(text);
-
-    Set<Integer> uniqueTokens = new HashSet<Integer>();  // unique term ID
-    uniqueTokens.addAll(docTokensAsIntegers);
-    //_documents.get(docId).setUniqueBodyTokens(uniqueTokens);  // setting the unique tokens for a document
-
+  protected void updatePostingsLists(int docId, Vector<Integer> docTokensAsIntegers) throws IOException {
     // Indexing
     Map<Integer, List<Integer>> occurences = new HashMap<Integer,List<Integer>>();
-    
+
     for(int position = 0; position < docTokensAsIntegers.size(); position++) {
       int word = docTokensAsIntegers.get(position);
       if (!occurences.containsKey(word)) {
@@ -71,13 +57,11 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
         dumpUtilityIndexToFileAndClearFromMemory(filePath);
       }
     }
-    
-    System.out.println("Finished indexing document id: " + docId);
   }
 
-  /**
-   * In HW2, you should be using {@link DocumentIndexed}.
-   */
+    /**
+     * In HW2, you should be using {@link DocumentIndexed}.
+     */
   @Override
   public Document nextDoc(Query query, int docid) {
 	// 3 cases to handle:
