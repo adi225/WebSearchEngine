@@ -3,6 +3,8 @@ package edu.nyu.cs.cs2580;
 import java.io.*;
 import java.util.*;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import de.l3s.boilerpipe.extractors.ArticleExtractor;
 
@@ -15,10 +17,11 @@ import edu.nyu.cs.cs2580.FileUtils.FileRange;
 public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
-  private static final String WORDS_DIR = "/partials";
+  private static final String WORDS_DIR = "/.partials";
   private static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
 
   private RandomAccessFile _indexRAF;
+  private final String indexFilePath = _options._indexPrefix + "/index.idx";
 
   // Utility index is only used during index construction.
   private Map<Integer, List<Integer>> _utilityIndex = new HashMap<Integer, List<Integer>>();
@@ -36,10 +39,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   
   // Maps each term to its integer representation
-  private Map<String, Integer> _dictionary = new HashMap<String, Integer>();
-
-  // All unique terms appeared in corpus. Offsets are integer representations.
-  private Vector<String> _terms = new Vector<String>();
+  private BiMap<String, Integer> _dictionary = HashBiMap.create();
 
   // Term frequency, key is the integer representation of the term and value is
   // the number of times the term appears in the corpus.
@@ -53,12 +53,11 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   @Override
   public void constructIndex() throws IOException {
 	System.out.println("Construct index from: " + _options._corpusPrefix);
-
-    File indexFile = new File(_options._indexPrefix + "/index.idx");
+    File indexFile = new File(indexFilePath);
     File indexAuxFile = new File(indexFile.getAbsolutePath() + "_aux");
     if(indexFile.exists()) {
       indexFile.delete();
-      indexFile = new File(_options._indexPrefix + "/index.idx");
+      indexFile = new File(indexFilePath);
     }
     if(indexAuxFile.exists()) {
       indexAuxFile.delete();
@@ -127,7 +126,6 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     // Add metadata to file.
     List<Object> indexMetadata = new ArrayList<Object>();
     indexMetadata.add(_documents);
-    indexMetadata.add(_terms);
     indexMetadata.add(_dictionary);
     indexMetadata.add(_termCorpusFrequency);
 
@@ -141,14 +139,13 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
 
   @Override
   public void loadIndex() throws IOException, ClassNotFoundException {
-    File indexFile = new File(_options._indexPrefix + "/index.idx");
+    File indexFile = new File(indexFilePath);
     List<Object> indexMetadata = new ArrayList<Object>();
     DataInputStream indexFileDIS = new DataInputStream(new FileInputStream(indexFile));
     long bytesRead = FileUtils.readObjectsFromFileIntoList(indexFileDIS, indexMetadata);
     _documents           = (Vector<DocumentIndexed>)indexMetadata.get(0);
-    _terms               = (Vector<String>)indexMetadata.get(1);
-    _dictionary          = (Map<String, Integer>)indexMetadata.get(2);
-    _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(3);
+    _dictionary          = (BiMap<String, Integer>)indexMetadata.get(1);
+    _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
     bytesRead += FileUtils.loadFromFileIntoIndex(indexFileDIS, _index);
     indexFileDIS.close();
     _indexOffset = bytesRead;
@@ -219,11 +216,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
         idx = _dictionary.get(token);
         _termCorpusFrequency.put(idx, _termCorpusFrequency.get(idx) + 1);
       } else {
-        idx = _terms.size();  // offsets are the integer representations
         idx = _dictionary.keySet().size();
-        // TODO Do we need _terms? Isn't it equal to the set of keys in _dictionary?
-        // Need _terms in order to convert the integer representation back to String
-        _terms.add(token);
         _dictionary.put(token, idx);
         _termCorpusFrequency.put(idx, 1);
       }
@@ -335,7 +328,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     List<Integer> postingsList = new LinkedList<Integer>();
     FileRange fileRange = _index.get(word);
     _indexRAF.seek(_indexOffset + fileRange.offset);
-    for(int i = 0; i < fileRange.length; i++) {
+    for(int i = 0; i < fileRange.length / 4; i++) {
       postingsList.add(_indexRAF.readInt());
     }
     return postingsList;
