@@ -1,7 +1,9 @@
 package edu.nyu.cs.cs2580;
 
 import java.io.*;
+import java.text.Normalizer;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -234,6 +236,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   public Vector<Integer> processDocument(Document doc, String text) throws BoilerpipeProcessingException, SAXException {
     text = removeNonVisibleContext(doc, text);  // step 1 of document processing
     text = removeInitialsDots(text);
+    text = deAccent(text);
     text = removePunctuation(text).toLowerCase();
     return readTermVector(text);
   }
@@ -268,6 +271,12 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     str=str.replaceAll("(?i)^(([a-z]) ([a-z]))($| )", "$2$3"+" ").trim();
     str=str.replaceAll("(?i)(?<= )(([a-z]) ([a-z]))($| )", "$2$3"+" ").trim();
     return str;
+  }
+
+  private String deAccent(String str) {
+    String nfdNormalizedString = Normalizer.normalize(str, Normalizer.Form.NFD);
+    Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+    return pattern.matcher(nfdNormalizedString).replaceAll("");
   }
 
   /**
