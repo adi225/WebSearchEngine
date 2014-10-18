@@ -5,10 +5,8 @@ import java.util.*;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import de.l3s.boilerpipe.BoilerpipeExtractor;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import de.l3s.boilerpipe.extractors.ArticleExtractor;
-
 import edu.nyu.cs.cs2580.FileUtils.FileRange;
 
 /**
@@ -101,13 +99,13 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
         System.out.println("Finished indexing document id: " + docId);
       }
 
-      precomputeSquareTFIDFSum(docBodies);
-
       // dump any leftover partial index
       if(_utilityIndexFlatSize > 0) {
         dumpUtilityIndexToFileAndClearFromMemory(
                 _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++);
       }
+
+      precomputeSquareTFIDFSum(docBodies);
     } else {
         throw new IOException("Invalid directory.");
     }
@@ -203,7 +201,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   public Vector<Integer> processDocument(String text) throws BoilerpipeProcessingException {
     text = removeNonVisibleContext(text);  // step 1 of document processing
     text = removePunctuation(text).toLowerCase();
-    text = performStemming(text);  // step 2 of document processing
     return readTermVector(text);
   }
 
@@ -216,6 +213,10 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     setLoadedMetadata(indexMetadata);
     bytesRead += FileUtils.loadFromFileIntoIndex(indexFileDIS, _index);
     indexFileDIS.close();
+    _numDocs = _documents.size();
+    for(int freq: _termCorpusFrequency.keySet()) {
+      _totalTermFrequency += freq;
+    }
     _indexOffset = bytesRead;
     _indexRAF = new RandomAccessFile(indexFile, "r");
     _indexRAF.seek(_indexOffset);
@@ -228,15 +229,19 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   }
 
   public String removePunctuation(String text) {
+    // text = text.replaceAll("(\\w\\.)+", "\1+");
     return text.replaceAll("[^a-zA-Z0-9\n]", " ");
     // TODO Treat abbreviation specially (I.B.M.)
-    // TODO Think about how to treat hyphen. Ex: peer-to-peer, live-action, 978-0-06-192691-4, 1998-2002
     // TODO Think about accented characters.
   }
   
   // Tokens are stemmed with Step 1 of the Porter's algorithm.
   public String performStemming(String text){
-	  return text;
+    Stemmer stemmer = new Stemmer();
+    stemmer.add(text.toCharArray(), text.length());
+    stemmer.stem();
+	String result = stemmer.toString();
+    return text;
   }
 
   /**
@@ -249,6 +254,8 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     Scanner s = new Scanner(content);  // Uses white space by default.
     while (s.hasNext()) {
       String token = s.next();
+      token = performStemming(token);
+
       int idx = -1;
       if (_dictionary.containsKey(token)) {
         idx = _dictionary.get(token);
