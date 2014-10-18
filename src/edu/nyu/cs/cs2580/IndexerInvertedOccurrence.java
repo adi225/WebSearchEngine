@@ -280,14 +280,6 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
   // This method returns the next position of the phrase after pos within the docid.
   public int nextPhrase(String phrase, List<String> phraseTokens, int docid, int pos){
 	  // need to pass the phrase portion into the query
-//	  Query query = new Query(""); // put the phrase information here
-//	  query.processQuery();
-	  Query tempQuery = new Query(phrase);
-	  tempQuery.processQuery();
-	  Document docVerify = nextDocConjunctive(tempQuery, docid-1);
-	  if(docVerify == null){
-		  return -1;  // if the document does not contain all the terms, then there is certainly no phrase
-	  }
 	  
 	  List<Integer> positions = new ArrayList<Integer>();
 	  int maxPosition = Integer.MIN_VALUE;
