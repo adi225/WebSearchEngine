@@ -51,6 +51,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   public IndexerInverted(SearchEngine.Options options) {
     super(options);
   }
+
   @Override
   public void constructIndex() throws IOException {
 	System.out.println("Construct index from: " + _options._corpusPrefix);
@@ -114,7 +115,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       String filePath2 = filePathBase + i;
       Map<Integer, FileRange> tempIndex = new HashMap<Integer, FileRange>();
       resFilePath = filePath1 + i;
-      System.gc();
       System.out.println("Merging file #" + i);
       long offset = FileUtils.mergeFilesIntoIndexAndFile(filePath1, filePath2, tempIndex, resFilePath);
       filePath1 = resFilePath;
@@ -230,7 +230,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     FileUtils.dumpIndexToFile(_utilityIndex, new File(filePath));
     _utilityIndex = new HashMap<Integer, List<Integer>>();
     _utilityIndexFlatSize = 0;
-    System.gc();
   }
 
   // This method may be deprecated in later versions. Use with caution!
