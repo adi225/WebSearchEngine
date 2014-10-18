@@ -5,9 +5,16 @@ import java.util.*;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Lists;
+import de.l3s.boilerpipe.BoilerpipeInput;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
+import de.l3s.boilerpipe.document.TextBlock;
+import de.l3s.boilerpipe.document.TextDocument;
 import de.l3s.boilerpipe.extractors.ArticleExtractor;
+import de.l3s.boilerpipe.sax.BoilerpipeSAXInput;
+import de.l3s.boilerpipe.sax.HTMLDocument;
 import edu.nyu.cs.cs2580.FileUtils.FileRange;
+import org.xml.sax.SAXException;
 
 /**
  * @CS2580: Implement this class for HW2.
@@ -94,17 +101,14 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
         try {
           // process the raw content of the document and build maps
-          Vector<Integer> processedBody = processDocument(text.toString());
+          Vector<Integer> processedBody = processDocument(docIndexed, text.toString());
           updatePostingsLists(docId, processedBody);
           docBodies.put(docId, processedBody);
-        } catch (BoilerpipeProcessingException e) {
+        } catch (BoilerpipeProcessingException | SAXException e) {
           throw new IOException("File format could not be processed by Boilerplate.");
         }
         System.out.println("Finished indexing document id: " + docId);
       }
-
-      populateStoppingWords();
-      precomputeSquareTFIDFSum(docBodies);
 
       // dump any leftover partial index
       if(_utilityIndexFlatSize > 0) {
@@ -112,6 +116,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
                 _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++);
       }
 
+      populateStoppingWords();
       precomputeSquareTFIDFSum(docBodies);
     } else {
         throw new IOException("Invalid directory.");
@@ -210,8 +215,8 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
   // TODO No stop word is removed, you need to dynamically determine whether to drop the processing of a certain inverted list.
 
-  public Vector<Integer> processDocument(String text) throws BoilerpipeProcessingException {
-    text = removeNonVisibleContext(text);  // step 1 of document processing
+  public Vector<Integer> processDocument(Document doc, String text) throws BoilerpipeProcessingException, SAXException {
+    text = removeNonVisibleContext(doc, text);  // step 1 of document processing
     text = removePunctuation(text).toLowerCase();
     return readTermVector(text);
   }
@@ -236,8 +241,12 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
   // Non-visible page content is removed, e.g., those inside <script> tags.
   // Right now, the 3rd party library "BoilerPiper" is used to perform the task.
-  public String removeNonVisibleContext(String text) throws BoilerpipeProcessingException {
-	return ArticleExtractor.INSTANCE.getText(text);
+  public String removeNonVisibleContext(Document document, String text) throws BoilerpipeProcessingException, SAXException {
+    HTMLDocument htmlDoc = new HTMLDocument(text);
+    BoilerpipeSAXInput boilerpipeSaxInput = new BoilerpipeSAXInput(htmlDoc.toInputSource());
+    TextDocument doc = boilerpipeSaxInput.getTextDocument();
+    document.setTitle(doc.getTitle());
+    return ArticleExtractor.INSTANCE.getText(text);
   }
 
   public String removePunctuation(String text) {
@@ -252,8 +261,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     Stemmer stemmer = new Stemmer();
     stemmer.add(text.toCharArray(), text.length());
     stemmer.stem();
-	String result = stemmer.toString();
-    return text;
+	return stemmer.toString();
   }
 
   /**
