@@ -225,7 +225,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     bytesRead += FileUtils.loadFromFileIntoIndex(indexFileDIS, _index);
     indexFileDIS.close();
     _numDocs = _documents.size();
-    for(int freq: _termCorpusFrequency.keySet()) {
+    for(int freq: _termCorpusFrequency.values()) {
       _totalTermFrequency += freq;
     }
     _indexOffset = bytesRead;
