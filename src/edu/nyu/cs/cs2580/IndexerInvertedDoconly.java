@@ -45,6 +45,9 @@ public class IndexerInvertedDoconly extends IndexerInverted {
     try {
       List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
       for(String token : query._tokens){
+    	if(_stoppingWords.contains(token)){  // skip processing a stop word
+    		continue;
+    	}
         int docID = next(token,docid);
         if(docID == -1){
           return null;
