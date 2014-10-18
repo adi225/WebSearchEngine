@@ -44,6 +44,10 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   // the number of times the term appears in the corpus.
   protected Map<Integer, Integer> _termCorpusFrequency = new HashMap<Integer, Integer>();
 
+  // The set contains stopping words, corresponding to the top 50 most frequent words in a corpus.
+  // Set to "public static" so that Query and QueryPhrase can get access.
+  public static Set<String> _stoppingWords = new HashSet<String>();
+  
   // Provided for serialization.
   public IndexerInverted() { }
 
@@ -101,6 +105,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
         System.out.println("Finished indexing document id: " + docId);
       }
 
+      populateStoppingWords();
       precomputeSquareTFIDFSum(docBodies);
 
       // dump any leftover partial index
@@ -148,6 +153,11 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     //System.out.println("Total document processing time: " + timeTaken + " min");
     //System.out.println("Total partial index dumping time: " + timeTaken + " min");
     System.out.println("Total partial index merging time: " + mergingTime + " min");
+  }
+  
+  // This method populates the top 50 most frequent words into _stoppingWords.
+  private void populateStoppingWords(){
+	  
   }
 
   private void precomputeSquareTFIDFSum(Map<Integer, Vector<Integer>> docBodies) {

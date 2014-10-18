@@ -30,7 +30,10 @@ public class Query {
     }
     Scanner s = new Scanner(_query);
     while (s.hasNext()) {
-      _tokens.add(s.next());
+      String token = s.next();
+      if(!IndexerInverted._stoppingWords.contains(token)){  // if token is not a stopping word, add it to _tokens
+        _tokens.add(token);
+      }
     }
     s.close();
   }
