@@ -35,13 +35,11 @@ public class IndexerInvertedDoconly extends IndexerInverted {
 
   /**
    * In HW2, you should be using {@link DocumentIndexed}
-   * @throws IOException
    */
   // This implementation follows that in the lecture 3 slide, page 13.
   @Override
   public Document nextDoc(Query query, int docid) {
     // Assuming that the query has already been processed.
-    // query.processQuery();
     try {
       List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
       for(String token : query._tokens){
@@ -73,9 +71,8 @@ public class IndexerInvertedDoconly extends IndexerInverted {
       }
 
       return nextDoc(query,docIDNew-1);
-    } catch (IOException e) {
-      return null;
-    }
+    } catch (IOException e) {}
+    return null;
   }
 
   // Just like in the lecture slide 3, page 14, this helper method returns the next document id
@@ -100,27 +97,23 @@ public class IndexerInvertedDoconly extends IndexerInverted {
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    try{
-      int termInt = _dictionary.get(term);  // an integer representation of a term
-
-      List<Integer> postingList = postingsListForWord(termInt);
-
-      return postingList.size();
-    }
-    catch(Exception e){
-      return 0;
-    }
+    try {
+      if (_dictionary.containsKey(term)) {
+        int termInt = _dictionary.get(term);  // an integer representation of a term
+        List<Integer> postingList = postingsListForWord(termInt);
+        return postingList.size();
+      }
+    } catch (IOException e) {}
+    return 0;
   }
 
   @Override
   public int corpusTermFrequency(String term) {
-    try{
+    if(_dictionary.containsKey(term)) {
       int termInt = _dictionary.get(term);  // an integer representation of a term
       return _termCorpusFrequency.get(termInt);
     }
-    catch(NullPointerException e){
-      return 0;
-    }
+    return 0;
   }
 
   // Need not be implemented because the information is not available in the index.
