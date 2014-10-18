@@ -349,8 +349,14 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    int word = _dictionary.get(term);
-    return _corpusDocFrequencyByTerm.get(word);
+	try{
+	    int word = _dictionary.get(term);
+	    return _corpusDocFrequencyByTerm.get(word);		
+	}
+	catch(Exception e){
+		return 0;
+	}
+
   }
 
   @Override
