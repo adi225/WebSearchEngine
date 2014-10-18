@@ -213,14 +213,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
   }
 
-  // TODO No stop word is removed, you need to dynamically determine whether to drop the processing of a certain inverted list.
-
-  public Vector<Integer> processDocument(Document doc, String text) throws BoilerpipeProcessingException, SAXException {
-    text = removeNonVisibleContext(doc, text);  // step 1 of document processing
-    text = removePunctuation(text).toLowerCase();
-    return readTermVector(text);
-  }
-
   @Override
   public void loadIndex() throws IOException, ClassNotFoundException {
     File indexFile = new File(indexFilePath);
@@ -237,6 +229,13 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     _indexOffset = bytesRead;
     _indexRAF = new RandomAccessFile(indexFile, "r");
     _indexRAF.seek(_indexOffset);
+  }
+
+  public Vector<Integer> processDocument(Document doc, String text) throws BoilerpipeProcessingException, SAXException {
+    text = removeNonVisibleContext(doc, text);  // step 1 of document processing
+    text = removeInitialsDots(text);
+    text = removePunctuation(text).toLowerCase();
+    return readTermVector(text);
   }
 
   // Non-visible page content is removed, e.g., those inside <script> tags.
@@ -262,6 +261,13 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     stemmer.add(text.toCharArray(), text.length());
     stemmer.stem();
 	return stemmer.toString();
+  }
+
+  private String removeInitialsDots(String str) {
+    str=str.replaceAll("(?i)(^([a-z])\\.|(?<= )([a-z])\\.|(?<=\\.)([a-z])\\.)", "$2$3$4").trim();
+    str=str.replaceAll("(?i)^(([a-z]) ([a-z]))($| )", "$2$3"+" ").trim();
+    str=str.replaceAll("(?i)(?<= )(([a-z]) ([a-z]))($| )", "$2$3"+" ").trim();
+    return str;
   }
 
   /**
