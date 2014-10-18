@@ -98,7 +98,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
      * In HW2, you should be using {@link DocumentIndexed}.
      */
   @Override
-  public Document nextDoc(Query query, int docid) 
+  public Document nextDoc(Query query, int docid)
   {
 	// 3 cases to handle:
 	// 1.) query containing only conjunctive terms (easily dealt with nextDocConjunctive)
@@ -346,58 +346,55 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    int word = _dictionary.get(term);
-    return _corpusDocFrequencyByTerm.get(word);
+    if(_dictionary.containsKey(term)) {
+      int word = _dictionary.get(term);
+      return _corpusDocFrequencyByTerm.get(word);
+    }
+    return 0;
   }
 
   @Override
   public int corpusTermFrequency(String term) {
-    try{
-      int termInt = _dictionary.get(term);  // an integer representation of a term
-      return _termCorpusFrequency.get(termInt);
+    if(_dictionary.containsKey(term)) {
+      int word = _dictionary.get(term);  // an integer representation of a term
+      return _termCorpusFrequency.get(word);
     }
-    catch(NullPointerException e){
-      return 0;
-    }
+    return 0;
   }
 
   @Override
   public int documentTermFrequency(String term, String url) {
-    //SearchEngine.Check(_dictionary.containsKey(term), "The term "+term+" does not exist in corpus.");
-	  
-    // Assuming that the given url is valid. (Needs to handle later otherwise)
-    int docId = mapUrlToDocId(url);  // get docid from url here, should we have a mapping from url to docid?
+    // TODO get docid from url here, should we have a mapping from url to docid?
+    int docId = mapUrlToDocId(url);
+    if(docId < 0 || !_dictionary.containsKey(term)) return 0;
     int termId = _dictionary.get(term);
     
     try {
-		List<Integer> postingList = postingsListForWord(termId);
-	    int termFrequency = 0;
-	    int occurrenceIndex = 1;  // the first index of occurrence position in the list
-	    while(occurrenceIndex < postingList.size()){
-	    	int docIndex = occurrenceIndex - 1;
-			if(postingList.get(docIndex) > docId){
-			  return 0;
-			}
-	    	int occurrence = postingList.get(occurrenceIndex);
-	    	if(postingList.get(docIndex) == docId){
-	    		return occurrence;
-	    	}
-	    	occurrenceIndex += occurrence + 2;  // jump to the next occurrence position
-	    }
-		
-	} catch (Exception e) {
-		return 0;
-	}
+      List<Integer> postingList = postingsListForWord(termId);
+      int termFrequency = 0;
+      int occurrenceIndex = 1;  // the first index of occurrence position in the list
+      while(occurrenceIndex < postingList.size()){
+        int docIndex = occurrenceIndex - 1;
+        if(postingList.get(docIndex) > docId){
+          return 0;
+        }
+        int occurrence = postingList.get(occurrenceIndex);
+        if(postingList.get(docIndex) == docId){
+          return occurrence;
+        }
+        occurrenceIndex += occurrence + 2;  // jump to the next occurrence position
+      }
+	} catch (IOException e) {}
     return 0;
   }
   
   // This method returns the corresponding docid of the given url.
-  public int mapUrlToDocId(String url){
-	  for(Document doc : _documents){
-		  if(doc.getUrl().equals(url)){
-			  return doc._docid;
-		  }
-	  }
-	  return -1;
+  public int mapUrlToDocId(String url) {
+    for(Document doc : _documents){
+      if(doc.getUrl().equals(url)){
+        return doc._docid;
+      }
+    }
+    return -1;
   }
 }
