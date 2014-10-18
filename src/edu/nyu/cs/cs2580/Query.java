@@ -25,6 +25,9 @@ public class Query {
     if (_query == null) {
       return;
     }
+    if(_tokens.size() > 0){
+      return;
+    }
     Scanner s = new Scanner(_query);
     while (s.hasNext()) {
       _tokens.add(s.next());
