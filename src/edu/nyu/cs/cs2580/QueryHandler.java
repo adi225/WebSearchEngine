@@ -167,12 +167,10 @@ class QueryHandler implements HttpHandler {
     String uriQuery = exchange.getRequestURI().getQuery();
     String uriPath = exchange.getRequestURI().getPath();
     if (uriPath == null || uriQuery == null) {
-        respondWithMsg(exchange, "Something wrong with the URI!");
+      respondWithMsg(exchange, "Something wrong with the URI!");
     } else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack")) {
-        respondWithMsg(exchange, "Only /search is handled!");
-    }
-    else if(uriPath.equalsIgnoreCase("/clicktrack")) 
-    {
+      respondWithMsg(exchange, "Only /search is handled!");
+    } else if(uriPath.equalsIgnoreCase("/clicktrack")) {
 
       // writing out to files
       String logFileName = "hw2.4-log.tsv";
@@ -198,48 +196,47 @@ class QueryHandler implements HttpHandler {
       exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
       exchange.getResponseBody().close();
       return;
+    } else {
+      System.out.println("Query: " + uriQuery);
+
+      // Process the CGI arguments.
+      CgiArguments cgiArgs = new CgiArguments(uriQuery);
+      if (cgiArgs._query.isEmpty()) {
+          respondWithMsg(exchange, "No query is given!");
       }
-    else
-    {
-    System.out.println("Query: " + uriQuery);
 
-    // Process the CGI arguments.
-    CgiArguments cgiArgs = new CgiArguments(uriQuery);
-    if (cgiArgs._query.isEmpty()) {
-        respondWithMsg(exchange, "No query is given!");
-    }
+      // Create the ranker.
+      Ranker ranker = Ranker.Factory.getRankerByArguments(cgiArgs, SearchEngine.OPTIONS, _indexer);
+      if (ranker == null) {
+          respondWithMsg(exchange, "Ranker " + cgiArgs._rankerType.toString() + " is not valid!");
+      }
 
-    // Create the ranker.
-    Ranker ranker = Ranker.Factory.getRankerByArguments(cgiArgs, SearchEngine.OPTIONS, _indexer);
-    if (ranker == null) {
-        respondWithMsg(exchange, "Ranker " + cgiArgs._rankerType.toString() + " is not valid!");
-    }
+      // Processing the query - check if we have exact match
+      // TODO Remove dependency on implementation.
+      Query processedQuery;
+      if(cgiArgs._query.indexOf('"') == -1)
+          processedQuery = new Query(cgiArgs._query);
+      else
+          processedQuery = new QueryPhrase(cgiArgs._query);
 
-    // Processing the query - check if we have exact match
-    Query processedQuery;
-    if(cgiArgs._query.indexOf('"') == -1)
-    	processedQuery = new Query(cgiArgs._query);
-    else
-    	processedQuery = new QueryPhrase(cgiArgs._query);
-    
-    processedQuery.processQuery();
+      processedQuery.processQuery();
 
-    // Ranking.
-    Vector<ScoredDocument> scoredDocs = ranker.runQuery(processedQuery, cgiArgs._numResults);
-    StringBuffer response = new StringBuffer();
-    switch (cgiArgs._outputFormat) {
-        case TEXT:
-            constructTextOutput(scoredDocs, response);
-            respondWithMsg(exchange, response.toString());
-            break;
-        case HTML:
-        	constructHTMLOutput(scoredDocs, response, cgiArgs._query);
-        	respondWithHTML(exchange, response.toString());
-            break;
-        default:
-            // nothing
-    }
-    System.out.println("Finished query: " + cgiArgs._query);
+      // Ranking.
+      Vector<ScoredDocument> scoredDocs = ranker.runQuery(processedQuery, cgiArgs._numResults);
+      StringBuffer response = new StringBuffer();
+      switch (cgiArgs._outputFormat) {
+          case TEXT:
+              constructTextOutput(scoredDocs, response);
+              respondWithMsg(exchange, response.toString());
+              break;
+          case HTML:
+              constructHTMLOutput(scoredDocs, response, cgiArgs._query);
+              respondWithHTML(exchange, response.toString());
+              break;
+          default:
+              // nothing
+      }
+      System.out.println("Finished query: " + cgiArgs._query);
     }
   }
   }

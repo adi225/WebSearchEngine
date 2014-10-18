@@ -15,7 +15,7 @@ import java.util.Vector;
  */
 public class QueryPhrase extends Query {
 
-	public Map<String, List<String>> _phrases = new HashMap<String, List<String>>();
+  public Map<String, List<String>> _phrases = new HashMap<String, List<String>>();
 	
   public QueryPhrase(String query) {
     super(query);
@@ -23,104 +23,88 @@ public class QueryPhrase extends Query {
 
   @Override
   public void processQuery() {
-	  
-	  if(_query == null)
-		  return;
-	  
-	  int count = 0;
-	  for (int i = 0; i < _query.length(); i++)
-	      if (_query.charAt(i) == '"')
-	          count++;
-	  
-	  if(count == 0)
-	  {
-		  /* How did we get here? this is a regular query */
-		  return;
-	  }
-	  else if(count % 2 == 0)
-	  {
-		  /* We have an even number of " */
-		  boolean inQuotes = false;
-		  String inQuotesString = "";
-		  for(int i = 0; i<_query.length(); i++)
-		  {
-			  char c = _query.charAt(i);
-			  if(c == '"' && inQuotes)
-			  {
-				  Scanner s = new Scanner(inQuotesString);
-				  List<String> phraseTokens = new ArrayList<String>();
-				    while (s.hasNext()) 
-				    {
-				    	//if(!IndexerInverted._stoppingWords.contains(s.next()))
-				    		phraseTokens.add(s.next());
-				    }
-				    s.close();
-				    
-				 _phrases.put(inQuotesString, phraseTokens);
-				 
-				 inQuotes = false;
-				 inQuotesString = "";
-			  }
-			  else if (c == '"' && !inQuotes)
-			  {
-				  /* just starting a new string */
-				  if(inQuotesString != null && !inQuotesString.equals(""))
-				  {
-					  Scanner s = new Scanner(inQuotesString);
-					    while (s.hasNext()) 
-					    {
-					    	//if(!IndexerInverted._stoppingWords.contains(s.next()))
-					    		_tokens.add(s.next());
-					    }
-					    s.close();
-				  }
-				  
-				  inQuotes = true;
-				  inQuotesString = "";
-			  }
-			  else
-			  {
-				  /* Just a regular character */
-				  inQuotesString += c;
-			  }
-		  }
-		  
-		  Scanner s = new Scanner(inQuotesString);
-		    while (s.hasNext()) 
-		    {
-		    	//if(!IndexerInverted._stoppingWords.contains(s.next()))
-		    		_tokens.add(s.next());
-		    }
-		    s.close();
-	  }
-	  else
-	  {
-		  /* Pretend that the user forgot to close the " and count towards the end */
-		  int index = _query.indexOf('"');
-		  String querySubString = _query.substring(index+1);
-		  Scanner s = new Scanner(querySubString);
-		  Vector<String> phraseTokens = new Vector<String>();
-		    while (s.hasNext()) 
-		    {
-		    	//if(!IndexerInverted._stoppingWords.contains(s.next()))
-		    		phraseTokens.add(s.next());
-		    }
-		    s.close();
-		    
-		 _phrases.put(querySubString, phraseTokens);
-		 
-		 if(index != 0)
-		 {
-		  s = new Scanner(_query.substring(0, index-1));
-		    while (s.hasNext()) 
-		    {
-		    	//if(!IndexerInverted._stoppingWords.contains(s.next()))
-		    		_tokens.add(s.next());
-		    }
-		    s.close();
-		 }
-	  }
-	  
-	  
+    if(_query == null) {
+      return;
+    }
+
+    int count = 0;
+    for (int i = 0; i < _query.length(); i++) {
+      if (_query.charAt(i) == '"') {
+        count++;
+      }
+    }
+
+    if(count == 0) {
+      /* How did we get here? this is a regular query */
+      return;
+    } else if(count % 2 == 0) {
+      /* We have an even number of " */
+      boolean inQuotes = false;
+      // TODO Maybe use StringBuilder instead for mutability.
+      String inQuotesString = "";
+      for(int i = 0; i < _query.length(); i++) {
+        char c = _query.charAt(i);
+        if(c == '"' && inQuotes) {
+          Scanner s = new Scanner(inQuotesString);
+          List<String> phraseTokens = new ArrayList<String>();
+          while (s.hasNext()) {
+            //if(!IndexerInverted._stoppingWords.contains(s.next()))
+            phraseTokens.add(s.next());
+          }
+          s.close();
+
+          _phrases.put(inQuotesString, phraseTokens);
+
+          inQuotes = false;
+          inQuotesString = "";
+        } else if (c == '"' && !inQuotes) {
+          /* just starting a new string */
+          if(!inQuotesString.isEmpty()) {
+            Scanner s = new Scanner(inQuotesString);
+            // TODO Maybe use super()?
+            while (s.hasNext()) {
+              //if(!IndexerInverted._stoppingWords.contains(s.next()))
+              _tokens.add(s.next());
+            }
+            s.close();
+          }
+
+          inQuotes = true;
+          inQuotesString = "";
+        } else {
+          /* Just a regular character */
+          inQuotesString += c;
+        }
+      }
+
+      Scanner s = new Scanner(inQuotesString);
+      while (s.hasNext()) {
+        //if(!IndexerInverted._stoppingWords.contains(s.next()))
+        _tokens.add(s.next());
+      }
+      s.close();
+    } else {
+      /* Pretend that the user forgot to close the " and count towards the end */
+      int index = _query.indexOf('"');
+      String querySubString = _query.substring(index + 1);
+      Scanner s = new Scanner(querySubString);
+      Vector<String> phraseTokens = new Vector<String>();
+      while (s.hasNext()) {
+        //if(!IndexerInverted._stoppingWords.contains(s.next()))
+        phraseTokens.add(s.next());
+      }
+      s.close();
+
+      _phrases.put(querySubString, phraseTokens);
+
+      if(index != 0) {
+        s = new Scanner(_query.substring(0, index - 1));
+        while (s.hasNext()) {
+          //if(!IndexerInverted._stoppingWords.contains(s.next()))
+          _tokens.add(s.next());
+        }
+        s.close();
+      }
+    }
   }
 }

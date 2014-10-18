@@ -18,6 +18,7 @@ public class Query {
   public Vector<String> _tokens = new Vector<String>();
 
   public Query(String query) {
+    // TODO Do not process on creation. (need more processing too)
     _query = performStemming(query);
   }
 
@@ -31,6 +32,7 @@ public class Query {
     Scanner s = new Scanner(_query);
     while (s.hasNext()) {
       String token = s.next();
+      // TODO Do not use public access to stopping words.
       if(!IndexerInverted._stoppingWords.contains(token)){  // if token is not a stopping word, add it to _tokens
         _tokens.add(token);
       }
@@ -43,6 +45,7 @@ public class Query {
 	    stemmer.add(text.toCharArray(), text.length());
 	    stemmer.stem();
 		String result = stemmer.toString();
+    // TODO This is a bug. Return result, not text.
 	    return text;
 	  }
 }
