@@ -71,6 +71,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     File[] directoryListing = dir.listFiles();
 
     if (directoryListing != null) {
+      Map<Integer, Vector<Integer>> docBodies = new HashMap<Integer, Vector<Integer>>();
       for (File docFile : directoryListing) {
         StringBuffer text = new StringBuffer();  // the original text of the document
 
@@ -84,17 +85,23 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
         // adding an indexed document
         int docId = _numDocs++;     // the current number of doc is ID for the current document
-        Document docIndexed = new Document(docId);
+        Document docIndexed = new DocumentIndexed(docId);
         docIndexed.setTitle(docFile.getName());
         docIndexed.setUrl(docFile.getAbsolutePath());
         _documents.add(docIndexed);
 
         try {
-          processDocument(docId, text.toString());  // process the raw context of the document
+          // process the raw content of the document and build maps
+          Vector<Integer> processedBody = processDocument(text.toString());
+          updatePostingsLists(docId, processedBody);
+          docBodies.put(docId, processedBody);
         } catch (BoilerpipeProcessingException e) {
           throw new IOException("File format could not be processed by Boilerplate.");
         }
+        System.out.println("Finished indexing document id: " + docId);
       }
+
+      precomputeSquareTFIDFSum(docBodies);
 
       // dump any leftover partial index
       if(_utilityIndexFlatSize > 0) {
@@ -143,6 +150,40 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     System.out.println("Total partial index merging time: " + mergingTime + " min");
   }
 
+  private void precomputeSquareTFIDFSum(Map<Integer, Vector<Integer>> docBodies) {
+    // Precompute squared tfidf sum of documents.
+    System.out.println("Precomputing cosine ranker data.");
+    for(int docId = 0; docId < _numDocs; docId++) {
+      if(docId % 1000 == 0) {
+        System.out.println("Finished precomputing cosine ranker data for " + docId + " documents.");
+      }
+      DocumentIndexed doc = (DocumentIndexed) this.getDoc(docId);
+      Vector<Integer> docBody = docBodies.get(docId);
+      docBodies.remove(docId);
+
+      Map<Integer, Integer> documentMap = new HashMap<Integer, Integer>();
+      for(int word : docBody) {
+        if(documentMap.containsKey(word)) {
+          documentMap.put(word, documentMap.get(word) + 1);
+        } else {
+          documentMap.put(word, 1);
+        }
+      }
+
+      // we precompute sum(tfidf^2)
+      double d_sqr = 0;
+      double idf, tf_d, tfidf_d;
+      for(int word : documentMap.keySet()) {
+        String wordString = _dictionary.inverse().get(word);
+        idf = 1 + Math.log(((double)_numDocs) / corpusDocFrequencyByTerm(wordString)) / Math.log(2);
+        tf_d = documentMap.get(word);
+        tfidf_d = tf_d * idf;  // tfidf of term in document
+        d_sqr += tfidf_d * tfidf_d; // computing sum(y^2) term of cosine similarity
+      }
+      doc.setTfidfSumSquared(d_sqr);
+    }
+  }
+
   protected List<Object> selectMetadataToStore() {
     List<Object> indexMetadata = new ArrayList<Object>();
     indexMetadata.add(_documents);
@@ -159,16 +200,11 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
   // TODO No stop word is removed, you need to dynamically determine whether to drop the processing of a certain inverted list.
 
-  public void processDocument(int docId, String text) throws IOException, BoilerpipeProcessingException {
+  public Vector<Integer> processDocument(String text) throws BoilerpipeProcessingException {
     text = removeNonVisibleContext(text);  // step 1 of document processing
     text = removePunctuation(text).toLowerCase();
     text = performStemming(text);  // step 2 of document processing
-
-    Vector<Integer> docTokensAsIntegers = readTermVector(text);
-
-    updatePostingsLists(docId, docTokensAsIntegers);
-
-    System.out.println("Finished indexing document id: " + docId);
+    return readTermVector(text);
   }
 
   @Override

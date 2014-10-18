@@ -75,7 +75,7 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
 
       int bytesWritten = postingList.size() - postingListInitialSize;
 
-      _utilityIndexFlatSize += bytesWritten;
+      _utilityIndexFlatSize += bytesWritten / 2;
       occurences.put(word, null);
 
       if(_utilityIndexFlatSize > UTILITY_INDEX_FLAT_SIZE_THRESHOLD) {

@@ -80,7 +80,7 @@ public class RankerCosine extends Ranker {
         Vector<String> docTokens = null;
         
 
-        double score = 0, q_sqr = 0, d_sqr = 0;
+        double score = 0, q_sqr = 0;
         int n = _indexer.numDocs();
         double idf, tf_q, tf_d, tfidf_q, tfidf_d;
 
@@ -93,20 +93,6 @@ public class RankerCosine extends Ranker {
                 queryMap.put(word, 1);
             }
         }
-        
-        // builds map of document word frequency
-        Set<Integer> uniqueBodyTokens = doc.getUniqueBodyTokens();
-        Map<String, Integer> documentMap = new HashMap<String, Integer>();
-//        for(String word : docTokens) {
-//            if(documentMap.containsKey(word)) {
-//                documentMap.put(word, documentMap.get(word) + 1);
-//            } else {
-//                documentMap.put(word, 1);
-//            }
-//        }
-        for(Integer termId : uniqueBodyTokens){
-        	
-        }
 
         // iterates over all words in query
         for(String word : queryMap.keySet()) {
@@ -117,15 +103,9 @@ public class RankerCosine extends Ranker {
             tfidf_d = tf_d * idf;  // tfidf of term in document
             q_sqr += tfidf_q * tfidf_q;  // computing sum(x^2) term of cosine similarity
             score += tfidf_q * tfidf_d;  // computing sum(x*y) term of cosine similarity
-        } 
-
-        // we count sum(y^2) separately so that we include all words in document
-        for(String word : documentMap.keySet()) {
-            idf = 1 + Math.log(n / _indexer.corpusDocFrequencyByTerm(word)) / Math.log(2);
-            tf_d = _indexer.documentTermFrequency(word, doc.getUrl()); // count of term in document
-            tfidf_d = tf_d * idf;  // tfidf of term in document
-            d_sqr += tfidf_d * tfidf_d; // computing sum(y^2) term of cosine similarity
         }
+
+        double d_sqr = doc.getTfidfSumSquared();
 
         if (q_sqr * d_sqr == 0)
             score = 0;
