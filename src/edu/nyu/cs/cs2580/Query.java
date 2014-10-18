@@ -18,7 +18,7 @@ public class Query {
   public Vector<String> _tokens = new Vector<String>();
 
   public Query(String query) {
-    _query = query;
+    _query = performStemming(query);
   }
 
   public void processQuery() {
@@ -37,4 +37,12 @@ public class Query {
     }
     s.close();
   }
+  
+  public String performStemming(String text){
+	    Stemmer stemmer = new Stemmer();
+	    stemmer.add(text.toCharArray(), text.length());
+	    stemmer.stem();
+		String result = stemmer.toString();
+	    return text;
+	  }
 }

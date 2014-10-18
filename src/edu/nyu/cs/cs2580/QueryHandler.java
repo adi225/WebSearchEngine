@@ -215,8 +215,13 @@ class QueryHandler implements HttpHandler {
         respondWithMsg(exchange, "Ranker " + cgiArgs._rankerType.toString() + " is not valid!");
     }
 
-    // Processing the query.
-    Query processedQuery = new Query(cgiArgs._query);
+    // Processing the query - check if we have exact match
+    Query processedQuery;
+    if(cgiArgs._query.indexOf('"') == -1)
+    	processedQuery = new Query(cgiArgs._query);
+    else
+    	processedQuery = new QueryPhrase(cgiArgs._query);
+    
     processedQuery.processQuery();
 
     // Ranking.
