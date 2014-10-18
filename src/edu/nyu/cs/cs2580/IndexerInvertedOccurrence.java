@@ -161,13 +161,15 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
 				{
 					//Check that the terms match the phrase
 					int phrasePosition = -1;
-					phrasePosition = nextPhrase((String)pairs.getKey(), phraseTokens ,docid , phrasePosition);
+					phrasePosition = nextPhrase((String)pairs.getKey(), phraseTokens ,docIDFixed , phrasePosition);
 			
 					if(phrasePosition == -1) //phrase not found
 						return nextDoc(query,docIDNew-1);
 					  
 					docsForAllPhrases.add(docIDFixed);
 				}
+				else
+					return nextDoc(query,docIDNew-1);
 		  }
 		  
 		  // all phrases done - check if docs are correct
