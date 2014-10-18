@@ -52,8 +52,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   protected Map<Integer, Integer> _termCorpusFrequency = new HashMap<Integer, Integer>();
 
   // The set contains stopping words, corresponding to the top 50 most frequent words in a corpus.
-  // Set to "public static" so that Query and QueryPhrase can get access.
-  public static Set<String> _stoppingWords = new HashSet<String>();
+  protected Set<String> _stoppingWords = new HashSet<String>();
   
   // Provided for serialization.
   public IndexerInverted() { }
