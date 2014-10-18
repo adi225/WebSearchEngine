@@ -77,6 +77,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     File dir = new File(_options._corpusPrefix);
     File[] directoryListing = dir.listFiles();
 
+    int debugCounter = 0;
     if (directoryListing != null) {
       Map<Integer, Vector<Integer>> docBodies = new HashMap<Integer, Vector<Integer>>();
       for (File docFile : directoryListing) {
@@ -106,6 +107,8 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
           throw new IOException("File format could not be processed by Boilerplate.");
         }
         System.out.println("Finished indexing document id: " + docId);
+        // TODO Remove debug code.
+        //if(debugCounter++ > 300) break;
       }
 
       // dump any leftover partial index

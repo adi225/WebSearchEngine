@@ -10,6 +10,8 @@ import java.util.*;
  */
 public class IndexerInvertedDoconly extends IndexerInverted {
 
+  private Map<Integer, Integer> _utilityCorpusDocFrequencyByTerm = new HashMap<Integer, Integer>();
+
   public IndexerInvertedDoconly(SearchEngine.Options options) {
     super(options);
   }
@@ -23,6 +25,7 @@ public class IndexerInvertedDoconly extends IndexerInverted {
       if(!_utilityIndex.containsKey(term)) {
         _utilityIndex.put(term, new LinkedList<Integer>());
       }
+      incrementCorpusDocFrequencyForTerm(term);
       _utilityIndex.get(term).add(docId);
       _utilityIndexFlatSize++;
 
@@ -100,11 +103,23 @@ public class IndexerInvertedDoconly extends IndexerInverted {
     try {
       if (_dictionary.containsKey(term)) {
         int termInt = _dictionary.get(term);  // an integer representation of a term
+        if(_utilityCorpusDocFrequencyByTerm.containsKey(termInt)) {
+          // during construction phase, the posting list is not available.
+          return _utilityCorpusDocFrequencyByTerm.get(termInt);
+        }
         List<Integer> postingList = postingsListForWord(termInt);
         return postingList.size();
       }
     } catch (IOException e) {}
     return 0;
+  }
+
+  protected void incrementCorpusDocFrequencyForTerm(int word) {
+    if(_utilityCorpusDocFrequencyByTerm.containsKey(word)) {
+      _utilityCorpusDocFrequencyByTerm.put(word, _utilityCorpusDocFrequencyByTerm.get(word) + 1);
+    } else {
+      _utilityCorpusDocFrequencyByTerm.put(word, 1);
+    }
   }
 
   @Override
