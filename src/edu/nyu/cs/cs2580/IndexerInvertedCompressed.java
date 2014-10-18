@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
@@ -51,6 +50,7 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
       // Put delta-encoded VByte docId into postings list
       int deltaDocId = docId - _utilityPrevDocId.get(word);
       _utilityPrevDocId.put(word, docId);
+      incrementCorpusDocFrequencyForTerm(word);
       byte[] deltaDocIdAsBytes = VByteUtils.encodeInt(deltaDocId);
       for(byte b : deltaDocIdAsBytes) {
         postingList.add(b);

@@ -4,14 +4,12 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Vector;
 
-import de.l3s.boilerpipe.BoilerpipeProcessingException;
+import com.google.common.collect.BiMap;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
@@ -20,9 +18,43 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 public class IndexerInvertedOccurrence extends IndexerInverted implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
+
+  protected Map<Integer, Integer> _corpusDocFrequencyByTerm;
 	
   public IndexerInvertedOccurrence(Options options) {
     super(options);
+  }
+
+  @Override
+  public void constructIndex() throws IOException {
+    _corpusDocFrequencyByTerm = new HashMap<Integer, Integer>();
+    super.constructIndex();
+  }
+
+  @Override
+  protected List<Object> selectMetadataToStore() {
+    List<Object> indexMetadata = new ArrayList<Object>();
+    indexMetadata.add(_documents);
+    indexMetadata.add(_dictionary);
+    indexMetadata.add(_termCorpusFrequency);
+    indexMetadata.add(_corpusDocFrequencyByTerm);
+    return indexMetadata;
+  }
+
+  @Override
+  protected void setLoadedMetadata(List<Object> indexMetadata) {
+    _documents           = (Vector<Document>)indexMetadata.get(0);
+    _dictionary          = (BiMap<String, Integer>)indexMetadata.get(1);
+    _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
+    _corpusDocFrequencyByTerm = (Map<Integer, Integer>)indexMetadata.get(3);
+  }
+
+  protected void incrementCorpusDocFrequencyForTerm(int word) {
+    if(_corpusDocFrequencyByTerm.containsKey(word)) {
+      _corpusDocFrequencyByTerm.put(word, _corpusDocFrequencyByTerm.get(word) + 1);
+    } else {
+      _corpusDocFrequencyByTerm.put(word, 1);
+    }
   }
 
   protected void updatePostingsLists(int docId, Vector<Integer> docTokensAsIntegers) throws IOException {
@@ -46,6 +78,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
       List<Integer> occurancesList = occurences.get(word);
 
       postingList.add(docId);
+      incrementCorpusDocFrequencyForTerm(word);
       postingList.add(occurancesList.size());
       postingList.addAll(occurancesList);
 

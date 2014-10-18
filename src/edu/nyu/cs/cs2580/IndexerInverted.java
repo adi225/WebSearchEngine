@@ -128,12 +128,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     System.out.println("Done merging files.");
 
     // Add metadata to file.
-    List<Object> indexMetadata = new ArrayList<Object>();
-    indexMetadata.add(_documents);
-    indexMetadata.add(_dictionary);
-    indexMetadata.add(_termCorpusFrequency);
-
-    FileUtils.writeObjectsToFile(indexMetadata, indexFile);
+    FileUtils.writeObjectsToFile(selectMetadataToStore(), indexFile);
     FileUtils.appendFileToFile(indexAuxFile, indexFile);
 
     System.out.println(
@@ -146,6 +141,20 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     //System.out.println("Total document processing time: " + timeTaken + " min");
     //System.out.println("Total partial index dumping time: " + timeTaken + " min");
     System.out.println("Total partial index merging time: " + mergingTime + " min");
+  }
+
+  protected List<Object> selectMetadataToStore() {
+    List<Object> indexMetadata = new ArrayList<Object>();
+    indexMetadata.add(_documents);
+    indexMetadata.add(_dictionary);
+    indexMetadata.add(_termCorpusFrequency);
+    return indexMetadata;
+  }
+
+  protected void setLoadedMetadata(List<Object> indexMetadata) {
+    _documents           = (Vector<Document>)indexMetadata.get(0);
+    _dictionary          = (BiMap<String, Integer>)indexMetadata.get(1);
+    _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
   }
 
   // TODO No stop word is removed, you need to dynamically determine whether to drop the processing of a certain inverted list.
@@ -168,9 +177,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     List<Object> indexMetadata = new ArrayList<Object>();
     DataInputStream indexFileDIS = new DataInputStream(new FileInputStream(indexFile));
     long bytesRead = FileUtils.readObjectsFromFileIntoList(indexFileDIS, indexMetadata);
-    _documents           = (Vector<Document>)indexMetadata.get(0);
-    _dictionary          = (BiMap<String, Integer>)indexMetadata.get(1);
-    _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
+    setLoadedMetadata(indexMetadata);
     bytesRead += FileUtils.loadFromFileIntoIndex(indexFileDIS, _index);
     indexFileDIS.close();
     _indexOffset = bytesRead;
