@@ -217,41 +217,40 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
   // This method returns the next docid after the given docid that contains all terms in the query conjunctive.
   // This is equivalent to the nextDoc method in the IndexerInvertedDoconly class.
   public Document nextDocConjunctive(Query query, int docid){
-	// query is already processed before getting passed into this method	
+	// query is already processed before getting passed into this method
+    // TODO Optimize performance using PriorityQueue, Set, or more sequential lookup of terms, etc.
 	try {
-		List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
-		for(String token : query._tokens){
-			if(_stoppingWords.contains(token)){  // skip processing a stop word
-				continue;
-			}
-			int docID = next(token,docid);
-			if(docID == -1){
-				return null;
-			}
-			docIDs.add(docID);
-		}
-		
-		boolean foundDocID = true;
-		int docIDFixed = docIDs.get(0); 
-		int docIDNew = Integer.MIN_VALUE;
-		
-		for(Integer docID : docIDs){  // check if all the doc IDs are equal
-			if(docID != docIDFixed){
-				foundDocID = false;
-			}
-			if(docID > docIDNew){
-				docIDNew = docID;
-			}
-		}
-		
-		if(foundDocID){
-			return _documents.get(docIDFixed);
-		}
-		
-		return nextDoc(query,docIDNew-1);
-	} catch (IOException e) {
-	  return null;
-	}
+      List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
+      for(String token : query._tokens){
+        if(_stoppingWords.contains(token)){  // skip processing a stop word
+          continue;
+        }
+        int docID = next(token, docid);
+        if(docID == -1){
+          return null;
+        }
+        docIDs.add(docID);
+      }
+
+      boolean foundDocID = true;
+      int docIDFixed = docIDs.get(0);
+      int docIDNew = Integer.MIN_VALUE;
+
+      for(Integer docID : docIDs){  // check if all the doc IDs are equal
+        if(docID != docIDFixed){
+          foundDocID = false;
+        }
+        if(docID > docIDNew){
+          docIDNew = docID;
+        }
+      }
+
+      if(foundDocID){
+        return _documents.get(docIDFixed);
+      }
+      return nextDoc(query, docIDNew - 1);
+	} catch (IOException e) {}
+	return null;
   }
   
   // Just like in the lecture slide 3, page 14, this helper method returns the next document id
