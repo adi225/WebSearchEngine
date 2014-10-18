@@ -235,6 +235,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     indexMetadata.add(_documents);
     indexMetadata.add(_dictionary);
     indexMetadata.add(_termCorpusFrequency);
+    indexMetadata.add(_stoppingWords);
     return indexMetadata;
   }
 
@@ -242,6 +243,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     _documents           = (Vector<Document>)indexMetadata.get(0);
     _dictionary          = (BiMap<String, Integer>)indexMetadata.get(1);
     _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
+    _stoppingWords       = (Set<String>)indexMetadata.get(3);
   }
 
   @Override

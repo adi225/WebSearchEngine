@@ -2,14 +2,7 @@ package edu.nyu.cs.cs2580;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 import com.google.common.collect.BiMap;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
@@ -35,20 +28,15 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
 
   @Override
   protected List<Object> selectMetadataToStore() {
-    List<Object> indexMetadata = new ArrayList<Object>();
-    indexMetadata.add(_documents);
-    indexMetadata.add(_dictionary);
-    indexMetadata.add(_termCorpusFrequency);
+    List<Object> indexMetadata = super.selectMetadataToStore();
     indexMetadata.add(_corpusDocFrequencyByTerm);
     return indexMetadata;
   }
 
   @Override
   protected void setLoadedMetadata(List<Object> indexMetadata) {
-    _documents           = (Vector<Document>)indexMetadata.get(0);
-    _dictionary          = (BiMap<String, Integer>)indexMetadata.get(1);
-    _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
-    _corpusDocFrequencyByTerm = (Map<Integer, Integer>)indexMetadata.get(3);
+    super.setLoadedMetadata(indexMetadata);
+    _corpusDocFrequencyByTerm = (Map<Integer, Integer>)indexMetadata.get(indexMetadata.size() - 1);
   }
 
   protected void incrementCorpusDocFrequencyForTerm(int word) {

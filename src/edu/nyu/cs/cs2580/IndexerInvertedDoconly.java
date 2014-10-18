@@ -114,7 +114,7 @@ public class IndexerInvertedDoconly extends IndexerInverted {
     return 0;
   }
 
-  protected void incrementCorpusDocFrequencyForTerm(int word) {
+  private void incrementCorpusDocFrequencyForTerm(int word) {
     if(_utilityCorpusDocFrequencyByTerm.containsKey(word)) {
       _utilityCorpusDocFrequencyByTerm.put(word, _utilityCorpusDocFrequencyByTerm.get(word) + 1);
     } else {
