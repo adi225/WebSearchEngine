@@ -357,5 +357,5 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
   protected abstract void updatePostingsLists(int docId, Vector<Integer> docTokensAsIntegers) throws IOException;
 
-  public abstract int next(String term, int docid) throws IOException;
+  protected abstract int next(String term, int docid) throws IOException;
 }
