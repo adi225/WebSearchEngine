@@ -32,10 +32,7 @@ public class Query {
     Scanner s = new Scanner(_query);
     while (s.hasNext()) {
       String token = s.next();
-      // TODO Do not use public access to stopping words.
-      if(!IndexerInverted._stoppingWords.contains(token)){  // if token is not a stopping word, add it to _tokens
-        _tokens.add(token);
-      }
+      _tokens.add(token);
     }
     s.close();
   }
