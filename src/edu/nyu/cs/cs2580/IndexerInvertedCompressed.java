@@ -120,7 +120,7 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
       do {
         buf[pos] = _indexRAF.readByte();
         bytesRead++;
-        keepGoing = (buf[pos++] & 0b10000000) == 0;
+        keepGoing = (buf[pos++] & 128) == 0;
       } while(keepGoing);
       byte[] asBytes = new byte[pos];
       for(int i = 0; i < asBytes.length; i++) {

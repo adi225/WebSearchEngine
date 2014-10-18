@@ -103,7 +103,9 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
           Vector<Integer> processedBody = processDocument(docIndexed, text.toString());
           updatePostingsLists(docId, processedBody);
           docBodies.put(docId, processedBody);
-        } catch (BoilerpipeProcessingException | SAXException e) {
+        } catch (BoilerpipeProcessingException e) {
+          throw new IOException("File format could not be processed by Boilerplate.");
+        } catch (SAXException e) {
           throw new IOException("File format could not be processed by Boilerplate.");
         }
         System.out.println("Finished indexing document id: " + docId);

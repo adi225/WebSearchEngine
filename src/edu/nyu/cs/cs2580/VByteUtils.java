@@ -28,10 +28,10 @@ public class VByteUtils {
 
     byte[] encodedValue = new byte[numBytes];
     for(int i = encodedValue.length - 1; i >= 0 ; i--) {
-      byte b = (byte)(number & 0b01111111); // apply bitmask to get last 7 bits
+      byte b = (byte)(number & 127); // apply bitmask to get last 7 bits
       number = number >>> 7; // shift number past the 7 bits that were processed
       if(i == encodedValue.length - 1) {
-        b = (byte)(b | 0b10000000); // set first bit to 1 for last byte of array
+        b = (byte)(b | 128); // set first bit to 1 for last byte of array
       }
       encodedValue[i] = b;
     }
@@ -41,7 +41,7 @@ public class VByteUtils {
   protected static int decodeByteArray(byte[] bytes) {
     int decodedValue = 0;
     for (int i = 0; i < bytes.length; i++) {
-      int contribution = bytes[i] & 0b01111111; // apply bitmask to get last 7 bits only
+      int contribution = bytes[i] & 127; // apply bitmask to get last 7 bits only
       decodedValue = decodedValue << 7; // shift number to make 7 bits available
       decodedValue += contribution; // add 7 bits to number
       if(bytes[i] >>> 7 == 1) {
@@ -64,7 +64,7 @@ public class VByteUtils {
     checkArgument(bytes.length == 4);
     int i = 0;
     for(byte aByte : bytes) {
-      int bByte = (int)aByte & 0b11111111; // careful converting byte with leading 1 to int (2's complement conversion)
+      int bByte = (int)aByte & 255; // careful converting byte with leading 1 to int (2's complement conversion)
       i = (i << 8);
       i = i | bByte;
     }
