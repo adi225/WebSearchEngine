@@ -10,13 +10,13 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 /**
  * @CS2580: Implement this class for HW2.
  */
-public class IndexerInvertedOccurrence extends IndexerInverted implements Serializable{
+public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
 
   protected Map<Integer, Integer> _corpusDocFrequencyByTerm;
 	
-  public IndexerInvertedOccurrence(Options options) {
+  public IndexerInvertedOccurrenceTest(Options options) {
     super(options);
   }
 
