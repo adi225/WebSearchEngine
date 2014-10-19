@@ -21,7 +21,7 @@ import org.xml.sax.SAXException;
 public abstract class IndexerInverted extends Indexer implements Serializable {
   private static final long serialVersionUID = 1077111905740085030L;
   protected static final String WORDS_DIR = "/.partials";
-  protected static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 5000000;
+  protected static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
 
   protected RandomAccessFile _indexRAF;
   protected final String indexFilePath = _options._indexPrefix + "/index.idx";
