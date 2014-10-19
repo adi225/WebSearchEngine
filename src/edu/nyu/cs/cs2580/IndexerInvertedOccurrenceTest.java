@@ -122,7 +122,15 @@ public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Se
       	
       	// case 3 (the query contains both the phrase and conjunctive parts)
       	else if(queryPhrase._tokens.size() != 0 && queryPhrase._phrases.size() != 0){ 
+      		List<List<String>> phrasesTokens = new ArrayList<List<String>>();
       		
+      		// adding each phrase into phrases
+          Iterator it = queryPhrase._phrases.entrySet().iterator();
+          while (it.hasNext()) {  // iterate over each phrase
+            Map.Entry pairs = (Map.Entry)it.next();
+            String phrase = pairs.getKey().toString();
+            phrasesTokens.add((List<String>)pairs.getValue());
+          }
       	}
       }
       
@@ -166,7 +174,7 @@ public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Se
   	Vector<Integer> positions = new Vector<Integer>();
   	
   	for(int i=0; i<phraseTokens.size(); i++){
-  		int pos = nextPosition(phraseTokens.get(i), docid+1, -1);
+  		int pos = nextPosition(phraseTokens.get(i), docid, -1);
   		if(pos == -1){  // if the token is not found
   			return -1;
   		}
