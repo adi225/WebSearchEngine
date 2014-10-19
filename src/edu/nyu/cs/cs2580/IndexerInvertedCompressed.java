@@ -41,7 +41,9 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
     for(int word : occurences.keySet()) {
       if(!_utilityIndex.containsKey(word)) {
         _utilityIndex.put(word, new LinkedList<Byte>());
-        _utilityPrevDocId.put(word, 0);
+        if(!_utilityPrevDocId.containsKey(word)) {
+          _utilityPrevDocId.put(word, 0);
+        }
       }
       List<Byte> postingList = _utilityIndex.get(word);
       int postingListInitialSize = postingList.size();
@@ -132,9 +134,11 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
     return postingsList;
   }
 
+  @Override
   protected void dumpUtilityIndexToFileAndClearFromMemory(String filePath) throws IOException {
     FileUtils.dumpIndexToFileBytes(_utilityIndex, new File(filePath));
-    _utilityIndex = new HashMap<Integer, List<Byte>>();
+    //_utilityIndex = new HashMap<Integer, List<Byte>>();
+    _utilityIndex.clear();
     _utilityIndexFlatSize = 0;
   }
 }

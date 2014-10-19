@@ -137,7 +137,8 @@ public class FileUtils {
           index.put(word1, new FileRange(fileOffset, word1Range.length));
           byte[] buf = new byte[(int)word1Range.length];
           fileOffset += buf.length;
-          file1DIS.read(buf);
+          int bytesRead = file1DIS.read(buf);
+          SearchEngine.Check(bytesRead == buf.length, "IO problem: did not read whole bytes.");
           auxDOS.write(buf);
           li++; i++;
         } else if (word2 < word1) {
@@ -145,7 +146,8 @@ public class FileUtils {
           index.put(word2, new FileRange(fileOffset, word2Range.length));
           byte[] buf = new byte[(int)word2Range.length];
           fileOffset += buf.length;
-          file2DIS.read(buf);
+          int bytesRead = file2DIS.read(buf);
+          SearchEngine.Check(bytesRead == buf.length, "IO problem: did not read whole bytes.");
           auxDOS.write(buf);
           ri++; i++;
         } else {
@@ -156,8 +158,10 @@ public class FileUtils {
           byte[] buf1 = new byte[(int)word1Range.length];
           byte[] buf2 = new byte[(int)word2Range.length];
           fileOffset += buf1.length + buf2.length;
-          file1DIS.read(buf1);
-          file2DIS.read(buf2);
+          int bytesRead = file1DIS.read(buf1);
+          SearchEngine.Check(bytesRead == buf1.length, "IO problem: did not read whole bytes.");
+          bytesRead = file2DIS.read(buf2);
+          SearchEngine.Check(bytesRead == buf2.length, "IO problem: did not read whole bytes.");
           auxDOS.write(buf1);
           auxDOS.write(buf2);
           li++; ri++; i+=2;
@@ -169,7 +173,8 @@ public class FileUtils {
           index.put(word1, new FileRange(fileOffset, word1Range.length));
           byte[] buf = new byte[(int)word1Range.length];
           fileOffset += buf.length;
-          file1DIS.read(buf);
+          int bytesRead = file1DIS.read(buf);
+          SearchEngine.Check(bytesRead == buf.length, "IO problem: did not read whole bytes.");
           auxDOS.write(buf);
           li++; i++;
         }
@@ -179,7 +184,8 @@ public class FileUtils {
           index.put(word2, new FileRange(fileOffset , word2Range.length));
           byte[] buf = new byte[(int)word2Range.length];
           fileOffset += buf.length;
-          file2DIS.read(buf);
+          int bytesRead = file2DIS.read(buf);
+          SearchEngine.Check(bytesRead == buf.length, "IO problem: did not read whole bytes.");
           auxDOS.write(buf);
           ri++; i++;
         }

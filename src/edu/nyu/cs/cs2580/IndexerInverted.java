@@ -21,7 +21,7 @@ import org.xml.sax.SAXException;
 public abstract class IndexerInverted extends Indexer implements Serializable {
   private static final long serialVersionUID = 1077111905740085030L;
   protected static final String WORDS_DIR = "/.partials";
-  protected static final long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 5000000;
+  protected static long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
 
   protected RandomAccessFile _indexRAF;
   protected final String indexFilePath = _options._indexPrefix + "/index.idx";
@@ -30,6 +30,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   protected Map<Integer, List<Integer>> _utilityIndex = new HashMap<Integer, List<Integer>>();
   protected long _utilityIndexFlatSize = 0;
   protected long _utilityPartialIndexCounter = 0;
+  protected int MAX_DOCS = Integer.MAX_VALUE;
 
   // An index, which is a mapping between an integer representation of a term
   // and a byte range in the file where the postings list for the term is located.
@@ -77,7 +78,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     File dir = new File(_options._corpusPrefix);
     File[] directoryListing = dir.listFiles();
 
-    int debugCounter = 0;
     if (directoryListing != null) {
       Map<Integer, Vector<Integer>> docBodies = new HashMap<Integer, Vector<Integer>>();
       for (File docFile : directoryListing) {
@@ -109,8 +109,8 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
           throw new IOException("File format could not be processed by Boilerplate.");
         }
         System.out.println("Finished indexing document id: " + docId);
-        // TODO Remove debug code.
-        //if(debugCounter++ > 300) break;
+
+        if(_numDocs > MAX_DOCS) break;
       }
 
       // dump any leftover partial index
@@ -346,7 +346,8 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
   protected void dumpUtilityIndexToFileAndClearFromMemory(String filePath) throws IOException {
     FileUtils.dumpIndexToFile(_utilityIndex, new File(filePath));
-    _utilityIndex = new HashMap<Integer, List<Integer>>();
+    //_utilityIndex = new HashMap<Integer, List<Integer>>();
+    _utilityIndex.clear();
     _utilityIndexFlatSize = 0;
   }
 

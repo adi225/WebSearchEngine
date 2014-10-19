@@ -14,7 +14,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
 
   private static final long serialVersionUID = 1077111905740085030L;
 
-  protected Map<Integer, Integer> _corpusDocFrequencyByTerm;
+  protected Map<Integer, Integer> _corpusDocFrequencyByTerm = new HashMap<Integer, Integer>();
 	
   public IndexerInvertedOccurrence(Options options) {
     super(options);
