@@ -10,13 +10,13 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 /**
  * @CS2580: Implement this class for HW2.
  */
-public class IndexerInvertedOccurrence extends IndexerInverted implements Serializable{
+public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Serializable{
 
   private static final long serialVersionUID = 1077111905740085030L;
 
-  protected Map<Integer, Integer> _corpusDocFrequencyByTerm = new HashMap<Integer, Integer>();
+  protected Map<Integer, Integer> _corpusDocFrequencyByTerm;
 	
-  public IndexerInvertedOccurrence(Options options) {
+  public IndexerInvertedOccurrenceTest(Options options) {
     super(options);
   }
 
@@ -93,94 +93,101 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
 	// 2.) query containing only the phrase portion
 	// 3.) query containing both conjunctive and phrase parts
 	  
-    if(query instanceof QueryPhrase) {
-        QueryPhrase queryPhrase = (QueryPhrase)query;
-        List<Integer> docsForAllPhrases = new ArrayList<Integer>();
-
-        //need to make sure all phrases are found
-        Iterator it = queryPhrase._phrases.entrySet().iterator();
-        while (it.hasNext()) {  
-          //loop over each phrase
-          Map.Entry pairs = (Map.Entry)it.next();
-          List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the phrase
-          List<String> phraseTokens = (List<String>)pairs.getValue();
-
+    	// case 1 (if this is a conjunctive query, containing no phrases)
+      if(! (query instanceof QueryPhrase)) {  
+      	return nextDocConjunctive(query, docid);
+      }
+      else{
+      	QueryPhrase queryPhrase = (QueryPhrase)query;
+      	
+      	// case 2 (the query contains only the phrase part)
+      	if(queryPhrase._tokens.size() == 0){  // if the query contains only the phrase part
+ 
+      		List<List<String>> phrasesTokens = new ArrayList<List<String>>();
+      		
+      		// adding each phrase into phrases
+          Iterator it = queryPhrase._phrases.entrySet().iterator();
+          while (it.hasNext()) {  // iterate over each phrase
+            Map.Entry pairs = (Map.Entry)it.next();
+            String phrase = pairs.getKey().toString();
+            phrasesTokens.add((List<String>)pairs.getValue());
+          }
+          
           try {
-            // Check the next doc for each token in the phrase
-            for(String token : phraseTokens) {
-              int docID = next(token, docid);
-              if(docID == -1) {
-                  return null;
-              }
-              docIDs.add(docID);
-            }
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-
-          boolean foundDocID = true;
-          int docIDFixed = docIDs.get(0);
-          int docIDNew = Integer.MIN_VALUE;
-
-          for(Integer docID : docIDs) {  // check if all the doc IDs are equal
-            if(docID != docIDFixed) {
-                foundDocID = false;
-            }
-            if(docID > docIDNew) {
-                docIDNew = docID;
-            }
-          }
-
-          if(foundDocID) {
-            //We found a doc that contains the current phrase
-            //Check that the terms match the phrase
-            int phrasePosition = -1;
-            phrasePosition = nextPhrase((String)pairs.getKey(), phraseTokens ,docIDFixed , phrasePosition);
-
-            if(phrasePosition == -1) //phrase not found (how do we get here if foundDocID is true?)
-            	  return null;
-                //return nextDoc(query, docIDNew - 1);
-
-            docsForAllPhrases.add(docIDFixed);
-          } else {
-            return nextDoc(query, docIDNew - 1);
-          }
-        }
-
-        // all phrases done - check if docs are correct
-        boolean foundFinalDocID = true;
-        int finalDocIDFixed = docsForAllPhrases.get(0);
-        int finalDocIDNew = Integer.MIN_VALUE;
-
-        for(Integer docID : docsForAllPhrases) {  // check if all the doc IDs are equal
-          if(docID != finalDocIDFixed) {
-              foundFinalDocID = false;
-          }
-          if(docID > finalDocIDNew) {
-              finalDocIDNew = docID;
-          }
-        }
-
-        if(!foundFinalDocID) {
-          return nextDoc(query, finalDocIDNew - 1);
-        }
-
-        /* check regular tokens */
-
-        int regularTokensDoc;
-        //need to make sure all regular tokens are found
-        if(queryPhrase._tokens != null && queryPhrase._tokens.size() != 0) {
-          regularTokensDoc = nextDocConjunctive(query, docid)._docid;
-          if(regularTokensDoc == finalDocIDFixed)
-            return _documents.get(finalDocIDFixed);
-          else
-            return nextDoc(query,finalDocIDNew-1);
-        }
-
-        return _documents.get(finalDocIDFixed);
-    } else {
-      return nextDocConjunctive(query, docid);
+						return nextDocMultiplePhrases(phrasesTokens, docid);
+					} catch (IOException e) {
+						return null;
+					}      
+      	}
+      	
+      	// case 3 (the query contains both the phrase and conjunctive parts)
+      	else if(queryPhrase._tokens.size() != 0 && queryPhrase._phrases.size() != 0){ 
+      		
+      	}
+      }
+      
+      return null;
+  }
+  
+  // Equivalent to next() method, except that this is for phrases.
+  public Document nextDocMultiplePhrases(List<List<String>> phrasesTokens, int docid) throws IOException{
+    // just like in lecture 3 slide, page 13
+    Vector<Integer> docIDs = new Vector<Integer>();
+    for(int i=0;i<phrasesTokens.size();i++){
+			int docID = nextDocSinglePhrase(phrasesTokens.get(i), docid);  // get the doc id after docid containing the phrase (exact)
+			if(docID == -1){
+				return null;
+			}
+			docIDs.add(docID);
     }
+    
+    boolean foundDoc = true;
+    int fixedDocId = docIDs.get(0);
+    int maxDocId = Integer.MIN_VALUE;
+    for(int i=0;i<docIDs.size();i++){
+    	if(docIDs.get(i) != fixedDocId){
+    		foundDoc = false;
+    	}
+    	maxDocId = Math.max(maxDocId, docIDs.get(i));
+    }
+		
+    if(foundDoc){
+    	return _documents.get(fixedDocId);
+    }
+    return nextDocMultiplePhrases(phrasesTokens, maxDocId);
+    
+  }
+  
+  
+  // This helper method returns the next document id containing a single phrase 
+  // (exact consecutive terms) in query after the given docid.
+  public int nextDocSinglePhrase(List<String> phraseTokens, int docid) throws IOException{
+  	
+  	Vector<Integer> positions = new Vector<Integer>();
+  	
+  	for(int i=0; i<phraseTokens.size(); i++){
+  		int pos = nextPosition(phraseTokens.get(i), docid+1, -1);
+  		if(pos == -1){  // if the token is not found
+  			return -1;
+  		}
+  		positions.add(pos);
+  	}
+  	
+  	boolean found = true;
+  	int maxPos = Integer.MIN_VALUE;
+  	for(int i=1;i<positions.size();i++){
+  		if(positions.get(i) != positions.get(i-1)+1){
+  			found = false;
+  		}
+  		maxPos = Math.max(maxPos, positions.get(i));
+  	}
+  	
+  	if(found){
+  		String firstTerm = phraseTokens.get(0);
+  		return next(firstTerm,docid);
+  	}
+  	
+  	return nextDocSinglePhrase(phraseTokens, maxPos);
   }
   
   // This method returns the next docid after the given docid that contains all terms in the query conjunctive.

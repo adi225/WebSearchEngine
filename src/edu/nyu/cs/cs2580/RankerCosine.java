@@ -56,7 +56,7 @@ public class RankerCosine extends Ranker {
         while(!scoredDocuments.isEmpty()){
         	results.add(scoredDocuments.poll());
         }
-        
+        Collections.sort(results, Collections.reverseOrder());
         return results;
     }
 
