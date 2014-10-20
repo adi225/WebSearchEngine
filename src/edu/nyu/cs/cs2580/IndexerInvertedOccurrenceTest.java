@@ -167,7 +167,7 @@ public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Se
   
   // Equivalent to next() method, except that this is for phrases.
   public Document nextDocMultiplePhrases(List<List<String>> phrasesTokens, int docid) throws IOException{
-    // just like in lecture 3 slide, page 13
+    // same design pattern just like in lecture 3 slide, page 13
     Vector<Integer> docIDs = new Vector<Integer>();
     for(int i=0;i<phrasesTokens.size();i++){
 			int docID = nextDocSinglePhrase(phrasesTokens.get(i), docid);  // get the doc id after docid containing the phrase (exact)
@@ -190,7 +190,7 @@ public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Se
     if(foundDoc){
     	return _documents.get(fixedDocId);
     }
-    return nextDocMultiplePhrases(phrasesTokens, maxDocId);
+    return nextDocMultiplePhrases(phrasesTokens, maxDocId-1);
     
   }
   
