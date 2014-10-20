@@ -131,6 +131,34 @@ public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Se
             String phrase = pairs.getKey().toString();
             phrasesTokens.add((List<String>)pairs.getValue());
           }
+          
+	        Query conjunctiveQuery = new Query(queryPhrase._query);  // constructing a conjunctive query
+	        conjunctiveQuery._tokens = queryPhrase._tokens;
+	        
+          Document docPhrases = null;
+          Document docConjunctive = null;
+          
+	        try {
+						docPhrases = nextDocMultiplePhrases(phrasesTokens, docid);
+						docConjunctive = nextDocConjunctive(conjunctiveQuery, docid);
+					} catch (Exception e1) {
+						return null;
+					}
+          
+	        if(docPhrases == null || docConjunctive == null){
+	        	return null;
+	        }
+	        
+	        int docPhrasesId = docPhrases._docid;
+	        int docConjunctiveId = docConjunctive._docid;
+	        
+	        if(docPhrasesId == docConjunctiveId){
+	        	return docPhrases;
+	        }
+	        
+	        int docNew = Math.max(docPhrasesId, docConjunctiveId);
+	        return nextDoc(queryPhrase, docNew-1);
+
       	}
       }
       
@@ -174,10 +202,11 @@ public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Se
   	Vector<Integer> positions = new Vector<Integer>();
   	
   	for(int i=0; i<phraseTokens.size(); i++){
-  		int pos = nextPosition(phraseTokens.get(i), docid, -1);
-  		if(pos == -1){  // if the token is not found
+  		int docID = next(phraseTokens.get(i), docid);
+  		if(docID == -1){  // if the token is not found
   			return -1;
   		}
+  		int pos = nextPosition(phraseTokens.get(i), docID, -1);
   		positions.add(pos);
   	}
   	

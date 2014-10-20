@@ -19,6 +19,7 @@ public class Query {
 
   public Query(String query) {
     // TODO Do not process on creation. (need more processing too)
+  	query.replaceAll("+", " ");
     _query = performStemming(query);
   }
 
