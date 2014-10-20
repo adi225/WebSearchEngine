@@ -1,5 +1,7 @@
 package edu.nyu.cs.cs2580;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.Scanner;
 import java.util.Vector;
 
@@ -19,7 +21,12 @@ public class Query {
 
   public Query(String query) {
     // TODO Do not process on creation. (need more processing too)
-    _query = performStemming(query);
+    try {
+      _query = URLDecoder.decode(query, "UTF-8");
+      _query = performStemming(_query);
+    } catch (UnsupportedEncodingException e) {
+      SearchEngine.Check(false, "Query is not in UTF-8 encoding.");
+    }
   }
 
   public void processQuery() {

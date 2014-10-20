@@ -85,8 +85,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
   /**
    * In HW2, you should be using {@link DocumentIndexed}.
    */
-  @Override
-  public Document nextDoc(Query query, int docid)
+  public Document nextDocDisjunctive(Query query, int docid)
   {
 	// 3 cases to handle:
 	// 1.) query containing only conjunctive terms (easily dealt with nextDocConjunctive)
@@ -139,11 +138,11 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
 
             if(phrasePosition == -1) //phrase not found (how do we get here if foundDocID is true?)
             	  return null;
-                //return nextDoc(query, docIDNew - 1);
+                //return nextDocDisjunctive(query, docIDNew - 1);
 
             docsForAllPhrases.add(docIDFixed);
           } else {
-            return nextDoc(query, docIDNew - 1);
+            return nextDocDisjunctive(query, docIDNew - 1);
           }
         }
 
@@ -162,7 +161,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
         }
 
         if(!foundFinalDocID) {
-          return nextDoc(query, finalDocIDNew - 1);
+          return nextDocDisjunctive(query, finalDocIDNew - 1);
         }
 
         /* check regular tokens */
@@ -170,60 +169,82 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
         int regularTokensDoc;
         //need to make sure all regular tokens are found
         if(queryPhrase._tokens != null && queryPhrase._tokens.size() != 0) {
-          regularTokensDoc = nextDocConjunctive(query, docid)._docid;
+          regularTokensDoc = nextDoc(query, docid)._docid;
           if(regularTokensDoc == finalDocIDFixed)
             return _documents.get(finalDocIDFixed);
           else
-            return nextDoc(query,finalDocIDNew-1);
+            return nextDocDisjunctive(query,finalDocIDNew-1);
         }
 
         return _documents.get(finalDocIDFixed);
     } else {
-      return nextDocConjunctive(query, docid);
+      return nextDoc(query, docid);
     }
   }
   
   // This method returns the next docid after the given docid that contains all terms in the query conjunctive.
   // This is equivalent to the nextDoc method in the IndexerInvertedDoconly class.
-  public Document nextDocConjunctive(Query query, int docid){
+  @Override
+  public Document nextDoc(Query query, int docid) {
 	// query is already processed before getting passed into this method
     // TODO Optimize performance using PriorityQueue, Set, or more sequential lookup of terms, etc.
 	try {
       List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
-      for(String token : query._tokens){
-        if(_stoppingWords.contains(token)){  // skip processing a stop word
+      for(String token : query._tokens) {
+        if(_stoppingWords.contains(token)) {  // skip processing a stop word
           continue;
         }
-        int docID = next(token, docid);
-        if(docID == -1){
+        int nextDocID = next(token, docid);
+        if(nextDocID == -1) {
           return null;
         }
-        docIDs.add(docID);
+        docIDs.add(nextDocID);
       }
 
-      boolean foundDocID = true;
-      int docIDFixed = docIDs.get(0);
-      int docIDNew = Integer.MIN_VALUE;
+      boolean found = false;
 
-      for(Integer docID : docIDs){  // check if all the doc IDs are equal
-        if(docID != docIDFixed){
-          foundDocID = false;
+      while(!found) {
+        // Get maximum docId for all tokens.
+        int maxDocId = Integer.MIN_VALUE;
+        int maxDocIdIndex = -1;
+        for(int pos = 0; pos < docIDs.size(); pos++) {
+          if(docIDs.get(pos) > maxDocId) {
+            maxDocId = docIDs.get(pos);
+            maxDocIdIndex = pos;
+          }
         }
-        if(docID > docIDNew){
-          docIDNew = docID;
+
+        for(int pos = 0; pos < docIDs.size(); pos++) {
+          if(docIDs.get(pos) < maxDocId) {
+            // Get next docId after or equal to the max general docId.
+            int docIdNew = next(query._tokens.get(pos), maxDocId - 1);
+            if (docIdNew < 0) return null;
+
+            // Set this to new docId for that token.
+            docIDs.set(pos, docIdNew);
+          }
+        }
+
+        // Check if the docIds are all equal.
+        found = true;
+        for(int pos = 1; pos < docIDs.size(); pos++) {
+          if(!docIDs.get(pos - 1).equals(docIDs.get(pos))) {  // careful with Integer unboxing
+            found = false;
+            break;
+          }
         }
       }
+      return _documents.get(docIDs.get(0));
 
-      if(foundDocID){
-        return _documents.get(docIDFixed);
-      }
-      return nextDoc(query, docIDNew - 1);
 	} catch (IOException e) {}
 	return null;
   }
-  
-  // Just like in the lecture slide 3, page 14, this helper method returns the next document id
-  // after the given docid. It returns -1 if not found.
+
+  /**
+   * This helper method returns the next docid after the given docid in the term's postings list.
+   * It returns -1 if not found.
+   * Works just like in the lecture slide 3, page 14.
+   */
   protected int next(String term, int docid) throws IOException {
     if(!_dictionary.containsKey(term)) {
       return -1;
@@ -233,9 +254,9 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
     List<Integer> postingList = postingsListForWord(termInt);
 
     int occurrenceIndex = 1;  // the first index of occurrence position in the list
-    while(occurrenceIndex < postingList.size()){
+    while(occurrenceIndex < postingList.size()) {
       int docIndex = occurrenceIndex - 1;
-      if(postingList.get(docIndex) > docid){
+      if(postingList.get(docIndex) > docid) {
         return postingList.get(docIndex);
       }
       int occurrence = postingList.get(occurrenceIndex);

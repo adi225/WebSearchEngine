@@ -1,10 +1,7 @@
 package edu.nyu.cs.cs2580;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
+import java.net.URLDecoder;
 import java.util.UUID;
 import java.util.Vector;
 
@@ -192,7 +189,8 @@ class QueryHandler implements HttpHandler {
       vsmWriter.write(logEntry + "\n");
       vsmWriter.close();
       // Construct a simple response.
-      responseHeaders.set("Location", exchange.getRequestHeaders().getFirst("Referer"));
+      // responseHeaders.set("Location", exchange.getRequestHeaders().getFirst("Referer"));
+      responseHeaders.set("Location", "file://" + _indexer.getDoc(Integer.parseInt(documentId)).getUrl());
       exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
       exchange.getResponseBody().close();
       return;
