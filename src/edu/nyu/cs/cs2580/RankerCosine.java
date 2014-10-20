@@ -96,11 +96,18 @@ public class RankerCosine extends Ranker {
           }
         }
 
+        IndexerInvertedOccurrence nicerApi = null;
+        if(_indexer instanceof IndexerInvertedOccurrence) {
+          nicerApi = (IndexerInvertedOccurrence) _indexer;
+        }
+
         // iterates over all words in query
         for(String word : queryMap.keySet()) {
             idf = 1 + Math.log(n / _indexer.corpusDocFrequencyByTerm(word)) / Math.log(2);
             tf_q = queryMap.get(word); // count of term in query
-            tf_d = _indexer.documentTermFrequency(word, doc.getUrl()); // count of term in document
+            tf_d = (nicerApi != null) ?
+                  nicerApi.documentTermFrequency(word, doc._docid):
+                  _indexer.documentTermFrequency(word, doc.getUrl()); // count of term in document
             tfidf_q = tf_q * idf;  // tfidf of term in query
             tfidf_d = tf_d * idf;  // tfidf of term in document
             q_sqr += tfidf_q * tfidf_q;  // computing sum(x^2) term of cosine similarity

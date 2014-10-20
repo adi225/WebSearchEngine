@@ -209,36 +209,6 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
     }
     return docIDs.get(0);
   }
-  
-  // This method returns the next occurrence of the term in docid after pos
-  protected int nextPosition(String term, int docid, int pos) {
-    if(!_dictionary.containsKey(term)) {
-      return -1;
-    }
-    try {
-      int termInt = _dictionary.get(term);  // an integer representation of a term
-      List<Integer> postingList = postingsListForWord(termInt);
-      int occurrenceIndex = 1;  // the first index of occurrence position in the list
-      while (occurrenceIndex < postingList.size()) {
-        int docIndex = occurrenceIndex - 1;
-        if (postingList.get(docIndex) > docid) {
-          return -1;
-        }
-        int occurrence = postingList.get(occurrenceIndex);
-        if (postingList.get(docIndex) == docid) {  // found the docid
-          // iterating through the positions of docid
-          for (int posIndex = occurrenceIndex + 1; posIndex < occurrenceIndex + 1 + occurrence; posIndex++) {
-            if (postingList.get(posIndex) > pos) {
-              return postingList.get(posIndex);
-            }
-          }
-          return -1;
-        }
-        occurrenceIndex += occurrence + 2;  // jump to the next occurrence position
-      }
-    } catch (IOException e) {}
-    return -1; // not found
-  }
 
   protected Set<Integer> getOccurancesForDoc(String term, int docId) throws IOException {
     if(!_dictionary.containsKey(term)) {
@@ -297,8 +267,11 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
 
   @Override
   public int documentTermFrequency(String term, String url) {
-    // TODO get docid from url here, should we have a mapping from url to docid?
     int docId = mapUrlToDocId(url);
+    return documentTermFrequency(term, docId);
+  }
+
+  public int documentTermFrequency(String term, int docId) {
     if(docId < 0 || !_dictionary.containsKey(term)) return 0;
     int termId = _dictionary.get(term);
     
