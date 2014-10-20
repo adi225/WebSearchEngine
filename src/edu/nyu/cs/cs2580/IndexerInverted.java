@@ -312,24 +312,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     return (docid >= _documents.size() || docid < 0) ? null : _documents.get(docid);
   }
 
-  protected void dumpUtilityIndexToFileAndClearFromMemory(String filePath) throws IOException {
-    FileUtils.dumpIndexToFile(_utilityIndex, new File(filePath));
-    //_utilityIndex = new HashMap<Integer, List<Integer>>();
-    _utilityIndex.clear();
-    _utilityIndexFlatSize = 0;
-  }
-
-  // This method may be deprecated in later versions. Use with caution!
-  protected List<Integer> postingsListForWord(int word) throws IOException {
-    List<Integer> postingsList = new LinkedList<Integer>();
-    FileUtils.FileRange fileRange = _index.get(word);
-    _indexRAF.seek(_indexOffset + fileRange.offset);
-    for(int i = 0; i < fileRange.length / 4; i++) {
-      postingsList.add(_indexRAF.readInt());
-    }
-    return postingsList;
-  }
-
   protected abstract void updatePostingsLists(int docId, Vector<Integer> docTokensAsIntegers) throws IOException;
 
   // This method returns the next docid after the given docid that contains all terms in the query conjunctive.
@@ -431,6 +413,43 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       return _documents.get(minDocId);
     } catch (IOException e) {}
     return null;
+  }
+
+  // This method may be deprecated in later versions. Use with caution!
+  protected List<Integer> postingsListForWord(int word) throws IOException {
+    if(_indexCache.containsKey(word)) {
+      return _indexCache.get(word);
+    }
+
+    List<Integer> postingsList = new LinkedList<Integer>();
+    FileUtils.FileRange fileRange = _index.get(word);
+    _indexRAF.seek(_indexOffset + fileRange.offset);
+    byte[] loadedList = new byte[(int)fileRange.length];
+    _indexRAF.read(loadedList);
+    DataInputStream loadedListDIS = new DataInputStream(new ByteArrayInputStream(loadedList));
+    for(int i = 0; i < fileRange.length / 4; i++) {
+      postingsList.add(loadedListDIS.readInt());
+    }
+
+    while(postingsList.size() * 4 + _indexCacheFlatSize > IndexerInverted.INDEX_CACHE_THRESHOLD) {
+      List<Integer> lists = Lists.newArrayList(_indexCache.keySet());
+      Random R = new Random();
+      int randomListIndex = R.nextInt(lists.size());
+
+      _indexCacheFlatSize -= _indexCache.get(lists.get(randomListIndex)).size() * 4;
+      _indexCache.remove(lists.get(randomListIndex));
+    }
+    _indexCache.put(word, postingsList);
+    _indexCacheFlatSize += postingsList.size() * 4;
+
+    return postingsList;
+  }
+
+  protected void dumpUtilityIndexToFileAndClearFromMemory(String filePath) throws IOException {
+    FileUtils.dumpIndexToFile(_utilityIndex, new File(filePath));
+    //_utilityIndex = new HashMap<Integer, List<Integer>>();
+    _utilityIndex.clear();
+    _utilityIndexFlatSize = 0;
   }
 
   protected abstract int nextPhrase(List<String> phraseTokens, int docid) throws IOException;
