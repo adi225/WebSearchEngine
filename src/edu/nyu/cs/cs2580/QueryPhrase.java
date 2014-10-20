@@ -49,7 +49,7 @@ public class QueryPhrase extends Query {
           List<String> phraseTokens = new ArrayList<String>();
           while (s.hasNext()) {
             //if(!IndexerInverted._stoppingWords.contains(s.next()))
-            phraseTokens.add(s.next());
+            phraseTokens.add(TextUtils.performStemming(s.next()));
           }
           s.close();
 
@@ -64,7 +64,7 @@ public class QueryPhrase extends Query {
             // TODO Maybe use super()?
             while (s.hasNext()) {
               //if(!IndexerInverted._stoppingWords.contains(s.next()))
-              _tokens.add(s.next());
+              _tokens.add(TextUtils.performStemming(s.next()));
             }
             s.close();
           }
@@ -80,7 +80,7 @@ public class QueryPhrase extends Query {
       Scanner s = new Scanner(inQuotesString);
       while (s.hasNext()) {
         //if(!IndexerInverted._stoppingWords.contains(s.next()))
-        _tokens.add(s.next());
+        _tokens.add(TextUtils.performStemming(s.next()));
       }
       s.close();
     } else {
@@ -91,7 +91,7 @@ public class QueryPhrase extends Query {
       Vector<String> phraseTokens = new Vector<String>();
       while (s.hasNext()) {
         //if(!IndexerInverted._stoppingWords.contains(s.next()))
-        phraseTokens.add(s.next());
+        phraseTokens.add(TextUtils.performStemming(s.next()));
       }
       s.close();
 
@@ -101,7 +101,7 @@ public class QueryPhrase extends Query {
         s = new Scanner(_query.substring(0, index - 1));
         while (s.hasNext()) {
           //if(!IndexerInverted._stoppingWords.contains(s.next()))
-          _tokens.add(s.next());
+          _tokens.add(TextUtils.performStemming(s.next()));
         }
         s.close();
       }

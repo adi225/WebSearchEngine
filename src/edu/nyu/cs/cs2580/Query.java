@@ -25,7 +25,7 @@ public class Query {
       _query = URLDecoder.decode(query, "UTF-8");
       _query = TextUtils.removeInitialsDots(_query);
       _query = TextUtils.deAccent(_query);
-      _query = TextUtils.removePunctuation(_query).toLowerCase();
+      _query = TextUtils.removePunctuation(_query, "\"").toLowerCase();
     } catch (UnsupportedEncodingException e) {
       SearchEngine.Check(false, "Query is not in UTF-8 encoding.");
     }

@@ -270,11 +270,9 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     text = TextUtils.removeNonVisibleContext(doc, text);  // step 1 of document processing
     text = TextUtils.removeInitialsDots(text);
     text = TextUtils.deAccent(text);
-    text = TextUtils.removePunctuation(text).toLowerCase();
+    text = TextUtils.removePunctuation(text, "").toLowerCase();
     return readTermVector(text);
   }
-
-
 
   /**
    * Tokenize {@code content} into terms, translate terms into their integer

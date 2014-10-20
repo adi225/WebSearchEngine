@@ -23,11 +23,9 @@ public class TextUtils {
     return ArticleExtractor.INSTANCE.getText(text);
   }
 
-  public static String removePunctuation(String text) {
-    // text = text.replaceAll("(\\w\\.)+", "\1+");
-    return text.replaceAll("[^a-zA-Z0-9\n]", " ");
-    // TODO Treat abbreviation specially (I.B.M.)
-    // TODO Think about accented characters.
+  public static String removePunctuation(String text, String ignoreCharacterClass) {
+    // TODO handle non-English characters
+    return text.replaceAll("[^a-zA-Z0-9" + ignoreCharacterClass + "\n]", " ");
   }
   
   // Tokens are stemmed with Step 1 of the Porter's algorithm.
