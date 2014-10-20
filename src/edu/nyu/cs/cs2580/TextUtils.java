@@ -48,4 +48,18 @@ public class TextUtils {
     Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
     return pattern.matcher(nfdNormalizedString).replaceAll("");
   }
+
+  public static String convertUnicodeSpecialLettersToASCII(String str) {
+    StringBuilder result = new StringBuilder();
+    for(int i = 0; i < str.length(); i++) {
+      int unicodeCodePoint = str.codePointAt(i);
+      int charType = Character.getType(unicodeCodePoint);
+      if(charType == Character.OTHER_LETTER) {
+        result.append(" U" + unicodeCodePoint + " ");
+      } else {
+        result.append(str.charAt(i));
+      }
+    }
+    return result.toString();
+  }
 }

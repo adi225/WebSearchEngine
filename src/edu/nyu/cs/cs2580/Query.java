@@ -20,11 +20,11 @@ public class Query {
   public Vector<String> _tokens = new Vector<String>();
 
   public Query(String query) {
-    // TODO Do not process on creation. (need more processing too)
     try {
       _query = URLDecoder.decode(query, "UTF-8");
       _query = TextUtils.removeInitialsDots(_query);
       _query = TextUtils.deAccent(_query);
+      _query = TextUtils.convertUnicodeSpecialLettersToASCII(_query);
       _query = TextUtils.removePunctuation(_query, "\"").toLowerCase();
     } catch (UnsupportedEncodingException e) {
       SearchEngine.Check(false, "Query is not in UTF-8 encoding.");
