@@ -12,22 +12,23 @@ The homeworks lead to building a simple web search engine.
 
 Assuming that the current directory contains the "src" , "data", "lib", and "conf" folders. Compilation of source codes can be done with the following command:
 
-tt1161@linserv1[hw2]$ javac -cp .:./lib/*:./src edu/nyu/cs/cs2580/*.java
+$ javac -cp .:./lib/*:./src src/edu/nyu/cs/cs2580/*.java
 
 To run the SearchEngine in the "index" mode:
 
-tt1161@linserv1[hw2]$ java -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=index --options=./conf/engine.conf
+$ java -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=index --options=./conf/engine.conf
 
 To run the SearchEngine in the "serve" mode:
 
-tt1161@linserv1[hw2]$ java -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=serve --port=25814 --options=./conf/engine.conf
+$ java -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=serve --port=25814 --options=./conf/engine.conf
 
 Please make sure that the all JAR files in the "lib" folder are included in the compilation, like above.
 
-We construct the index using the merging approach, as opposed to in-memory construction as provided by the original source code. 
+We construct the index using the merging approach, as opposed to in-memory construction as provided by the original source code. We construct partial indexes in memory, until we reach a certain memory use threshold. We then dump the in-memory index to file, and clear the memory. Once all partial indexes are constructed, we merge the files using a variant of the "merge-sort" merge() function. This is done efficiently using Input/Output streams rather than byte-at-a-time.
 
-Only metadata of the index is loaded into memory during "serve" mode. The metadata is the integer representation of all terms in the corpus with the offsets, which are used to jump into the posting list of the term in the index file. This is the first portion in the index file. In the later portion is the posting lists corresponding to each term. The client codes can read the posting list from the file by supplying the integer representation. This way, only the metadata is stored in memory, not the posting lists.
+Only metadata of the index is loaded into memory during "serve" mode (with the exception of a small cache of posting lists). The metadata consists of a mapping from the integer representation of each term in the corpus to offset in the index file where its posting list is located. It is used to jump to the posting list of the term in the index file. A few other metadata stores are loaded at the beginning of the index file, such as a mapping of string terms to their integer representations, etc. In the later portion is the posting lists corresponding to each term. The client code can read the posting list from the file by supplying the integer representation. This way, only the metadata is stored in memory, not the posting lists (except for a small cache for performace reasons).
 
+We also maintain a round-robin style cache of posting lists, such that whenever a posting list is requested, after it is loaded from the file, it is stored in memory during serve mode. This way, the next time the same posting list is requested, it is fetched from the in-memory cache rather than from file again. When the cache grows past a certain threshold, some of its list are released at random, allowing new lists to be added to the cache without overwhelming the memory usage.
 
 ##INDEX LOADING
 
@@ -35,20 +36,24 @@ Our index size for IndexerInvertedDoconly, IndexerInvertedOccurrence, IndexerInv
 
 In finding a reasonable compromise between space and time, we chose to maintain the following data in memory while SearchEngine is running in the "serve" mode:
 
-Map<Integer, FileRange> _index:   An index, which is a mapping between an integer representation of a term and a byte range in the file where the postings list for the term is located.
+Map<Integer, FileRange> _index:   An index metadata, which is a mapping between an integer representation of a term and a byte range in the file where the postings list for the term is located.
 
 long _indexOffset:	An offset in the file where the postings lists begin (after all metadata).
 	
-Vector<Document> _documents:	A vector of documents consisting of metadata.
+Vector<Document> _documents:	A vector of documents consisting of metadata (no actual information on content).
   
-BiMap<String, Integer> _dictionary:	Maps each term to its integer representation
+BiMap<String, Integer> _dictionary:	Maps each term to its integer representation (one-to-one bidirectional mapping)
 
 Map<Integer, Integer> _termCorpusFrequency:	Term frequency, key is the integer representation of the term and value is the number of times the term appears in the corpus.
 
 Set<String> _stoppingWords:		The set contains stopping words, corresponding to the top 50 most frequent words in a corpus.
 
-In addition to these fields, the IndexerInvertedOccurrence and IndexerInvertedCompressed maintain Map<Integer, Integer> _corpusDocFrequencyByTerm
+In addition to these fields, the IndexerInvertedOccurrence and IndexerInvertedCompressed maintain Map<Integer, Integer> _corpusDocFrequencyByTerm, which allows faster access to this information without reading an entire posting list.
 
+##INDEX COMPRESSION
+We compressed the index using the v-byte and delta compression method. The best-case compression that can be expected is 4x, since each integer would at best be represented as 1 byte. Using delta-compression, we are able to facilitate this even more by encouraging the storage of small integers.
+
+We experienced a significant compresion from 102 MB to 44MB, which is in line with what we expected. In future work, we may attempt to use Elias encoding to reduce this further. However, we found that our integers after delta compression are relatively small (in the range of hundreds), but not very small (not often smaller than 20). 
 
 ##DOCUMENT PROCESSING
 
@@ -58,13 +63,13 @@ The functionality includes:
 
 1.) Removing non-visible context of the page: The 3rd library, Boilerpipe, is used. The library website is at: https://code.google.com/p/boilerpipe/
 
-2.) Removing punctuations
+2.) Removing abbreviation dots (converting U.K. to UK, I.B.M. to IBM)
 
-3.) Stemming: use of step 1 of Porter's algorithm to perform stemming
+3.) Removing punctuations
 
-4.) Removing initial dots
+4.) deAccent (such that Beyoncé becomes Beyonce)
 
-5.) deAccent
+5.) Stemming: use of step 1 of Porter's algorithm to perform stemming
 
 A set of stop words is determined by the top 50 most frequent terms in a corpus. However, no stop word is removed during construction of the index. At run-time, when a user issues a query, processing of inverted list of stop words is skipped.
 
@@ -73,6 +78,7 @@ A set of stop words is determined by the top 50 most frequent terms in a corpus.
 
 In addition to the super class's fields, DocumentIndexed has the field:  private double _tfidfSumSquared, which is precomputed in the index construction process, so that the body token vectors do not have to be maintained.
 
+This precomputed number allows us to normalize tfidf vectors for RankerCosine ranking, without needing to access the document's list of words.
 
 ##REPRESENTATION OF QUERYPHRASE
 
@@ -81,12 +87,16 @@ In addition to the super class's fields, QueryPhrase maintains the field: public
 
 ##FAVORITE RANKER
 
-Cosine ranker was chosen as the favorite. The RankerFavorite class extends RankerCosine.
+Cosine ranker was chosen as the favorite. The RankerFavorite class extends RankerCosine without any extra functionality (for testing convenience).
 
 In the construction index phase, the normalizing factor of a document vector is precomputed so that body tokens do not need to be stored in DocumentIndexed. This saves significant memory.
 
+##CARRYOVERS FROM ASSIGNMENT 1
+We maintained some important features from assignment 1, such as HTML result display and click logging. 
 
 
+End of assignment 2
+-------------------
 
 
 #Assignment 1
