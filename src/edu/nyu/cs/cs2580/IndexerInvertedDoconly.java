@@ -97,8 +97,19 @@ public class IndexerInvertedDoconly extends IndexerInverted {
     int termInt = _dictionary.get(term);  // an integer representation of a term
     List<Integer> postingList = postingsListForWord(termInt);
 
-    for(int i=0; i < postingList.size(); i++){
+    int startIndex = 0;
+    if(_cachedDocId.containsKey(termInt) && _cachedDocId.get(termInt) <= docid) {
+      if(_cachedOffset.containsKey(termInt)) {
+        startIndex = _cachedOffset.get(termInt);
+      } else {
+        System.out.println("Cached offset is missing offset, but cachedDoc has doc!");
+      }
+    }
+
+    for(int i = startIndex; i < postingList.size(); i++){
       if(postingList.get(i) > docid){
+        _cachedDocId.put(termInt, postingList.get(i));
+        _cachedOffset.put(termInt, i);
         return postingList.get(i);
       }
     }

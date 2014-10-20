@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
