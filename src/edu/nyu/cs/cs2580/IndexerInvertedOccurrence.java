@@ -90,6 +90,10 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
    * Works just like in the lecture slide 3, page 14.
    */
   protected int next(String term, int docid) throws IOException {
+    return next(term, docid, 0);
+  }
+
+  protected int next(String term, int docid, int pos) throws IOException {
     if(!_dictionary.containsKey(term)) {
       return -1;
     }
@@ -97,7 +101,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
     int termInt = _dictionary.get(term);  // an integer representation of a term
     List<Integer> postingList = postingsListForWord(termInt);
 
-    int occurrenceIndex = 1;  // the first index of occurrence position in the list
+    int occurrenceIndex = pos + 1;  // the first index of occurrence position in the list
     while(occurrenceIndex < postingList.size()) {
       int docIndex = occurrenceIndex - 1;
       if(postingList.get(docIndex) > docid) {

@@ -453,6 +453,4 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   }
 
   protected abstract int nextPhrase(List<String> phraseTokens, int docid) throws IOException;
-
-  protected abstract int next(String term, int docid) throws IOException;
 }
