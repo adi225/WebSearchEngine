@@ -3,6 +3,7 @@ package edu.nyu.cs.cs2580;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Vector;
 
 /**
@@ -19,16 +20,25 @@ public class RankerQL extends Ranker {
 
     @Override
     public Vector<ScoredDocument> runQuery(Query query, int numResults) {
-        Vector<ScoredDocument> all = new Vector<ScoredDocument>();
-        for (int i = 0; i < _indexer.numDocs(); ++i) {
-            all.add(new ScoredDocument(_indexer.getDoc(i), scoreDocument(query, i)));
-        }
-        Collections.sort(all, Collections.reverseOrder());
-        Vector<ScoredDocument> results = new Vector<ScoredDocument>();
-        for (int i = 0; i < all.size() && i < numResults; ++i) {
-            results.add(all.get(i));
-        }
-        return results;
+      Vector<ScoredDocument> results = new Vector<ScoredDocument>();
+      
+      PriorityQueue<ScoredDocument> scoredDocuments = new PriorityQueue<ScoredDocument>();
+      Document doc = _indexer.nextDoc(query, -1);
+      
+      while(doc!=null){
+      	Double score = scoreDocument(query,doc._docid);
+      	scoredDocuments.add(new ScoredDocument(doc,score));
+      	if(scoredDocuments.size()>numResults){
+      		scoredDocuments.poll();
+      	}
+      	doc = _indexer.nextDoc(query, doc._docid);
+      }
+      
+      while(!scoredDocuments.isEmpty()){
+      	results.add(scoredDocuments.poll());
+      }
+      Collections.sort(results, Collections.reverseOrder());
+      return results;
     }
 
     protected double scoreDocument(Query query, int did) {
