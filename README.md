@@ -16,11 +16,11 @@ $ javac -cp .:./lib/*:./src src/edu/nyu/cs/cs2580/*.java
 
 To run the SearchEngine in the "index" mode:
 
-$ java -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=index --options=./conf/engine.conf
+$ java -Xmx512m -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=index --options=./conf/engine.conf
 
 To run the SearchEngine in the "serve" mode:
 
-$ java -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=serve --port=25814 --options=./conf/engine.conf
+$ java  -Xmx512m -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=serve --port=25814 --options=./conf/engine.conf
 
 Please make sure that the all JAR files in the "lib" folder are included in the compilation, like above.
 
