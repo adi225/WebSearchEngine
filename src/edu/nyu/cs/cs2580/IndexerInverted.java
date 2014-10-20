@@ -394,6 +394,41 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     return null;
   }
 
+  // This method returns the next docid after the given docid that contains at least one of the terms in the query disjunctive.
+  public Document nextDocDisjunctive(Query query, int docid) {
+    List<List<String>> phrases = new ArrayList<List<String>>();
+    if(query instanceof QueryPhrase) {
+      QueryPhrase queryPhrase = (QueryPhrase)query;
+      phrases = Lists.newArrayList(queryPhrase._phrases.values());
+    }
+
+    // Treat all tokens as 1 word phrases.
+    for(String token : query._tokens) {
+      phrases.add(Lists.newArrayList(token));
+    }
+
+    // query is already processed before getting passed into this method
+    try {
+      List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each phrase in the query
+      for(List<String> phrase : phrases) {
+        if(phrase.size() == 1 && _stoppingWords.contains(phrase.get(0))) {  // skip processing a stop word (if not in phrase)
+          continue;
+        }
+        int nextDocID = nextPhrase(phrase, docid);
+        if(nextDocID == -1) return null;
+        docIDs.add(nextDocID);
+      }
+
+      // Get minimum docId for all phrases.
+      int minDocId = Integer.MAX_VALUE;
+      for(int pos = 0; pos < docIDs.size(); pos++) {
+        minDocId = Math.min(docIDs.get(pos), minDocId);
+      }
+      return _documents.get(minDocId);
+    } catch (IOException e) {}
+    return null;
+  }
+
   protected abstract int nextPhrase(List<String> phraseTokens, int docid) throws IOException;
 
   protected abstract int next(String term, int docid) throws IOException;
