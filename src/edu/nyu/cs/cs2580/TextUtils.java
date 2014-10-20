@@ -24,7 +24,6 @@ public class TextUtils {
   }
 
   public static String removePunctuation(String text, String ignoreCharacterClass) {
-    // TODO handle non-English characters
     return text.replaceAll("[^a-zA-Z0-9" + ignoreCharacterClass + "\n]", " ");
   }
   

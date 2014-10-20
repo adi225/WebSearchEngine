@@ -57,19 +57,26 @@ We experienced a significant compresion from 102 MB to 44MB, which is in line wi
 
 ##DOCUMENT PROCESSING
 
-The TextUtils.java is provided to perform document processing.
+The TextUtils.java is provided to perform document processing. The same processing is applied identically to queries (except for the quotation mark) in serve mode as they arrive.
 
 The functionality includes:
 
 1.) Removing non-visible context of the page: The 3rd library, Boilerpipe, is used. The library website is at: https://code.google.com/p/boilerpipe/
 
 2.) Removing abbreviation dots (converting U.K. to UK, I.B.M. to IBM)
+We use regular expressions to detect the abbreviation pattern and replace it with the non-abbreviate version.
 
-3.) Removing punctuations
+3.) deAccent (such that Beyoncé becomes Beyonce)
+We use special features of regular expressions to detect accented characters and replace them with their non-accented versions.
 
-4.) deAccent (such that Beyoncé becomes Beyonce)
+4.) Converting Unicode special characters into their unicode codepoint encoding as a String.
+We use the codepoint of the characters, and if they match the Unicode character class general category "Lo" (in Java, Character. OTHER_LETTER), meaning they are non-punctuation special letters, we replace them by the encoding "u", followed by their code point. This generates a repeatable (deterministic) unique identifier for this character, which can be treated as an ASCII word. We also pad this encoding with spaces, so that it is treated as a separate word.
 
-5.) Stemming: use of step 1 of Porter's algorithm to perform stemming
+5.) Removing punctuations
+We replace all characters that are not English letters, Roman digits or newlines with space. In query processing, we also ignore quotation marks and do not replace them with spaces. This is because they have a special meaning of "query phrase", so we can detect them properly.
+
+6.) Stemming: use of step 1 of Porter's algorithm to perform stemming
+We use the Porter stemming, which performs gramatical stemming based on English language gramatical constructs.
 
 A set of stop words is determined by the top 50 most frequent terms in a corpus. However, no stop word is removed during construction of the index. At run-time, when a user issues a query, processing of inverted list of stop words is skipped.
 
