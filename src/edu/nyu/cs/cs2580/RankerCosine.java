@@ -42,19 +42,19 @@ public class RankerCosine extends Ranker {
         Vector<ScoredDocument> results = new Vector<ScoredDocument>();
       
         PriorityQueue<ScoredDocument> scoredDocuments = new PriorityQueue<ScoredDocument>();
+
         Document doc = _indexer.nextDoc(query, -1);
-        
-        while(doc!=null){
-        	Double score = scoreDocument(query,doc._docid);
-        	scoredDocuments.add(new ScoredDocument(doc,score));
-        	if(scoredDocuments.size()>numResults){
-        		scoredDocuments.poll();
-        	}
-        	doc = _indexer.nextDoc(query, doc._docid);
+        while(doc != null) {
+          double score = scoreDocument(query, doc._docid);
+          scoredDocuments.add(new ScoredDocument(doc, score));
+          if(scoredDocuments.size()>numResults){
+              scoredDocuments.poll();
+          }
+          doc = _indexer.nextDoc(query, doc._docid);      // nextDoc() is conjunctive.
         }
         
         while(!scoredDocuments.isEmpty()){
-        	results.add(scoredDocuments.poll());
+          results.add(scoredDocuments.poll());
         }
         Collections.sort(results, Collections.reverseOrder());
         return results;
@@ -64,24 +64,15 @@ public class RankerCosine extends Ranker {
     	// If the inverted-doconly is used, just return 1.0 as a score.
     	// This is because the index has only the docID, which is
     	// insufficient to calculate the score.
-    	if(_indexer._options._indexerType.equalsIgnoreCase("inverted-doconly")){
+    	if(_indexer instanceof IndexerInvertedDoconly){
+            System.out.println("Ranker does not support this indexer type.");
     		return 1.0;
     	}
-    	
-        // TODO Check that double processing is ok. (Query Handler also processes it).
-        // Process the raw query into tokens.
-        // query.processQuery();
 
-    	// How to rebuild a document vector (String) from index file?
-    	// Should we store unique terms in DocumentIndexed?
-        // Get the document tokens.
         DocumentIndexed doc = ((DocumentIndexed)_indexer.getDoc(did));
-        //Vector<String> docTokens = ((DocumentFull) doc).getConvertedBodyTokens();
-        Vector<String> docTokens = null;
-        
 
         double score = 0, q_sqr = 0;
-        int n = _indexer.numDocs();
+        double n = _indexer.numDocs();
         double idf, tf_q, tf_d, tfidf_q, tfidf_d;
 
         // builds map of query word frequency
@@ -114,5 +105,4 @@ public class RankerCosine extends Ranker {
 
         return score;
     }
-
 }
