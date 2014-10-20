@@ -90,10 +90,6 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
    * Works just like in the lecture slide 3, page 14.
    */
   protected int next(String term, int docid) throws IOException {
-    return next(term, docid, 0);
-  }
-
-  protected int next(String term, int docid, int pos) throws IOException {
     if(!_dictionary.containsKey(term)) {
       return -1;
     }
@@ -101,10 +97,21 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
     int termInt = _dictionary.get(term);  // an integer representation of a term
     List<Integer> postingList = postingsListForWord(termInt);
 
-    int occurrenceIndex = pos + 1;  // the first index of occurrence position in the list
+    int occurrenceIndex = 1;
+
+    if(_cachedDocId.containsKey(termInt) && _cachedDocId.get(termInt) <= docid) {
+      if(_cachedOffset.containsKey(termInt)) {
+        occurrenceIndex = _cachedOffset.get(termInt) + 1;
+      } else {
+        System.out.println("Cached offset is missing offset, but cachedDoc has doc!");
+      }
+    }
+
     while(occurrenceIndex < postingList.size()) {
       int docIndex = occurrenceIndex - 1;
       if(postingList.get(docIndex) > docid) {
+        _cachedDocId.put(termInt, postingList.get(docIndex));
+        _cachedOffset.put(termInt, docIndex);
         return postingList.get(docIndex);
       }
       int occurrence = postingList.get(occurrenceIndex);
@@ -244,9 +251,19 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
     List<Integer> postingList = postingsListForWord(termInt);
 
     int occurrenceIndex = 1;  // the first index of occurrence position in the list
+    if(_cachedDocId.containsKey(termInt) && _cachedDocId.get(termInt) <= docId) {
+      if(_cachedOffset.containsKey(termInt)) {
+        occurrenceIndex = _cachedOffset.get(termInt) + 1;
+      } else {
+        System.out.println("Cached offset is missing offset, but cachedDoc has doc!");
+      }
+    }
+
     while(occurrenceIndex < postingList.size()) {
       int docIndex = occurrenceIndex - 1;
       if(postingList.get(docIndex) == docId) {
+        _cachedDocId.put(termInt, docId);
+        _cachedOffset.put(termInt, docIndex);
         Set<Integer> result = Sets.newHashSet();
         int occurrence = postingList.get(occurrenceIndex);
         for(int i = occurrenceIndex + 1; i <= occurrenceIndex + occurrence; i++) {
@@ -289,8 +306,16 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
     
     try {
       List<Integer> postingList = postingsListForWord(termId);
-      int termFrequency = 0;
+
       int occurrenceIndex = 1;  // the first index of occurrence position in the list
+      if(_cachedDocId.containsKey(termId) && _cachedDocId.get(termId) <= docId) {
+        if(_cachedOffset.containsKey(termId)) {
+          occurrenceIndex = _cachedOffset.get(termId) + 1;
+        } else {
+          System.out.println("Cached offset is missing offset, but cachedDoc has doc!");
+        }
+      }
+
       while(occurrenceIndex < postingList.size()){
         int docIndex = occurrenceIndex - 1;
         if(postingList.get(docIndex) > docId){
@@ -298,6 +323,8 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
         }
         int occurrence = postingList.get(occurrenceIndex);
         if(postingList.get(docIndex) == docId){
+          _cachedDocId.put(termId, docId);
+          _cachedOffset.put(termId, docIndex);
           return occurrence;
         }
         occurrenceIndex += occurrence + 2;  // jump to the next occurrence position

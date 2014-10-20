@@ -89,7 +89,7 @@ public class IndexerInvertedDoconly extends IndexerInverted {
   // Just like in the lecture slide 3, page 14, this helper method returns the next document id
   // after the given docid. It returns -1 if not found.
   @Override
-  public int next(String term, int docid) throws IOException {
+  protected int next(String term, int docid) throws IOException {
     if(!_dictionary.containsKey(term)) {
       return -1;
     }

@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import de.l3s.boilerpipe.document.TextDocument;
 import de.l3s.boilerpipe.extractors.ArticleExtractor;
@@ -41,6 +42,8 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   // A cache for postings lists to contain some of the lists in memory.
   protected Map<Integer, List<Integer>> _indexCache = new HashMap<Integer, List<Integer>>();
   protected long _indexCacheFlatSize = 0;
+  protected Map<Integer, Integer> _cachedDocId = Maps.newHashMap();
+  protected Map<Integer, Integer> _cachedOffset = Maps.newHashMap();
 
   // An offset in the file where the postings lists begin (after all metadata).
   protected long _indexOffset = 0;
@@ -453,4 +456,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   }
 
   protected abstract int nextPhrase(List<String> phraseTokens, int docid) throws IOException;
+
+  protected abstract int next(String term, int docid) throws IOException;
 }
