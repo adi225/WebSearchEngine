@@ -14,6 +14,7 @@ public class IndexerInvertedCompressedTest {
 
   IndexerInvertedCompressed _indexer;
   File testDirectory;
+  private static final int MAX_DOC_TEST = 100;
 
   @Before
   public void setUp() throws Exception {
@@ -75,7 +76,7 @@ public class IndexerInvertedCompressedTest {
 
     _indexer._utilityIndex = new UnshrinkableHashMap<Integer, List<Byte>>();
     _indexer.UTILITY_INDEX_FLAT_SIZE_THRESHOLD = Integer.MAX_VALUE;
-    //_indexer.MAX_DOCS = 100;
+    _indexer.MAX_DOCS = MAX_DOC_TEST;
 
     _indexer.constructIndex();
     Map<Integer, List<Byte>> utilityIndex = _indexer._utilityIndex;
@@ -109,7 +110,7 @@ public class IndexerInvertedCompressedTest {
 
     indexer._utilityIndex = new UnshrinkableHashMap<Integer, List<Integer>>();
     indexer.UTILITY_INDEX_FLAT_SIZE_THRESHOLD = Integer.MAX_VALUE;
-    //indexer.MAX_DOCS = 200;
+    indexer.MAX_DOCS = MAX_DOC_TEST;
 
     indexer.constructIndex();
     Map<Integer, List<Integer>> utilityIndex = indexer._utilityIndex;
@@ -137,14 +138,14 @@ public class IndexerInvertedCompressedTest {
 
     indexerOccurances._utilityIndex = new UnshrinkableHashMap<Integer, List<Integer>>();
     indexerOccurances.UTILITY_INDEX_FLAT_SIZE_THRESHOLD = Integer.MAX_VALUE;
-    //indexerOccurances.MAX_DOCS = 100;
+    indexerOccurances.MAX_DOCS = MAX_DOC_TEST;
 
     indexerOccurances.constructIndex();
     Map<Integer, List<Integer>> utilityIndexOccurances = indexerOccurances._utilityIndex;
 
     indexerCompressed._utilityIndex = new UnshrinkableHashMap<Integer, List<Byte>>();
     indexerCompressed.UTILITY_INDEX_FLAT_SIZE_THRESHOLD = Integer.MAX_VALUE;
-    //indexerCompressed.MAX_DOCS = 100;
+    indexerCompressed.MAX_DOCS = MAX_DOC_TEST;
 
     indexerCompressed.constructIndex();
 
@@ -171,7 +172,7 @@ public class IndexerInvertedCompressedTest {
 
     _indexer._utilityIndex = new UnshrinkableHashMap<Integer, List<Byte>>();
     _indexer.UTILITY_INDEX_FLAT_SIZE_THRESHOLD = Integer.MAX_VALUE;
-    //_indexer.MAX_DOCS = 100;
+    _indexer.MAX_DOCS = MAX_DOC_TEST;
 
     _indexer.constructIndex();
     Map<Integer, List<Byte>> utilityIndex = _indexer._utilityIndex;
@@ -207,14 +208,14 @@ public class IndexerInvertedCompressedTest {
 
     indexerOccurances._utilityIndex = new UnshrinkableHashMap<Integer, List<Integer>>();
     indexerOccurances.UTILITY_INDEX_FLAT_SIZE_THRESHOLD = Integer.MAX_VALUE;
-    //indexerOccurances.MAX_DOCS = 100;
+    indexerOccurances.MAX_DOCS = MAX_DOC_TEST;
 
     indexerOccurances.constructIndex();
     Map<Integer, List<Integer>> utilityIndexOccurances = indexerOccurances._utilityIndex;
 
     indexerCompressed._utilityIndex = new UnshrinkableHashMap<Integer, List<Byte>>();
     indexerCompressed.UTILITY_INDEX_FLAT_SIZE_THRESHOLD = Integer.MAX_VALUE;
-    //indexerCompressed.MAX_DOCS = 100;
+    indexerCompressed.MAX_DOCS = MAX_DOC_TEST;
 
     indexerCompressed.constructIndex();
 
@@ -274,8 +275,8 @@ public class IndexerInvertedCompressedTest {
   @Test
   public void testUnmergedVsMergedEquality() throws Exception {
     File unmergedFile = new File(_indexer._options._indexPrefix + "/index_unmerged_compressed.idx");
-    //File mergedFile = new File(_indexer._options._indexPrefix + "/index_merged_compressed.idx");
-    File mergedFile = new File(_indexer._options._indexPrefix + "/index.idx");
+    File mergedFile = new File(_indexer._options._indexPrefix + "/index_comp.idx");
+    //File mergedFile = new File(_indexer._options._indexPrefix + "/index.idx");
 
 
     RandomAccessFile unmerged = new RandomAccessFile(unmergedFile, "r");
@@ -304,11 +305,15 @@ public class IndexerInvertedCompressedTest {
       _indexer._indexRAF = unmerged;
       _indexer._indexOffset = unmergedOffset;
       _indexer._index = unmergedLists;
+      _indexer._indexCache.clear();
+      _indexer._indexCacheFlatSize = 0;
       List<Integer> unmergedList = _indexer.postingsListForWord(key);
 
       _indexer._indexRAF = merged;
       _indexer._indexOffset = mergedOffset;
       _indexer._index = mergedLists;
+      _indexer._indexCache.clear();
+      _indexer._indexCacheFlatSize = 0;
       List<Integer> mergedList = _indexer.postingsListForWord(key);
 
       assertEquals(unmergedList, mergedList);

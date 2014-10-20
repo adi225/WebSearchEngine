@@ -112,7 +112,7 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
       }
     }
 
-    while(postingsList.size() * 4 + _indexCacheFlatSize > IndexerInverted.INDEX_CACHE_THRESHOLD) {
+    while(_indexCacheFlatSize > 0 && postingsList.size() * 4 + _indexCacheFlatSize > IndexerInverted.INDEX_CACHE_THRESHOLD) {
       List<Integer> lists = Lists.newArrayList(_indexCache.keySet());
       Random R = new Random();
       int randomListIndex = R.nextInt(lists.size());
