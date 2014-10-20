@@ -5,6 +5,8 @@ import java.io.Serializable;
 import java.util.*;
 
 import com.google.common.collect.BiMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
@@ -134,7 +136,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
             //We found a doc that contains the current phrase
             //Check that the terms match the phrase
             int phrasePosition = -1;
-            phrasePosition = nextPhrase((String)pairs.getKey(), phraseTokens ,docIDFixed , phrasePosition);
+            //phrasePosition = nextPhrase((String)pairs.getKey(), phraseTokens ,docIDFixed , phrasePosition);
 
             if(phrasePosition == -1) //phrase not found (how do we get here if foundDocID is true?)
             	  return null;
@@ -173,7 +175,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
           if(regularTokensDoc == finalDocIDFixed)
             return _documents.get(finalDocIDFixed);
           else
-            return nextDocDisjunctive(query,finalDocIDNew-1);
+            return nextDocDisjunctive(query, finalDocIDNew - 1);
         }
 
         return _documents.get(finalDocIDFixed);
@@ -186,25 +188,33 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
   // This is equivalent to the nextDoc method in the IndexerInvertedDoconly class.
   @Override
   public Document nextDoc(Query query, int docid) {
+    List<List<String>> phrases = new ArrayList<List<String>>();
+    if(query instanceof QueryPhrase) {
+      QueryPhrase queryPhrase = (QueryPhrase)query;
+      phrases = Lists.newArrayList(queryPhrase._phrases.values());
+    }
+
+    // Treat all tokens as 1 word phrases.
+    for(String token : query._tokens) {
+      phrases.add(Lists.newArrayList(token));
+    }
+
 	// query is already processed before getting passed into this method
-    // TODO Optimize performance using PriorityQueue, Set, or more sequential lookup of terms, etc.
 	try {
-      List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
-      for(String token : query._tokens) {
-        if(_stoppingWords.contains(token)) {  // skip processing a stop word
+      List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each phrase in the query
+      for(List<String> phrase : phrases) {
+        if(phrase.size() == 1 && _stoppingWords.contains(phrase.get(0))) {  // skip processing a stop word (if not in phrase)
           continue;
         }
-        int nextDocID = next(token, docid);
-        if(nextDocID == -1) {
-          return null;
-        }
+        int nextDocID = nextPhrase(phrase, docid);
+        if(nextDocID == -1) return null;
         docIDs.add(nextDocID);
       }
 
       boolean found = false;
 
       while(!found) {
-        // Get maximum docId for all tokens.
+        // Get maximum docId for all phrases.
         int maxDocId = Integer.MIN_VALUE;
         int maxDocIdIndex = -1;
         for(int pos = 0; pos < docIDs.size(); pos++) {
@@ -217,10 +227,10 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
         for(int pos = 0; pos < docIDs.size(); pos++) {
           if(docIDs.get(pos) < maxDocId) {
             // Get next docId after or equal to the max general docId.
-            int docIdNew = next(query._tokens.get(pos), maxDocId - 1);
+            int docIdNew = nextPhrase(phrases.get(pos), maxDocId - 1);
             if (docIdNew < 0) return null;
 
-            // Set this to new docId for that token.
+            // Set this to new docId for that phrase.
             docIDs.set(pos, docIdNew);
           }
         }
@@ -264,35 +274,99 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
     }
     return -1;
   }
-  
-  // Lecture 3 slide, page 23
-  // This method returns the next position of the phrase after pos within the docid.
-  public int nextPhrase(String phrase, List<String> phraseTokens, int docid, int pos){
-	  // need to pass the phrase portion into the query
-	  
-	  List<Integer> positions = new ArrayList<Integer>();
-	  int maxPosition = Integer.MIN_VALUE;
-	  for(int i=0; i<phraseTokens.size(); i++){
-		  int termPosition = nextPosition(phraseTokens.get(i), docid, pos);
-		  if(termPosition == -1){
-			  return -1;
-		  }
-		  maxPosition = Math.max(maxPosition, termPosition);
-		  positions.add(termPosition);
-	  }
-	  
-	  boolean foundPhrase = true;
-	  for(int i=1; i<positions.size(); i++){
-		  if(positions.get(i) != positions.get(i-1) + 1){
-			  foundPhrase = false;
-			  break;
-		  }
-	  }
-	  
-	  if(foundPhrase){
-		  return positions.get(0);
-	  }
-	  return nextPhrase(phrase, phraseTokens, docid, maxPosition);
+
+  /**
+   *  This helper method returns the next docid after the given docid for this phrase (series of consecutive terms)
+   */
+  public int nextPhrase(List<String> phraseTokens, int docid) throws IOException {
+	// need to pass the phrase portion into the query
+
+    if(phraseTokens.size() == 1) {
+      return next(phraseTokens.get(0), docid);
+    }
+
+    List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the phrase
+    for(String token : phraseTokens) {
+      int nextDocID = next(token, docid);
+      if(nextDocID == -1) return -1;
+      docIDs.add(nextDocID);
+    }
+
+    boolean found = false;
+
+    while(!found) {
+      // Get maximum docId for all tokens.
+      int maxDocId = Integer.MIN_VALUE;
+      int maxDocIdIndex = -1;
+      for(int pos = 0; pos < docIDs.size(); pos++) {
+        if(docIDs.get(pos) > maxDocId) {
+          maxDocId = docIDs.get(pos);
+          maxDocIdIndex = pos;
+        }
+      }
+
+      for(int pos = 0; pos < docIDs.size(); pos++) {
+        if(docIDs.get(pos) < maxDocId) {
+          // Get next docId after or equal to the max general docId.
+          int docIdNew = next(phraseTokens.get(pos), maxDocId - 1);
+          if (docIdNew < 0) return -1;
+
+          // Set this to new docId for that token.
+          docIDs.set(pos, docIdNew);
+        }
+      }
+
+      // Check if the docIds are all equal.
+      found = true;
+      for(int pos = 1; pos < docIDs.size(); pos++) {
+        if(!docIDs.get(pos - 1).equals(docIDs.get(pos))) {  // careful with Integer unboxing
+          found = false;
+          break;
+        }
+      }
+
+      if(found) {
+        // Check that occurrences are consecutive.
+        boolean areConsecutive = false;
+
+        // Use a cache so we don't have to reload the occurances set every time.
+        Map<Integer, Set<Integer>> occurancesCache = new HashMap<Integer, Set<Integer>>();
+
+        // Go through all elem of first list and check if the other lists have the required consecutive elems.
+        Set<Integer> firstList = getOccurancesForDoc(phraseTokens.get(0), docIDs.get(0));
+        for(int firstListOccurance : firstList) {
+          int listIndex;
+          for(listIndex = 1; listIndex < phraseTokens.size(); listIndex++) {
+            Set<Integer> otherList;
+            if(!occurancesCache.containsKey(listIndex)) {
+              otherList = getOccurancesForDoc(phraseTokens.get(listIndex), docIDs.get(0));
+              occurancesCache.put(listIndex, otherList);
+            } else {
+              otherList = occurancesCache.get(listIndex);
+            }
+
+            if(!otherList.contains(firstListOccurance + listIndex)) {
+              break;
+            }
+          }
+          if(listIndex == phraseTokens.size()) {
+            areConsecutive = true;
+            break;
+          }
+        }
+        if(!areConsecutive) {
+          found = false;
+          int commonButNonConsecutiveDocId = docIDs.get(0);
+          docIDs.clear();
+          for(String token : phraseTokens) {
+            int nextDocID = next(token, commonButNonConsecutiveDocId);
+            if(nextDocID == -1) return -1;
+            docIDs.add(nextDocID);
+          }
+        }
+      }
+    }
+    return docIDs.get(0);
   }
   
   // This method returns the next occurrence of the term in docid after pos
@@ -323,6 +397,33 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
       }
     } catch (IOException e) {}
     return -1; // not found
+  }
+
+  protected Set<Integer> getOccurancesForDoc(String term, int docId) throws IOException {
+    if(!_dictionary.containsKey(term)) {
+      return null;
+    }
+
+    int termInt = _dictionary.get(term);  // an integer representation of a term
+    List<Integer> postingList = postingsListForWord(termInt);
+
+    int occurrenceIndex = 1;  // the first index of occurrence position in the list
+    while(occurrenceIndex < postingList.size()) {
+      int docIndex = occurrenceIndex - 1;
+      if(postingList.get(docIndex) == docId) {
+        Set<Integer> result = Sets.newHashSet();
+        int occurrence = postingList.get(occurrenceIndex);
+        for(int i = occurrenceIndex + 1; i <= occurrenceIndex + occurrence; i++) {
+          result.add(postingList.get(i));
+        }
+        return result;
+      } else if(postingList.get(docIndex) > docId) {
+        return null;
+      }
+      int occurrence = postingList.get(occurrenceIndex);
+      occurrenceIndex += occurrence + 2;  // jump to the next occurrence position
+    }
+    return null;
   }
 
   @Override
