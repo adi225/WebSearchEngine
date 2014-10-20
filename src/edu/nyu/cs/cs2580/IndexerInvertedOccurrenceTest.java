@@ -122,7 +122,43 @@ public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Se
       	
       	// case 3 (the query contains both the phrase and conjunctive parts)
       	else if(queryPhrase._tokens.size() != 0 && queryPhrase._phrases.size() != 0){ 
+      		List<List<String>> phrasesTokens = new ArrayList<List<String>>();
       		
+      		// adding each phrase into phrases
+          Iterator it = queryPhrase._phrases.entrySet().iterator();
+          while (it.hasNext()) {  // iterate over each phrase
+            Map.Entry pairs = (Map.Entry)it.next();
+            String phrase = pairs.getKey().toString();
+            phrasesTokens.add((List<String>)pairs.getValue());
+          }
+          
+	        Query conjunctiveQuery = new Query(queryPhrase._query);  // constructing a conjunctive query
+	        conjunctiveQuery._tokens = queryPhrase._tokens;
+	        
+          Document docPhrases = null;
+          Document docConjunctive = null;
+          
+	        try {
+						docPhrases = nextDocMultiplePhrases(phrasesTokens, docid);
+						docConjunctive = nextDocConjunctive(conjunctiveQuery, docid);
+					} catch (Exception e1) {
+						return null;
+					}
+          
+	        if(docPhrases == null || docConjunctive == null){
+	        	return null;
+	        }
+	        
+	        int docPhrasesId = docPhrases._docid;
+	        int docConjunctiveId = docConjunctive._docid;
+	        
+	        if(docPhrasesId == docConjunctiveId){
+	        	return docPhrases;
+	        }
+	        
+	        int docNew = Math.max(docPhrasesId, docConjunctiveId);
+	        return nextDoc(queryPhrase, docNew-1);
+
       	}
       }
       
@@ -131,7 +167,7 @@ public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Se
   
   // Equivalent to next() method, except that this is for phrases.
   public Document nextDocMultiplePhrases(List<List<String>> phrasesTokens, int docid) throws IOException{
-    // just like in lecture 3 slide, page 13
+    // same design pattern just like in lecture 3 slide, page 13
     Vector<Integer> docIDs = new Vector<Integer>();
     for(int i=0;i<phrasesTokens.size();i++){
 			int docID = nextDocSinglePhrase(phrasesTokens.get(i), docid);  // get the doc id after docid containing the phrase (exact)
@@ -154,7 +190,7 @@ public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Se
     if(foundDoc){
     	return _documents.get(fixedDocId);
     }
-    return nextDocMultiplePhrases(phrasesTokens, maxDocId);
+    return nextDocMultiplePhrases(phrasesTokens, maxDocId-1);
     
   }
   
@@ -163,31 +199,33 @@ public class IndexerInvertedOccurrenceTest extends IndexerInverted implements Se
   // (exact consecutive terms) in query after the given docid.
   public int nextDocSinglePhrase(List<String> phraseTokens, int docid) throws IOException{
   	
-  	Vector<Integer> positions = new Vector<Integer>();
+  	// constructing the conjunctive query
+  	String phrase = "";
+  	Vector<String> tokens = new Vector<String>();
+  	for(int i=0;i<phraseTokens.size();i++){
+  		tokens.add(phraseTokens.get(i));
+  		phrase += phraseTokens.get(i)+" ";
+  	}
+  	phrase = phrase.trim();
   	
-  	for(int i=0; i<phraseTokens.size(); i++){
-  		int pos = nextPosition(phraseTokens.get(i), docid+1, -1);
-  		if(pos == -1){  // if the token is not found
-  			return -1;
-  		}
-  		positions.add(pos);
+  	Query queryConjunctive = new Query(phrase);
+  	queryConjunctive._tokens = tokens;
+  	
+  	Document doc = nextDocConjunctive(queryConjunctive, docid);
+  	
+  	if(doc == null){  // making sure that there is a document containing all terms in the phrases
+  		return -1;
   	}
   	
-  	boolean found = true;
-  	int maxPos = Integer.MIN_VALUE;
-  	for(int i=1;i<positions.size();i++){
-  		if(positions.get(i) != positions.get(i-1)+1){
-  			found = false;
-  		}
-  		maxPos = Math.max(maxPos, positions.get(i));
+  	while(doc != null){
+	   	int phrasePosition = nextPhrase(phrase, phraseTokens, docid, -1);
+	  	if(phrasePosition != -1){
+	  		return doc._docid;
+	  	}
+	  	doc = nextDocConjunctive(queryConjunctive, doc._docid);
   	}
-  	
-  	if(found){
-  		String firstTerm = phraseTokens.get(0);
-  		return next(firstTerm,docid);
-  	}
-  	
-  	return nextDocSinglePhrase(phraseTokens, maxPos);
+   	
+  	return -1;
   }
   
   // This method returns the next docid after the given docid that contains all terms in the query conjunctive.
