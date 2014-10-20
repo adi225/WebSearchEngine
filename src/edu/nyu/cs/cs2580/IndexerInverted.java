@@ -404,15 +404,17 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
           continue;
         }
         int nextDocID = nextPhrase(phrase, docid);
-        if(nextDocID == -1) return null;
         docIDs.add(nextDocID);
       }
 
       // Get minimum docId for all phrases.
       int minDocId = Integer.MAX_VALUE;
       for(int pos = 0; pos < docIDs.size(); pos++) {
-        minDocId = Math.min(docIDs.get(pos), minDocId);
+        if(docIDs.get(pos) >= 0) {
+          minDocId = Math.min(docIDs.get(pos), minDocId);
+        }
       }
+      if(minDocId == Integer.MAX_VALUE) return null;
       return _documents.get(minDocId);
     } catch (IOException e) {}
     return null;
