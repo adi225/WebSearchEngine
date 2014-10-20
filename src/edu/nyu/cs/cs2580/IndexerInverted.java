@@ -267,50 +267,14 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   }
 
   public Vector<Integer> processDocument(Document doc, String text) throws BoilerpipeProcessingException, SAXException {
-    text = removeNonVisibleContext(doc, text);  // step 1 of document processing
-    text = removeInitialsDots(text);
-    text = deAccent(text);
-    text = removePunctuation(text).toLowerCase();
+    text = TextUtils.removeNonVisibleContext(doc, text);  // step 1 of document processing
+    text = TextUtils.removeInitialsDots(text);
+    text = TextUtils.deAccent(text);
+    text = TextUtils.removePunctuation(text).toLowerCase();
     return readTermVector(text);
   }
 
-  // Non-visible page content is removed, e.g., those inside <script> tags.
-  // Right now, the 3rd party library "BoilerPiper" is used to perform the task.
-  public String removeNonVisibleContext(Document document, String text) throws BoilerpipeProcessingException, SAXException {
-    HTMLDocument htmlDoc = new HTMLDocument(text);
-    BoilerpipeSAXInput boilerpipeSaxInput = new BoilerpipeSAXInput(htmlDoc.toInputSource());
-    TextDocument doc = boilerpipeSaxInput.getTextDocument();
-    document.setTitle(doc.getTitle());
-    return ArticleExtractor.INSTANCE.getText(text);
-  }
 
-  public String removePunctuation(String text) {
-    // text = text.replaceAll("(\\w\\.)+", "\1+");
-    return text.replaceAll("[^a-zA-Z0-9\n]", " ");
-    // TODO Treat abbreviation specially (I.B.M.)
-    // TODO Think about accented characters.
-  }
-  
-  // Tokens are stemmed with Step 1 of the Porter's algorithm.
-  public String performStemming(String text){
-    Stemmer stemmer = new Stemmer();
-    stemmer.add(text.toCharArray(), text.length());
-    stemmer.stem();
-	return stemmer.toString();
-  }
-
-  private String removeInitialsDots(String str) {
-    str=str.replaceAll("(?i)(^([a-z])\\.|(?<= )([a-z])\\.|(?<=\\.)([a-z])\\.)", "$2$3$4").trim();
-    str=str.replaceAll("(?i)^(([a-z]) ([a-z]))($| )", "$2$3"+" ").trim();
-    str=str.replaceAll("(?i)(?<= )(([a-z]) ([a-z]))($| )", "$2$3"+" ").trim();
-    return str;
-  }
-
-  private String deAccent(String str) {
-    String nfdNormalizedString = Normalizer.normalize(str, Normalizer.Form.NFD);
-    Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
-    return pattern.matcher(nfdNormalizedString).replaceAll("");
-  }
 
   /**
    * Tokenize {@code content} into terms, translate terms into their integer
@@ -322,7 +286,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     Scanner s = new Scanner(content);  // Uses white space by default.
     while (s.hasNext()) {
       String token = s.next();
-      token = performStemming(token);
+      token = TextUtils.performStemming(token);
 
       int idx = -1;
       if (_dictionary.containsKey(token)) {

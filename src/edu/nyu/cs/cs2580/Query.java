@@ -23,7 +23,9 @@ public class Query {
     // TODO Do not process on creation. (need more processing too)
     try {
       _query = URLDecoder.decode(query, "UTF-8");
-      _query = performStemming(_query);
+      _query = TextUtils.removeInitialsDots(_query);
+      _query = TextUtils.deAccent(_query);
+      _query = TextUtils.removePunctuation(_query).toLowerCase();
     } catch (UnsupportedEncodingException e) {
       SearchEngine.Check(false, "Query is not in UTF-8 encoding.");
     }
@@ -39,17 +41,10 @@ public class Query {
     Scanner s = new Scanner(_query);
     while (s.hasNext()) {
       String token = s.next();
+      token = TextUtils.performStemming(token);
       _tokens.add(token);
     }
     s.close();
   }
   
-  public String performStemming(String text){
-	    Stemmer stemmer = new Stemmer();
-	    stemmer.add(text.toCharArray(), text.length());
-	    stemmer.stem();
-		String result = stemmer.toString();
-    // TODO This is a bug. Return result, not text.
-	    return text;
-	  }
 }
