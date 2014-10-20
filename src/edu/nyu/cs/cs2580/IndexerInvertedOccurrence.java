@@ -12,7 +12,7 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 /**
  * @CS2580: Implement this class for HW2.
  */
-public class IndexerInvertedOccurrence extends IndexerInverted implements Serializable{
+public class IndexerInvertedOccurrence extends IndexerInverted implements Serializable {
 
   private static final long serialVersionUID = 1077111905740085030L;
 
@@ -183,72 +183,6 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
       return nextDoc(query, docid);
     }
   }
-  
-  // This method returns the next docid after the given docid that contains all terms in the query conjunctive.
-  // This is equivalent to the nextDoc method in the IndexerInvertedDoconly class.
-  @Override
-  public Document nextDoc(Query query, int docid) {
-    List<List<String>> phrases = new ArrayList<List<String>>();
-    if(query instanceof QueryPhrase) {
-      QueryPhrase queryPhrase = (QueryPhrase)query;
-      phrases = Lists.newArrayList(queryPhrase._phrases.values());
-    }
-
-    // Treat all tokens as 1 word phrases.
-    for(String token : query._tokens) {
-      phrases.add(Lists.newArrayList(token));
-    }
-
-	// query is already processed before getting passed into this method
-	try {
-      List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each phrase in the query
-      for(List<String> phrase : phrases) {
-        if(phrase.size() == 1 && _stoppingWords.contains(phrase.get(0))) {  // skip processing a stop word (if not in phrase)
-          continue;
-        }
-        int nextDocID = nextPhrase(phrase, docid);
-        if(nextDocID == -1) return null;
-        docIDs.add(nextDocID);
-      }
-
-      boolean found = false;
-
-      while(!found) {
-        // Get maximum docId for all phrases.
-        int maxDocId = Integer.MIN_VALUE;
-        int maxDocIdIndex = -1;
-        for(int pos = 0; pos < docIDs.size(); pos++) {
-          if(docIDs.get(pos) > maxDocId) {
-            maxDocId = docIDs.get(pos);
-            maxDocIdIndex = pos;
-          }
-        }
-
-        for(int pos = 0; pos < docIDs.size(); pos++) {
-          if(docIDs.get(pos) < maxDocId) {
-            // Get next docId after or equal to the max general docId.
-            int docIdNew = nextPhrase(phrases.get(pos), maxDocId - 1);
-            if (docIdNew < 0) return null;
-
-            // Set this to new docId for that phrase.
-            docIDs.set(pos, docIdNew);
-          }
-        }
-
-        // Check if the docIds are all equal.
-        found = true;
-        for(int pos = 1; pos < docIDs.size(); pos++) {
-          if(!docIDs.get(pos - 1).equals(docIDs.get(pos))) {  // careful with Integer unboxing
-            found = false;
-            break;
-          }
-        }
-      }
-      return _documents.get(docIDs.get(0));
-
-	} catch (IOException e) {}
-	return null;
-  }
 
   /**
    * This helper method returns the next docid after the given docid in the term's postings list.
@@ -278,9 +212,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
   /**
    *  This helper method returns the next docid after the given docid for this phrase (series of consecutive terms)
    */
-  public int nextPhrase(List<String> phraseTokens, int docid) throws IOException {
-	// need to pass the phrase portion into the query
-
+  protected int nextPhrase(List<String> phraseTokens, int docid) throws IOException {
     if(phraseTokens.size() == 1) {
       return next(phraseTokens.get(0), docid);
     }

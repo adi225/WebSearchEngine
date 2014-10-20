@@ -36,46 +36,54 @@ public class IndexerInvertedDoconly extends IndexerInverted {
     }
   }
 
-  /**
-   * In HW2, you should be using {@link DocumentIndexed}
-   */
-  // This implementation follows that in the lecture 3 slide, page 13.
   @Override
-  public Document nextDoc(Query query, int docid) {
-    // Assuming that the query has already been processed.
-    try {
-      List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the query
-      for(String token : query._tokens){
-    	if(_stoppingWords.contains(token)){  // skip processing a stop word
-    		continue;
-    	}
-        int docID = next(token,docid);
-        if(docID == -1){
-          return null;
-        }
-        docIDs.add(docID);
-      }
+  protected int nextPhrase(List<String> phraseTokens, int docid) throws IOException {
+    if(phraseTokens.size() == 1) {
+      return next(phraseTokens.get(0), docid);
+    }
+    System.out.println("This indexer does not support query phrases.");
 
-      boolean foundDocID = true;
-      int docIDFixed = docIDs.get(0);
-      int docIDNew = Integer.MIN_VALUE;
+    List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each term in the phrase
+    for(String token : phraseTokens) {
+      int nextDocID = next(token, docid);
+      if(nextDocID == -1) return -1;
+      docIDs.add(nextDocID);
+    }
 
-      for(Integer docID : docIDs){  // check if all the doc IDs are equal
-        if(docID != docIDFixed){
-          foundDocID = false;
-        }
-        if(docID > docIDNew){
-          docIDNew = docID;
+    boolean found = false;
+
+    while(!found) {
+      // Get maximum docId for all tokens.
+      int maxDocId = Integer.MIN_VALUE;
+      int maxDocIdIndex = -1;
+      for(int pos = 0; pos < docIDs.size(); pos++) {
+        if(docIDs.get(pos) > maxDocId) {
+          maxDocId = docIDs.get(pos);
+          maxDocIdIndex = pos;
         }
       }
 
-      if(foundDocID){
-        return _documents.get(docIDFixed);
+      for(int pos = 0; pos < docIDs.size(); pos++) {
+        if(docIDs.get(pos) < maxDocId) {
+          // Get next docId after or equal to the max general docId.
+          int docIdNew = next(phraseTokens.get(pos), maxDocId - 1);
+          if (docIdNew < 0) return -1;
+
+          // Set this to new docId for that token.
+          docIDs.set(pos, docIdNew);
+        }
       }
 
-      return nextDoc(query,docIDNew-1);
-    } catch (IOException e) {}
-    return null;
+      // Check if the docIds are all equal.
+      found = true;
+      for(int pos = 1; pos < docIDs.size(); pos++) {
+        if(!docIDs.get(pos - 1).equals(docIDs.get(pos))) {  // careful with Integer unboxing
+          found = false;
+          break;
+        }
+      }
+    }
+    return docIDs.get(0);
   }
 
   // Just like in the lecture slide 3, page 14, this helper method returns the next document id
