@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import com.google.common.collect.Lists;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
@@ -90,6 +91,10 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
   // This method may be deprecated in later versions. Use with caution!
   @Override
   protected List<Integer> postingsListForWord(int word) throws IOException {
+    if(_indexCache.containsKey(word)) {
+      return _indexCache.get(word);
+    }
+
     LinkedList<Integer> deltaPostingsList = (LinkedList<Integer>) deltaPostingsListForWord(word);
     List<Integer> postingsList = new LinkedList<Integer>();
 
@@ -106,6 +111,18 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
         postingsList.add(_prevOccurance);
       }
     }
+
+    while(postingsList.size() * 4 + _indexCacheFlatSize > IndexerInverted.INDEX_CACHE_THRESHOLD) {
+      List<Integer> lists = Lists.newArrayList(_indexCache.keySet());
+      Random R = new Random();
+      int randomListIndex = R.nextInt(lists.size());
+
+      _indexCacheFlatSize -= _indexCache.get(lists.get(randomListIndex)).size() * 4;
+      _indexCache.remove(lists.get(randomListIndex));
+    }
+    _indexCache.put(word, postingsList);
+    _indexCacheFlatSize += postingsList.size() * 4;
+
     return postingsList;
   }
 
@@ -115,13 +132,16 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
     _indexRAF.seek(_indexOffset + fileRange.offset);
     int bytesRead = 0;
     boolean keepGoing;
+    byte[] loadedList = new byte[(int)fileRange.length];
+    int readConfirm = _indexRAF.read(loadedList);
+    SearchEngine.Check(readConfirm == loadedList.length, "IO problems reading postings list.");
+
     while(bytesRead < fileRange.length) {
       int pos = 0;
       byte[] buf = new byte[8];
       keepGoing = true;
       do {
-        buf[pos] = _indexRAF.readByte();
-        bytesRead++;
+        buf[pos] = loadedList[bytesRead++];
         keepGoing = (buf[pos++] & 128) == 0;
       } while(keepGoing);
       byte[] asBytes = new byte[pos];

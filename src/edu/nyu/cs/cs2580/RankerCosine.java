@@ -1,11 +1,8 @@
 package edu.nyu.cs.cs2580;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Set;
-import java.util.Vector;
+import com.google.common.collect.Lists;
+
+import java.util.*;
 
 /**
  * Created by andreidinuionita on 10/8/14.
@@ -83,6 +80,20 @@ public class RankerCosine extends Ranker {
             } else {
                 queryMap.put(word, 1);
             }
+        }
+
+        if(query instanceof QueryPhrase) {
+          QueryPhrase queryPhrase = (QueryPhrase)query;
+          List<List<String>> phrases = new ArrayList<List<String>>(queryPhrase._phrases.values());
+          for (List<String> phrase : phrases) {
+            for(String word : phrase) {
+              if (queryMap.containsKey(word)) {
+                queryMap.put(word, queryMap.get(word) + 1);
+              } else {
+                queryMap.put(word, 1);
+              }
+            }
+          }
         }
 
         // iterates over all words in query

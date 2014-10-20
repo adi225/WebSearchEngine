@@ -23,6 +23,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   private static final long serialVersionUID = 1077111905740085030L;
   protected static final String WORDS_DIR = "/.partials";
   protected static long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
+  protected static long INDEX_CACHE_THRESHOLD = 500000;
 
   protected RandomAccessFile _indexRAF;
   protected final String indexFilePath = _options._indexPrefix + "/index.idx";
@@ -36,6 +37,10 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   // An index, which is a mapping between an integer representation of a term
   // and a byte range in the file where the postings list for the term is located.
   protected Map<Integer, FileRange> _index = new HashMap<Integer, FileRange>();
+
+  // A cache for postings lists to contain some of the lists in memory.
+  protected Map<Integer, List<Integer>> _indexCache = new HashMap<Integer, List<Integer>>();
+  protected long _indexCacheFlatSize = 0;
 
   // An offset in the file where the postings lists begin (after all metadata).
   protected long _indexOffset = 0;
@@ -324,7 +329,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     }
     return postingsList;
   }
-
 
   protected abstract void updatePostingsLists(int docId, Vector<Integer> docTokensAsIntegers) throws IOException;
 
