@@ -2,6 +2,8 @@ package edu.nyu.cs.cs2580;
 
 import java.io.*;
 import java.net.URLDecoder;
+import java.util.Calendar;
+import java.util.Timer;
 import java.util.UUID;
 import java.util.Vector;
 
@@ -125,12 +127,17 @@ class QueryHandler implements HttpHandler {
     response.append(response.length() > 0 ? "\n" : "");
   }
   
-  private void constructHTMLOutput(final Vector<ScoredDocument> docs, StringBuffer response, String query) {
+  private void constructHTMLOutput(final Vector<ScoredDocument> docs, StringBuffer response, String query, long timeTaken) {
+	  response.append("<html><head><style>font-family: arial,sans-serif;</style></head><body>");
+	  response.append("<p style=\"color:#A8A8A8;font-size:16px\">Your search has returned ");
+	  response.append(docs.size());
+	  response.append(" results in ").append(timeTaken).append(" ms </p>");
+	  response.append("<br/>");		
 	  for (ScoredDocument doc : docs) {
-      response.append(response.length() > 0 ? "<br/>" : "");
       response.append(doc.asHtmlResult(query));
+      response.append("<br/>");
     }
-    response.append(response.length() > 0 ? "<br/>" : "");
+	  response.append("</body></html>");
   }
 
   public void handle(HttpExchange exchange) throws IOException {
@@ -171,7 +178,7 @@ class QueryHandler implements HttpHandler {
     } else if(uriPath.equalsIgnoreCase("/clicktrack")) {
 
       // writing out to files
-      String logFileName = "hw2.4-log.tsv";
+      String logFileName = "hw3.4-log.tsv";
       FileWriter logFileWriter = new FileWriter("results/" + logFileName, true);
       PrintWriter vsmWriter = new PrintWriter(new BufferedWriter(logFileWriter));
       String[] params = uriQuery.split("&");
@@ -190,12 +197,13 @@ class QueryHandler implements HttpHandler {
       vsmWriter.write(logEntry + "\n");
       vsmWriter.close();
       // Construct a simple response.
-      // responseHeaders.set("Location", exchange.getRequestHeaders().getFirst("Referer"));
-      responseHeaders.set("Location", "file://" + _indexer.getDoc(Integer.parseInt(documentId)).getUrl());
-      exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
+       responseHeaders.set("Location", exchange.getRequestHeaders().getFirst("Referer"));
+//      responseHeaders.set("Location", "file:///" + _indexer.getDoc(Integer.parseInt(documentId)).getUrl());
+//      exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
       exchange.getResponseBody().close();
       return;
     } else {
+    	long startTime = Calendar.getInstance().getTimeInMillis();
       System.out.println("Query: " + uriQuery);
 
       // Process the CGI arguments.
@@ -221,15 +229,17 @@ class QueryHandler implements HttpHandler {
       processedQuery.processQuery();
 
       // Ranking.
+      
       Vector<ScoredDocument> scoredDocs = ranker.runQuery(processedQuery, cgiArgs._numResults);
       StringBuffer response = new StringBuffer();
+      long endTime = Calendar.getInstance().getTimeInMillis();
       switch (cgiArgs._outputFormat) {
           case TEXT:
               constructTextOutput(scoredDocs, response);
               respondWithMsg(exchange, response.toString());
               break;
           case HTML:
-              constructHTMLOutput(scoredDocs, response, cgiArgs._query);
+              constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
               respondWithHTML(exchange, response.toString());
               break;
           default:
