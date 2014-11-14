@@ -6,15 +6,18 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
  * This is the abstract Indexer class for all concrete Indexer implementations.
- * 
+ *
  * Use {@link Indexer.Factory} to create concrete Indexer implementation.
  * Do NOT change the interface of this class.
- * 
+ *
  * In HW1: instructor's {@link IndexerFullScan} is provided as is.
- * 
- * In HW2: student will implement {@link IndexerInvertedDoconly},
+ *
+ * In HW2: students will implement {@link IndexerInvertedDoconly},
  * {@link IndexerInvertedOccurrence}, and {@link IndexerInvertedCompressed}.
  * See comments below for more info.
+ *
+ * In HW3: students will incorporate the corpus analysis and log mining results
+ * into indexing process through {@link CorpusAnalyzer} and {@link LogMiner}.
  *
  * @author congyu
  * @author fdiaz
@@ -22,6 +25,10 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 public abstract class Indexer {
   // Options to configure each concrete Indexer, do not serialize.
   protected Options _options = null;
+
+  // CorpusAnalyzer and LogMinder that support the indexing process.
+  protected CorpusAnalyzer _corpusAnalyzer = null;
+  protected LogMiner _logMiner = null;
 
   // In-memory data structures populated once for each server. Those fields
   // are populated during index loading time and must not be modified during
@@ -36,6 +43,8 @@ public abstract class Indexer {
   // The real constructor
   public Indexer(Options options) {
     _options = options;
+    _corpusAnalyzer = CorpusAnalyzer.Factory.getCorpusAnalyzerByOption(options);
+    _logMiner = LogMiner.Factory.getLogMinerByOption(options);
   }
 
   // APIs for document retrieval.
@@ -67,7 +76,7 @@ public abstract class Indexer {
   /**
    * Called when the SearchEngine is in {@code Mode.INDEX} mode. Subclass must
    * construct the index from the provided corpus at {@code corpus_prefix}.
-   * 
+   *
    * Document processing must satisfy the following:
    *   1) Non-visible page content is removed, e.g., those inside <script> tags
    *   2) Tokens are stemmed with Step 1 of the Porter's algorithm
@@ -75,17 +84,20 @@ public abstract class Indexer {
    *      drop the processing of a certain inverted list.
    *
    * The index must reside at the directory of index_prefix, no other data can
-   * be stored (either in a hidden file or in a temporary directory). We will
-   * construct your index on one machine and move the index to a different
-   * machine for serving, so do NOT try to play tricks. 
-   */ 
+   * be stored (either in a hidden file or in a temporary directory). In serve
+   * mode, the constructed index should provide the necessary functionality to
+   * support the search tasks.
+   *
+   * In HW3: leverage load() functions from both {@link CorpusAnalyzer} and
+   * {@link LogMiner}.
+   */
   public abstract void constructIndex() throws IOException;
 
   /**
    * Called exactly once when the SearchEngine is in {@code Mode.SERVE} mode.
    * Subclass must load the index at {@code index_prefix} to be ready for
    * serving the search traffic.
-   * 
+   *
    * You must load the index from the constructed index above, do NOT try to
    * reconstruct the index from the corpus. When the search engine is run in
    * serve mode, it will NOT have access to the corpus, all grading for serve
@@ -95,11 +107,11 @@ public abstract class Indexer {
 
   /**
    * APIs for statistics needed for ranking.
-   * 
+   *
    * {@link numDocs} and {@link totalTermFrequency} must return correct results
    * for the current state whenever they are called, either during index
    * construction or during serving (obviously).
-   * 
+   *
    * {@link corpusDocFrequencyByTerm}, {@link corpusTermFrequency}, and
    * {@link documentTermFrequency} must return correct results during serving.
    */
@@ -113,11 +125,12 @@ public abstract class Indexer {
   // Number of documents in which {@code term} appeared, over the full corpus.
   public abstract int corpusDocFrequencyByTerm(String term);
 
-  // Number of times {@code term} appeared in corpus. 
+  // Number of times {@code term} appeared in corpus.
   public abstract int corpusTermFrequency(String term);
 
-  // Number of times {@code term} appeared in the document {@code url}.
-  public abstract int documentTermFrequency(String term, String url);
+  // Number of times {@code term} appeared in the document {@code docid}.
+  // *** @CS2580: Note the function signature change from url to docid. ***
+  public abstract int documentTermFrequency(String term, int docid);
 
   /**
    * All Indexers must be created through this factory class based on the

@@ -265,12 +265,6 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
     return 0;
   }
 
-  @Override
-  public int documentTermFrequency(String term, String url) {
-    int docId = mapUrlToDocId(url);
-    return documentTermFrequency(term, docId);
-  }
-
   public int documentTermFrequency(String term, int docId) {
     if(docId < 0 || !_dictionary.containsKey(term)) return 0;
     int termId = _dictionary.get(term);

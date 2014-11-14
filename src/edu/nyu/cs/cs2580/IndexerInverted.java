@@ -107,6 +107,10 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
         docIndexed.setUrl(docFile.getAbsolutePath());
         _documents.add(docIndexed);
 
+        if(docIndexed.getTitle().equals("2008_World_Music_Awards")) {
+          System.out.print("");
+        }
+
         try {
           // process the raw content of the document and build maps
           Vector<Integer> processedBody = processDocument(docIndexed, text.toString());

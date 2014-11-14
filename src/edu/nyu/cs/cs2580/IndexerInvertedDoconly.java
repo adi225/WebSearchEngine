@@ -152,7 +152,7 @@ public class IndexerInvertedDoconly extends IndexerInverted {
 
   // Need not be implemented because the information is not available in the index.
   @Override
-  public int documentTermFrequency(String term, String url) {
+  public int documentTermFrequency(String term, int docId) {
     SearchEngine.Check(false, "Not implemented!");
     return 0;
   }

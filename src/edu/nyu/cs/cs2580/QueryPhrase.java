@@ -26,7 +26,11 @@ public class QueryPhrase extends Query {
     if(_query == null) {
       return;
     }
+    if(!_phrases.isEmpty() || !_tokens.isEmpty()) {
+      return;
+    }
 
+    // Count how many quotations we have.
     int count = 0;
     for (int i = 0; i < _query.length(); i++) {
       if (_query.charAt(i) == '"') {
@@ -38,7 +42,7 @@ public class QueryPhrase extends Query {
       /* How did we get here? this is a regular query */
       return;
     } else if(count % 2 == 0) {
-      /* We have an even number of " */
+      /* We have an even number of quotations */
       boolean inQuotes = false;
       // TODO Maybe use StringBuilder instead for mutability.
       String inQuotesString = "";

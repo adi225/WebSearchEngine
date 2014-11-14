@@ -221,7 +221,7 @@ class IndexerFullScan extends Indexer implements Serializable {
   }
 
   @Override
-  public int documentTermFrequency(String term, String url) {
+  public int documentTermFrequency(String term, int docid) {
     SearchEngine.Check(false, "Not implemented!");
     return 0;
   }
