@@ -1,11 +1,11 @@
 package edu.nyu.cs.cs2580;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Sets;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 import static com.google.common.base.Preconditions.*;
@@ -16,6 +16,8 @@ import static com.google.common.base.Preconditions.*;
 public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
 
   private static final double DAMPENING_FACTOR = 0.1;
+  private static final int WRITER_BUFFER_SIZE = 50000000;
+  private static final int READER_BUFFER_SIZE = 5000000;
 
   protected BiMap<String, Integer> _documents;
   protected List<Set<Integer>> adjacencyList;
@@ -48,35 +50,46 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
     System.out.println("Preparing " + this.getClass().getName());
 
     File[] directories = checkNotNull(new File(_options._corpusPrefix)).listFiles();
-    List<Set<String>> intermediateAdjacencyList = new ArrayList<Set<String>>(directories.length);
-    adjacencyList = new ArrayList<Set<Integer>>(directories.length);
+    File intermediateAdjacencyListFile = new File(_options._indexPrefix + "/.adjacencyList");
+    PrintWriter intermediateAdjacencyListWriter =
+            new PrintWriter(new BufferedWriter(new FileWriter(intermediateAdjacencyListFile), WRITER_BUFFER_SIZE));
+
     _documents = HashBiMap.create(directories.length);
     int docId = 0;
 
     for(File document : directories) {
       System.out.println("Preparing document " + docId);
       HeuristicLinkExtractor extractor = new HeuristicLinkExtractor(document);
-      Set<String> outLinks = new HashSet<String>();
 
       _documents.put(extractor.getLinkSource(), docId++);
+      intermediateAdjacencyListWriter.print(extractor.getLinkSource() + " ");
       String nextLink = extractor.getNextInCorpusLinkTarget();
       while(nextLink != null) {
-        outLinks.add(nextLink);
+        intermediateAdjacencyListWriter.print(nextLink + " ");
         nextLink = extractor.getNextInCorpusLinkTarget();
       }
-      intermediateAdjacencyList.add(outLinks);
+      intermediateAdjacencyListWriter.println();
     }
+    intermediateAdjacencyListWriter.close();
 
-    for(Set<String> outLinks : intermediateAdjacencyList) {
-      Set<Integer> converted = new HashSet<Integer>();
-      for(String outLink : outLinks) {
-        if(_documents.containsKey(outLink)) {
-          converted.add(_documents.get(outLink));
+    adjacencyList = new ArrayList<Set<Integer>>(directories.length);
+    Scanner intermediateAdjacencyListScanner =
+            new Scanner(new BufferedReader(new FileReader(intermediateAdjacencyListFile), READER_BUFFER_SIZE));
+
+    while (intermediateAdjacencyListScanner.hasNextLine()) {
+      String[] tokens = intermediateAdjacencyListScanner.nextLine().split(" ");
+      Set<Integer> outLinks = Sets.newHashSet();
+      checkState(_documents.containsKey(tokens[0]));
+      checkState(_documents.get(tokens[0]) == adjacencyList.size());
+      for(int i = 1; i < tokens.length; i++) {
+        if(_documents.containsKey(tokens[i])) {
+          outLinks.add(_documents.get(tokens[i]));
         }
       }
-      outLinks.clear();
-      adjacencyList.add(converted);
+      adjacencyList.add(outLinks);
     }
+    intermediateAdjacencyListScanner.close();
+    intermediateAdjacencyListFile.delete();
   }
 
   /**
@@ -137,13 +150,18 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
     }
 
     public double[] times(double[] vector) {
+      System.out.print("Multiplying matrix.");
       checkArgument(vector.length == n);
       double[] result = new double[n];
       for(int i = 0; i < n; i++) {
         for(int j = 0; j < n; j++) {
           result[i] += elem(i, j) * vector[j];
         }
+        if(i % (n / 5) == 0) {
+          System.out.print(".");
+        }
       }
+      System.out.println(".");
       return result;
     }
   }
