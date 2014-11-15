@@ -1,13 +1,25 @@
 package edu.nyu.cs.cs2580;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.*;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
+
+import static com.google.common.base.Preconditions.*;
 
 /**
  * @CS2580: Implement this class for HW3.
  */
 public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
+
+  private static final double DAMPENING_FACTOR = 0.1;
+
+  protected BiMap<String, Integer> _documents;
+  protected List<Set<Integer>> adjacencyList;
+
   public CorpusAnalyzerPagerank(Options options) {
     super(options);
   }
@@ -34,7 +46,37 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
   @Override
   public void prepare() throws IOException {
     System.out.println("Preparing " + this.getClass().getName());
-    return;
+
+    File[] directories = checkNotNull(new File(_options._corpusPrefix)).listFiles();
+    List<Set<String>> intermediateAdjacencyList = new ArrayList<Set<String>>(directories.length);
+    adjacencyList = new ArrayList<Set<Integer>>(directories.length);
+    _documents = HashBiMap.create(directories.length);
+    int docId = 0;
+
+    for(File document : directories) {
+      System.out.println("Preparing document " + docId);
+      HeuristicLinkExtractor extractor = new HeuristicLinkExtractor(document);
+      Set<String> outLinks = new HashSet<String>();
+
+      _documents.put(extractor.getLinkSource(), docId++);
+      String nextLink = extractor.getNextInCorpusLinkTarget();
+      while(nextLink != null) {
+        outLinks.add(nextLink);
+        nextLink = extractor.getNextInCorpusLinkTarget();
+      }
+      intermediateAdjacencyList.add(outLinks);
+    }
+
+    for(Set<String> outLinks : intermediateAdjacencyList) {
+      Set<Integer> converted = new HashSet<Integer>();
+      for(String outLink : outLinks) {
+        if(_documents.containsKey(outLink)) {
+          converted.add(_documents.get(outLink));
+        }
+      }
+      outLinks.clear();
+      adjacencyList.add(converted);
+    }
   }
 
   /**
@@ -53,7 +95,13 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
   @Override
   public void compute() throws IOException {
     System.out.println("Computing using " + this.getClass().getName());
-    return;
+    AdjustedTransitionMatrix M = new AdjustedTransitionMatrix(adjacencyList, DAMPENING_FACTOR);
+    double[] pageRank = new double[_documents.size()];
+    for(int i = 0; i < pageRank.length; i++) {
+      pageRank[i] = 1.0 / pageRank.length;
+    }
+    pageRank = M.times(pageRank);
+    pageRank = M.times(pageRank);
   }
 
   /**
@@ -66,5 +114,52 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
   public Object load() throws IOException {
     System.out.println("Loading using " + this.getClass().getName());
     return null;
+  }
+
+  class TransitionMatrix {
+    private List<Set<Integer>> _adjacencyList;
+    protected int n;
+
+    public TransitionMatrix(List<Set<Integer>> adjacencyList) {
+      _adjacencyList = adjacencyList;
+      n = adjacencyList.size();
+    }
+
+    public double elem(int row, int col) {
+      checkElementIndex(row, n);
+      checkElementIndex(col, n);
+      Set<Integer> outLinks = _adjacencyList.get(col);
+      if(outLinks.contains(row)) {
+        return 1.0 / outLinks.size();
+      } else {
+        return 0;
+      }
+    }
+
+    public double[] times(double[] vector) {
+      checkArgument(vector.length == n);
+      double[] result = new double[n];
+      for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+          result[i] += elem(i, j) * vector[j];
+        }
+      }
+      return result;
+    }
+  }
+
+  class AdjustedTransitionMatrix extends TransitionMatrix {
+    private double lambda;
+
+    public AdjustedTransitionMatrix(List<Set<Integer>> adjacencyList, double dampeningFactor) {
+      super(adjacencyList);
+      lambda = dampeningFactor;
+    }
+
+    @Override
+    public double elem(int row, int col) {
+      double transitionMatrixValue = super.elem(row, col);
+      return (1.0 - lambda) * transitionMatrixValue + lambda / n;
+    }
   }
 }
