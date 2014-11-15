@@ -175,9 +175,28 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
     }
 
     @Override
-    public double elem(int row, int col) {
-      double transitionMatrixValue = super.elem(row, col);
-      return (1.0 - lambda) * transitionMatrixValue + lambda / n;
+//    public double elem(int row, int col) {
+//      double transitionMatrixValue = super.elem(row, col);
+//      return (1.0 - lambda) * transitionMatrixValue + lambda / n;
+//    }
+    
+    public double[] times(double[] vector) {
+      System.out.print("Multiplying matrix.");
+      checkArgument(vector.length == n);
+      double[] result = new double[n];
+      for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+          result[i] += elem(i, j) * vector[j];
+        }
+        result[i] *= (1.0 - lambda);
+        result[i] += lambda / n;
+        if(i % (n / 5) == 0) {
+          System.out.print(".");
+        }
+      }
+      
+      System.out.println(".");
+      return result;
     }
   }
 }
