@@ -14,9 +14,10 @@ import static com.google.common.base.Preconditions.*;
  */
 public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
 
-  private static final double DAMPENING_FACTOR = 0.1;
+  private static final float DAMPENING_FACTOR = 0.1f;
   private static final int WRITER_BUFFER_SIZE = 50000000;
   private static final int READER_BUFFER_SIZE = 5000000;
+  private final String pageRankFilePath;
 
   protected BiMap<String, Integer> _documents;
   protected List<Set<Integer>> invertedAdjacencyList;
@@ -24,6 +25,7 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
 
   public CorpusAnalyzerPagerank(Options options) {
     super(options);
+    pageRankFilePath = _options._indexPrefix + "/pagerank";
   }
 
   /**
@@ -113,15 +115,15 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
   public void compute() throws IOException {
     System.out.println("Computing using " + this.getClass().getName());
     TransitionMatrix M = new TransitionMatrix(invertedAdjacencyList, outlinks);
-    double[] pageRank = new double[_documents.size()];
+    float[] pageRank = new float[_documents.size()];
     for(int i = 0; i < pageRank.length; i++) {
-      pageRank[i] = 1.0 / pageRank.length;
+      pageRank[i] = 1.0f / pageRank.length;
     }
     pageRank = M.iteratePageRank(pageRank);
     pageRank = M.iteratePageRank(pageRank);
 
     int maxPRDocId = -1;
-    double maxPR = -1;
+    float maxPR = -1;
     for(int i = 0; i < pageRank.length; i++) {
       if(maxPR < pageRank[i]) {
         maxPR = pageRank[i];
@@ -130,7 +132,7 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
     }
     System.out.println("Max PR: " + _documents.inverse().get(maxPRDocId));
 
-    File pageRankFile = new File(_options._indexPrefix + "/pagerank");
+    File pageRankFile = new File(pageRankFilePath);
     PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(pageRankFile)));
     for(int i = 0; i < pageRank.length; i++) {
       writer.println(_documents.inverse().get(i) + " " + pageRank[i]);
@@ -147,7 +149,14 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
   @Override
   public Object load() throws IOException {
     System.out.println("Loading using " + this.getClass().getName());
-    return null;
+    File pageRankFile = new File(pageRankFilePath);
+    Scanner scanner = new Scanner(new BufferedReader(new FileReader(pageRankFile)));
+    float[] pageRank = new float[_documents.size()];
+    while (scanner.hasNextLine()){
+      String[] tokens = scanner.nextLine().split(" ");
+      pageRank[_documents.get(tokens[0])] = Float.parseFloat(tokens[1]);
+    }
+    return pageRank;
   }
 
   public class TransitionMatrix {
@@ -161,14 +170,14 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
       n = invertedAdjacencyList.size();
     }
 
-    public double[] times(double[] vector) {
+    public float[] times(float[] vector) {
       System.out.print("Multiplying matrix.");
       checkArgument(vector.length == n);
-      double[] result = new double[n];
+      float[] result = new float[n];
       for(int i = 0; i < n; i++) {
         Set<Integer> inlinks = _invertedAdjacencyList.get(i);
         for(int inlink : inlinks) {
-          double elem = 1.0 / _outlinks[inlink];
+          float elem = 1.0f / _outlinks[inlink];
           result[i] += elem * vector[inlink];
         }
         if((5*i) % n == 0) {
@@ -179,10 +188,10 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
       return result;
     }
 
-    public double[] iteratePageRank(double[] vector) {
+    public float[] iteratePageRank(float[] vector) {
       vector = this.times(vector);
       for(int i = 0; i < vector.length; i++) {
-        vector[i] = (1.0 - DAMPENING_FACTOR) * vector[i] + DAMPENING_FACTOR / vector.length;
+        vector[i] = (1.0f - DAMPENING_FACTOR) * vector[i] + DAMPENING_FACTOR / vector.length;
       }
       return vector;
     }

@@ -132,6 +132,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
                 _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++);
       }
 
+      loadPageRanks();
       populateStoppingWords();
       precomputeSquareTFIDFSum(docBodies);
     } else {
@@ -188,6 +189,14 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
            String term = _dictionary.inverse().get(termId);
            _stoppingWords.add(term);
       }
+  }
+
+  private void loadPageRanks() throws IOException {
+    CorpusAnalyzer corpusAnalyzer = CorpusAnalyzer.Factory.getCorpusAnalyzerByOption(_options);
+    float[] pageRanks = (float[])corpusAnalyzer.load();
+    for(int i = 0; i < pageRanks.length; i++) {
+      _documents.get(i).setPageRank(pageRanks[i]);
+    }
   }
   
   // This helper method sorts the given map by value in a decreasing order.

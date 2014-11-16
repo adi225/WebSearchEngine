@@ -64,20 +64,13 @@ public class CorpusAnalyzerPagerankTest {
     prAnalyzer.prepare();
     prAnalyzer.compute();
 
-    double[] expectedPageRank = new double[prAnalyzer._documents.size()];
-    expectedPageRank[0] = 0.413125;
-    expectedPageRank[1] = 0.13375;
-    expectedPageRank[2] = 0.274375;
-    expectedPageRank[3] = 0.17875;
+    float[] expectedPageRank = new float[prAnalyzer._documents.size()];
+    expectedPageRank[0] = 0.413125f;
+    expectedPageRank[1] = 0.13375f;
+    expectedPageRank[2] = 0.274375f;
+    expectedPageRank[3] = 0.17875f;
 
-    File pageRankFile = new File(prAnalyzer._options._indexPrefix + "/pagerank");
-    Scanner scanner = new Scanner(pageRankFile);
-    double[] pageRank = new double[expectedPageRank.length];
-    for(int i = 0; i < pageRank.length; i++) {
-      String[] tokens = scanner.nextLine().split(" ");
-      pageRank[i] = Double.parseDouble(tokens[1]);
-    }
-    assertFalse(scanner.hasNextLine());
+    float[] pageRank = (float[])prAnalyzer.load();
 
     for(int i = 0; i < expectedPageRank.length; i++) {
       assertEquals(expectedPageRank[i], pageRank[i], 0.001);
