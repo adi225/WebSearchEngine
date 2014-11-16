@@ -108,13 +108,23 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
   @Override
   public void compute() throws IOException {
     System.out.println("Computing using " + this.getClass().getName());
-    AdjustedTransitionMatrix M = new AdjustedTransitionMatrix(adjacencyList, DAMPENING_FACTOR);
+    TransitionMatrix M = new TransitionMatrix(adjacencyList);
     double[] pageRank = new double[_documents.size()];
     for(int i = 0; i < pageRank.length; i++) {
       pageRank[i] = 1.0 / pageRank.length;
     }
-    pageRank = M.times(pageRank);
-    pageRank = M.times(pageRank);
+    pageRank = M.iteratePageRank(pageRank);
+    pageRank = M.iteratePageRank(pageRank);
+
+    int maxPRIndex = -1;
+    double maxPR = -1;
+    for(int i = 0; i < pageRank.length; i++) {
+      if(maxPR < pageRank[i]) {
+        maxPR = pageRank[i];
+        maxPRIndex = i;
+      }
+    }
+    System.out.println("Max PR doc: " + _documents.inverse().get(maxPRIndex));
   }
 
   /**
@@ -163,6 +173,14 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
       }
       System.out.println(".");
       return result;
+    }
+
+    public double[] iteratePageRank(double[] vector) {
+      vector = this.times(vector);
+      for(int i = 0; i < vector.length; i++) {
+        vector[i] = (1.0 - DAMPENING_FACTOR) * vector[i] + DAMPENING_FACTOR / vector.length;
+      }
+      return vector;
     }
   }
 
