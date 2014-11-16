@@ -116,15 +116,12 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
     pageRank = M.iteratePageRank(pageRank);
     pageRank = M.iteratePageRank(pageRank);
 
-    int maxPRIndex = -1;
-    double maxPR = -1;
+    File pageRankFile = new File(_options._indexPrefix + "/pagerank");
+    PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(pageRankFile)));
     for(int i = 0; i < pageRank.length; i++) {
-      if(maxPR < pageRank[i]) {
-        maxPR = pageRank[i];
-        maxPRIndex = i;
-      }
+      writer.println(_documents.inverse().get(i) + " " + pageRank[i]);
     }
-    System.out.println("Max PR doc: " + _documents.inverse().get(maxPRIndex));
+    writer.close();
   }
 
   /**
