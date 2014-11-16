@@ -5,7 +5,6 @@ import java.util.*;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.Sets;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 import static com.google.common.base.Preconditions.*;
@@ -20,7 +19,8 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
   private static final int READER_BUFFER_SIZE = 5000000;
 
   protected BiMap<String, Integer> _documents;
-  protected List<Set<Integer>> adjacencyList;
+  protected List<Set<Integer>> invertedAdjacencyList;
+  protected int[] outlinks;
 
   public CorpusAnalyzerPagerank(Options options) {
     super(options);
@@ -55,6 +55,7 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
             new PrintWriter(new BufferedWriter(new FileWriter(intermediateAdjacencyListFile), WRITER_BUFFER_SIZE));
 
     _documents = HashBiMap.create(directories.length);
+    outlinks = new int[directories.length];
     int docId = 0;
 
     for(File document : directories) {
@@ -72,21 +73,24 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
     }
     intermediateAdjacencyListWriter.close();
 
-    adjacencyList = new ArrayList<Set<Integer>>(directories.length);
+    invertedAdjacencyList = new ArrayList<Set<Integer>>(directories.length);
+    for(int i = 0; i < directories.length; ++i) {
+      invertedAdjacencyList.add(new HashSet<Integer>());
+    }
     Scanner intermediateAdjacencyListScanner =
             new Scanner(new BufferedReader(new FileReader(intermediateAdjacencyListFile), READER_BUFFER_SIZE));
 
     while (intermediateAdjacencyListScanner.hasNextLine()) {
       String[] tokens = intermediateAdjacencyListScanner.nextLine().split(" ");
-      Set<Integer> outLinks = Sets.newHashSet();
       checkState(_documents.containsKey(tokens[0]));
-      checkState(_documents.get(tokens[0]) == adjacencyList.size());
+      int fromDocId = _documents.get(tokens[0]);
       for(int i = 1; i < tokens.length; i++) {
         if(_documents.containsKey(tokens[i])) {
-          outLinks.add(_documents.get(tokens[i]));
+          int toDocId = _documents.get(tokens[i]);
+          invertedAdjacencyList.get(toDocId).add(fromDocId);
+          ++outlinks[fromDocId];
         }
       }
-      adjacencyList.add(outLinks);
     }
     intermediateAdjacencyListScanner.close();
     intermediateAdjacencyListFile.delete();
@@ -108,13 +112,23 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
   @Override
   public void compute() throws IOException {
     System.out.println("Computing using " + this.getClass().getName());
-    TransitionMatrix M = new TransitionMatrix(adjacencyList);
+    TransitionMatrix M = new TransitionMatrix(invertedAdjacencyList, outlinks);
     double[] pageRank = new double[_documents.size()];
     for(int i = 0; i < pageRank.length; i++) {
       pageRank[i] = 1.0 / pageRank.length;
     }
     pageRank = M.iteratePageRank(pageRank);
     pageRank = M.iteratePageRank(pageRank);
+
+    int maxPRDocId = -1;
+    double maxPR = -1;
+    for(int i = 0; i < pageRank.length; i++) {
+      if(maxPR < pageRank[i]) {
+        maxPR = pageRank[i];
+        maxPRDocId = i;
+      }
+    }
+    System.out.println("Max PR: " + _documents.inverse().get(maxPRDocId));
 
     File pageRankFile = new File(_options._indexPrefix + "/pagerank");
     PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(pageRankFile)));
@@ -136,24 +150,15 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
     return null;
   }
 
-  class TransitionMatrix {
-    private List<Set<Integer>> _adjacencyList;
+  public class TransitionMatrix {
+    private List<Set<Integer>> _invertedAdjacencyList;
+    private int[] _outlinks;
     protected int n;
 
-    public TransitionMatrix(List<Set<Integer>> adjacencyList) {
-      _adjacencyList = adjacencyList;
-      n = adjacencyList.size();
-    }
-
-    public double elem(int row, int col) {
-      checkElementIndex(row, n);
-      checkElementIndex(col, n);
-      Set<Integer> outLinks = _adjacencyList.get(col);
-      if(outLinks.contains(row)) {
-        return 1.0 / outLinks.size();
-      } else {
-        return 0;
-      }
+    public TransitionMatrix(List<Set<Integer>> invertedAdjacencyList, int[] outlinks) {
+      _invertedAdjacencyList = invertedAdjacencyList;
+      _outlinks = outlinks;
+      n = invertedAdjacencyList.size();
     }
 
     public double[] times(double[] vector) {
@@ -161,10 +166,12 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
       checkArgument(vector.length == n);
       double[] result = new double[n];
       for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-          result[i] += elem(i, j) * vector[j];
+        Set<Integer> inlinks = _invertedAdjacencyList.get(i);
+        for(int inlink : inlinks) {
+          double elem = 1.0 / _outlinks[inlink];
+          result[i] += elem * vector[inlink];
         }
-        if(i % (n / 5) == 0) {
+        if((5*i) % n == 0) {
           System.out.print(".");
         }
       }
