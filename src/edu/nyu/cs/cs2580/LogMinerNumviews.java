@@ -1,16 +1,26 @@
 package edu.nyu.cs.cs2580;
 
-import java.io.IOException;
+import java.io.*;
+import java.net.URLDecoder;
+import java.util.*;
 
+import com.google.common.collect.Maps;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @CS2580: Implement this class for HW3.
  */
 public class LogMinerNumviews extends LogMiner {
 
+  private static final int READER_BUFFER_SIZE = 50000000;
+
+  protected String numViewFilePath;
+
   public LogMinerNumviews(Options options) {
     super(options);
+    numViewFilePath = _options._indexPrefix + "/numviews";
   }
 
   /**
@@ -29,7 +39,40 @@ public class LogMinerNumviews extends LogMiner {
   @Override
   public void compute() throws IOException {
     System.out.println("Computing using " + this.getClass().getName());
-    return;
+    Map<String, Integer> numViews = Maps.newHashMap();
+
+    String[] directories = checkNotNull(new File(_options._corpusPrefix)).list();
+    for(String document : directories) {
+      numViews.put(document, 0);
+    }
+
+    File[] logFilesDirectory = checkNotNull(new File(_options._logPrefix)).listFiles();
+    for(File logFile : logFilesDirectory) {
+      Scanner scanner = new Scanner(new BufferedReader(new FileReader(logFile), READER_BUFFER_SIZE));
+      while(scanner.hasNextLine()) {
+        String[] tokens = scanner.nextLine().split(" ");
+        if(tokens.length != 3) {
+          continue;
+        }
+        try {
+          int count = Integer.parseInt(tokens[2]);
+          if(numViews.keySet().contains(tokens[1])) {
+            numViews.put(tokens[1], numViews.get(tokens[1]) + count);
+          }
+        } catch (NumberFormatException e) {
+          continue;
+        };
+      }
+      scanner.close();
+    }
+
+    File numViewsFile  = new File(numViewFilePath);
+    PrintWriter numViewsFileWriter =
+            new PrintWriter(new BufferedWriter(new FileWriter(numViewsFile)));
+    for(String document : numViews.keySet()) {
+      numViewsFileWriter.println(document + " " + numViews.get(document));
+    }
+    numViewsFileWriter.close();
   }
 
   /**
@@ -41,6 +84,13 @@ public class LogMinerNumviews extends LogMiner {
   @Override
   public Object load() throws IOException {
     System.out.println("Loading using " + this.getClass().getName());
-    return null;
+    File numViewsFile = new File(numViewFilePath);
+    Scanner scanner = new Scanner(new BufferedReader(new FileReader(numViewsFile)));
+    Map<String, Integer> numViews = Maps.newHashMap();
+    while (scanner.hasNextLine()){
+      String[] tokens = scanner.nextLine().split(" ");
+      numViews.put(tokens[0], Integer.parseInt(tokens[1]));
+    }
+    return numViews;
   }
 }

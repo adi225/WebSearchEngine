@@ -5,6 +5,7 @@ import java.util.*;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Maps;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 import static com.google.common.base.Preconditions.*;
@@ -151,10 +152,10 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
     System.out.println("Loading using " + this.getClass().getName());
     File pageRankFile = new File(pageRankFilePath);
     Scanner scanner = new Scanner(new BufferedReader(new FileReader(pageRankFile)));
-    float[] pageRank = new float[_documents.size()];
+    Map<String, Float> pageRank = Maps.newHashMap();
     while (scanner.hasNextLine()){
       String[] tokens = scanner.nextLine().split(" ");
-      pageRank[_documents.get(tokens[0])] = Float.parseFloat(tokens[1]);
+      pageRank.put(tokens[0], Float.parseFloat(tokens[1]));
     }
     return pageRank;
   }

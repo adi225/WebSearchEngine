@@ -99,6 +99,8 @@ public class SearchEngine {
       Check(_corpusPrefix != null, "Missing option: corpus_prefix!");
       _indexPrefix = options.get("index_prefix");
       Check(_indexPrefix != null, "Missing option: index_prefix!");
+      _logPrefix = options.get("log_prefix");
+      Check(_logPrefix != null, "Missing option: log_prefix!");
       
       // Populate specific options.
       _indexerType = options.get("indexer_type");

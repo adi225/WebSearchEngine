@@ -1,19 +1,13 @@
 package edu.nyu.cs.cs2580;
 
 import java.io.*;
-import java.text.Normalizer;
 import java.util.*;
-import java.util.regex.Pattern;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
-import de.l3s.boilerpipe.document.TextDocument;
-import de.l3s.boilerpipe.extractors.ArticleExtractor;
-import de.l3s.boilerpipe.sax.BoilerpipeSAXInput;
-import de.l3s.boilerpipe.sax.HTMLDocument;
 import edu.nyu.cs.cs2580.FileUtils.FileRange;
 import org.xml.sax.SAXException;
 
@@ -133,6 +127,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       }
 
       loadPageRanks();
+      loadNumViews();
       populateStoppingWords();
       precomputeSquareTFIDFSum(docBodies);
     } else {
@@ -172,8 +167,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     long timeTaken = (System.currentTimeMillis() - startTime) / 60000;
     long mergingTime = (System.currentTimeMillis() - mergeStart) / 60000;
     System.out.println("Total indexing time: " + timeTaken + " min");
-    //System.out.println("Total document processing time: " + timeTaken + " min");
-    //System.out.println("Total partial index dumping time: " + timeTaken + " min");
     System.out.println("Total partial index merging time: " + mergingTime + " min");
   }
   
@@ -193,9 +186,17 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
   private void loadPageRanks() throws IOException {
     CorpusAnalyzer corpusAnalyzer = CorpusAnalyzer.Factory.getCorpusAnalyzerByOption(_options);
-    float[] pageRanks = (float[])corpusAnalyzer.load();
-    for(int i = 0; i < pageRanks.length; i++) {
-      _documents.get(i).setPageRank(pageRanks[i]);
+    Map<String, Float> pageRanks = (Map<String, Float>)corpusAnalyzer.load();
+    for(Document document : _documents) {
+      document.setPageRank(pageRanks.get(document.getTitle()));
+    }
+  }
+
+  private void loadNumViews() throws IOException {
+    LogMiner logMiner = LogMinerNumviews.Factory.getLogMinerByOption(_options);
+    Map<String, Integer> numViews = (Map<String, Integer>)logMiner.load();
+    for(Document document : _documents) {
+      document.setNumViews(numViews.get(document.getTitle()));
     }
   }
   
