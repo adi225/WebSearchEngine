@@ -97,8 +97,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
         // adding an indexed document
         int docId = _numDocs++;     // the current number of doc is ID for the current document
         Document docIndexed = new DocumentIndexed(docId);
-        docIndexed.setTitle(docFile.getName());
-        docIndexed.setUrl(docFile.getAbsolutePath());
+        docIndexed.setUrl(docFile.getName());
         _documents.add(docIndexed);
 
         if(docIndexed.getTitle().equals("2008_World_Music_Awards")) {
