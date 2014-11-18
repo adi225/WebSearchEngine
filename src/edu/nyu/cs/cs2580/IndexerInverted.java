@@ -187,7 +187,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     CorpusAnalyzer corpusAnalyzer = CorpusAnalyzer.Factory.getCorpusAnalyzerByOption(_options);
     Map<String, Float> pageRanks = (Map<String, Float>)corpusAnalyzer.load();
     for(Document document : _documents) {
-      document.setPageRank(pageRanks.get(document.getTitle()));
+      document.setPageRank(pageRanks.get(document.getUrl()));
     }
   }
 
@@ -195,7 +195,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     LogMiner logMiner = LogMinerNumviews.Factory.getLogMinerByOption(_options);
     Map<String, Integer> numViews = (Map<String, Integer>)logMiner.load();
     for(Document document : _documents) {
-      document.setNumViews(numViews.get(document.getTitle()));
+      document.setNumViews(numViews.get(document.getUrl()));
     }
   }
   
