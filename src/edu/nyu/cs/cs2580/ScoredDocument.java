@@ -19,7 +19,9 @@ class ScoredDocument implements Comparable<ScoredDocument> {
     StringBuffer buf = new StringBuffer();
     buf.append(_doc._docid).append("\t");
     buf.append(_doc.getTitle()).append("\t");
-    buf.append(_score);
+    buf.append(_score).append("\t");
+    buf.append("PageRank: ").append(_doc.getPageRank()).append("\t");
+    buf.append("NumViews: ").append(_doc.getNumViews());
     return buf.toString();
   }
 
@@ -33,6 +35,7 @@ class ScoredDocument implements Comparable<ScoredDocument> {
     buf.append("&query=").append(query).append("\">");
     buf.append(_doc.getTitle());
     buf.append("</a></p>");
+    buf.append("PageRank: "+_doc.getPageRank()+" NumViews: "+_doc.getNumViews());
     buf.append("<p style=\"color:green;font-size:14px;\">");
     
     String[] urlParts = _doc.getUrl().split("/");
