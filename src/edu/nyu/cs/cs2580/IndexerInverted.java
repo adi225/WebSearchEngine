@@ -238,6 +238,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       }
       DocumentIndexed doc = (DocumentIndexed) this.getDoc(docId);
       Vector<Integer> docBody = docBodies.get(docId);
+      doc.setDocumentSize(docBody.size());
       docBodies.remove(docId);
 
       Map<Integer, Integer> documentMap = new HashMap<Integer, Integer>();

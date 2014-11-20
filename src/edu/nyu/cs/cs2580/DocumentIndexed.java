@@ -12,8 +12,17 @@ import java.util.Vector;
 public class DocumentIndexed extends Document {
   private static final long serialVersionUID = 9184892508124423115L;
 
+  private int _documentSize;
   private double _tfidfSumSquared;
   private Map<Integer, Integer> _topFrequentTerms;
+  
+  public void setDocumentSize(int size){
+  	_documentSize = size;
+  }
+  
+  public int getDocumentSize(){
+  	return _documentSize;
+  }
 
   public void setTfidfSumSquared(double tfidfSumSquared) {
     _tfidfSumSquared = tfidfSumSquared;

@@ -42,9 +42,8 @@ public class RankerQL extends Ranker {
     }
 
     protected double scoreDocument(Query query, int did) {
-    	  // TODO: add document size field in the Document class. 
-    	  // This field should be populated in the construction of the index.
-        int documentSize = 1;  // get value from the Document
+
+        int documentSize = ((DocumentIndexed)_indexer.getDoc(did)).getDocumentSize();  // get value from the Document
         long totalWordsInCorpus = _indexer.totalTermFrequency();
         double lambda = 0.5;
         double score = 0;
