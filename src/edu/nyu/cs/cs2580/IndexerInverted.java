@@ -19,6 +19,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   protected static final String WORDS_DIR = "/.partials";
   protected static long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
   protected static long INDEX_CACHE_THRESHOLD = 500000;
+  protected static int TOP_WORDS_TO_STORE = 100;
 
   protected RandomAccessFile _indexRAF;
   protected final String indexFilePath = _options._indexPrefix + "/index.idx";
@@ -43,7 +44,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   protected long _indexOffset = 0;
 	
   // Metadata of documents.
-  protected Vector<Document> _documents = new Vector<Document>();
+  protected Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   
   // Maps each term to its integer representation
   protected BiMap<String, Integer> _dictionary = HashBiMap.create();
@@ -96,7 +97,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
         // adding an indexed document
         int docId = _numDocs++;     // the current number of doc is ID for the current document
-        Document docIndexed = new DocumentIndexed(docId);
+        DocumentIndexed docIndexed = new DocumentIndexed(docId);
         docIndexed.setUrl(docFile.getName());
         _documents.add(docIndexed);
 
@@ -128,6 +129,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       loadPageRanks();
       loadNumViews();
       populateStoppingWords();
+      populateTopFrequentTerms(docBodies);
       precomputeSquareTFIDFSum(docBodies);
     } else {
         throw new IOException("Invalid directory.");
@@ -171,16 +173,14 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   
   // This method populates the top 50 most frequent words into _stoppingWords.
   private void populateStoppingWords(){
-	  Map<Integer, Integer> sortedTermCorpusFrequency = sortByValues(_termCorpusFrequency); 
-	  
-      Set termSet = sortedTermCorpusFrequency.entrySet();
-      Iterator iterator = termSet.iterator();
-      for(int i=0;i<50;i++) {  // extracting the top 50 terms (the order is preserved)
-           Map.Entry me = (Map.Entry)iterator.next();
-           int termId = (Integer)me.getKey();
-           String term = _dictionary.inverse().get(termId);
-           _stoppingWords.add(term);
-      }
+    List<Map.Entry<Integer, Integer>> sortedTermCorpusFrequency = sortByValues(_termCorpusFrequency);
+
+    for(int i=0;i<50;i++) {  // extracting the top 50 terms (the order is preserved)
+      Map.Entry<Integer, Integer> me = sortedTermCorpusFrequency.get(i);
+      int termId = me.getKey();
+      String term = _dictionary.inverse().get(termId);
+      _stoppingWords.add(term);
+    }
   }
 
   private void loadPageRanks() throws IOException {
@@ -200,25 +200,34 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   }
   
   // This helper method sorts the given map by value in a decreasing order.
-  private HashMap sortByValues(Map map) { 
-      List list = new LinkedList(map.entrySet());
-      // Defined Custom Comparator here
-      Collections.sort(list, new Comparator() {
-           public int compare(Object o1, Object o2) {
-              return ((Comparable) ((Map.Entry) (o2)).getValue())
-                 .compareTo(((Map.Entry) (o1)).getValue());
-           }
-      });
-
-      // Here I am copying the sorted list in HashMap
-      // using LinkedHashMap to preserve the insertion order
-      HashMap sortedHashMap = new LinkedHashMap();
-      for (Iterator it = list.iterator(); it.hasNext();) {
-             Map.Entry entry = (Map.Entry) it.next();
-             sortedHashMap.put(entry.getKey(), entry.getValue());
-      } 
-      return sortedHashMap;
+  private <K,V extends Comparable<V>> List<Map.Entry<K,V>> sortByValues(Map<K, V> map) {
+    Comparator<Map.Entry<K,V>> byMapValues = new Comparator<Map.Entry<K,V>>() {
+      @Override
+      public int compare(Map.Entry<K,V> left, Map.Entry<K,V> right) {
+        return left.getValue().compareTo(right.getValue());
+      }
+    };
+    List<Map.Entry<K,V>> sortedMap = Lists.newArrayList(map.entrySet());
+    Collections.sort(sortedMap, byMapValues);
+    return sortedMap;
  }
+
+  private void populateTopFrequentTerms(Map<Integer, Vector<Integer>> docBodies) {
+    for(DocumentIndexed documentIndexed : _documents) {
+      Vector<Integer> words = docBodies.get(documentIndexed._docid);
+      Map<Integer, Integer> wordFrequencies = Maps.newHashMap();
+      for(int word : words) {
+        int frequency = wordFrequencies.containsKey(word) ? wordFrequencies.get(word) : 0;
+        wordFrequencies.put(word, frequency + 1);
+      }
+      List<Map.Entry<Integer, Integer>> topWordFrequencies = sortByValues(wordFrequencies);
+      Map<Integer, Integer> topWordFrequenciesMap = Maps.newHashMap();
+      for(int i = 0; i < TOP_WORDS_TO_STORE && i < topWordFrequencies.size(); i++) {
+        topWordFrequenciesMap.put(topWordFrequencies.get(i).getKey(), topWordFrequencies.get(i).getValue());
+      }
+      documentIndexed.setTopFrequentTerms(topWordFrequenciesMap);
+    }
+  }
 
   private void precomputeSquareTFIDFSum(Map<Integer, Vector<Integer>> docBodies) {
     // Precompute squared tfidf sum of documents.
@@ -264,7 +273,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   }
 
   protected void setLoadedMetadata(List<Object> indexMetadata) {
-    _documents           = (Vector<Document>)indexMetadata.get(0);
+    _documents           = (Vector<DocumentIndexed>)indexMetadata.get(0);
     _dictionary          = (BiMap<String, Integer>)indexMetadata.get(1);
     _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
     _stoppingWords       = (Set<String>)indexMetadata.get(3);

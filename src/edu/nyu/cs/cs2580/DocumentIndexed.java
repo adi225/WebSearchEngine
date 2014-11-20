@@ -1,6 +1,7 @@
 package edu.nyu.cs.cs2580;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
@@ -12,6 +13,7 @@ public class DocumentIndexed extends Document {
   private static final long serialVersionUID = 9184892508124423115L;
 
   private double _tfidfSumSquared;
+  private Map<Integer, Integer> _topFrequentTerms;
 
   public void setTfidfSumSquared(double tfidfSumSquared) {
     _tfidfSumSquared = tfidfSumSquared;
@@ -19,6 +21,14 @@ public class DocumentIndexed extends Document {
 
   public double getTfidfSumSquared() {
     return _tfidfSumSquared;
+  }
+
+  public void setTopFrequentTerms(Map<Integer, Integer> topFrequentTerms) {
+    _topFrequentTerms = topFrequentTerms;
+  }
+
+  public Map<Integer, Integer> getTopFrequentTerms() {
+    return _topFrequentTerms;
   }
 
   public DocumentIndexed(int docid) {
