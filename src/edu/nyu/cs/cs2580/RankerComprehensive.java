@@ -15,10 +15,15 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 public class RankerComprehensive extends Ranker {
 
 	// TODO: Adjust the weighing parameters below by experimentation.
-  public static final double BETA_COS = 1.0/0.8;
-  public static final double BETA_PAGERANK = 1.0/0.8;
-  public static final double BETA_NUMVIEWS = 1.0/20000.0;
+  public static final double alpha = 0.82;
+  public static final double beta = 0.5;
 
+  public static final double maxPageRank = 0.016616534;
+  public static final double minPageRank = 9.777083 * Math.pow(10, -6);
+  
+  public static final double maxNumViews = 420930;
+  public static final double minNumViews = 0;
+  
   RankerCosine _cosineRanker;
 	
   public RankerComprehensive(Options options,
@@ -57,9 +62,13 @@ public class RankerComprehensive extends Ranker {
     double pageRank		 = _indexer.getDoc(did).getPageRank(); 
     double numViews    = _indexer.getDoc(did).getNumViews();
 
-    double combinedScore = BETA_COS      * cosineScore +
-    		               BETA_PAGERANK       * pageRank +
-    		               BETA_NUMVIEWS * numViews;
+    // Normalization of PageRank and NumViews so that the value is between [0,1]
+    pageRank = (pageRank - minPageRank) / (maxPageRank - minPageRank);
+    numViews = (numViews - minNumViews) / (maxNumViews - minNumViews);
+    
+    double visitationScore = beta * pageRank + (1 - beta) * numViews;
+    
+    double combinedScore = alpha * cosineScore + (1 - alpha) * visitationScore;
 
     return combinedScore;
   }

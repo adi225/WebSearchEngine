@@ -40,7 +40,7 @@ public class LogMinerNumviews extends LogMiner {
   public void compute() throws IOException {
     System.out.println("Computing using " + this.getClass().getName());
     Map<String, Integer> numViews = Maps.newHashMap();
-
+ 
     String[] directories = checkNotNull(new File(_options._corpusPrefix)).list();
     for(String document : directories) {
       numViews.put(document, 0);
