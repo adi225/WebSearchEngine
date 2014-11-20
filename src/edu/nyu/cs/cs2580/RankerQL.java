@@ -42,32 +42,15 @@ public class RankerQL extends Ranker {
     }
 
     protected double scoreDocument(Query query, int did) {
-        // TODO Check that double processing is ok. (Query Handler also processes it).
-        // Process the raw query into tokens.
-        // query.processQuery();
-
-        // Get the document tokens.
-        Document doc = _indexer.getDoc(did);
-        Vector<String> docTokens = ((DocumentFull) doc).getConvertedBodyTokens();
-
-        int documentSize = docTokens.size();
+    	  // TODO: add document size field in the Document class. 
+    	  // This field should be populated in the construction of the index.
+        int documentSize = 1;  // get value from the Document
         long totalWordsInCorpus = _indexer.totalTermFrequency();
         double lambda = 0.5;
         double score = 0;
 
-                
-        // builds map of document word frequency
-        Map<String, Integer> documentMap = new HashMap<String, Integer>();
-        for(String word : docTokens) {
-            if(documentMap.containsKey(word)) {
-                documentMap.put(word, documentMap.get(word) + 1);
-            } else {
-                documentMap.put(word, 1);
-            }
-        }
-
         for(String word : query._tokens) {
-            int wordFrequencyInDocument = documentMap.containsKey(word) ? documentMap.get(word) : 0;
+            int wordFrequencyInDocument = _indexer.documentTermFrequency(word, did);
             int wordFrequencyInCorpus = _indexer.corpusTermFrequency(word);
 
             // This formula calculates the value of log( P(Q|D) ), which is given by
