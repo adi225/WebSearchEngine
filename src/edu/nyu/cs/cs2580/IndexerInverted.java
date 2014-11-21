@@ -28,7 +28,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   protected Map<Integer, List<Integer>> _utilityIndex = new HashMap<Integer, List<Integer>>();
   protected long _utilityIndexFlatSize = 0;
   protected long _utilityPartialIndexCounter = 0;
-  protected int MAX_DOCS = Integer.MAX_VALUE;
+  protected int MAX_DOCS = 100000;
 
   // An index, which is a mapping between an integer representation of a term
   // and a byte range in the file where the postings list for the term is located.
@@ -173,7 +173,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   
   // This method populates the top 50 most frequent words into _stoppingWords.
   private void populateStoppingWords(){
-    List<Map.Entry<Integer, Integer>> sortedTermCorpusFrequency = sortByValues(_termCorpusFrequency);
+    List<Map.Entry<Integer, Integer>> sortedTermCorpusFrequency = sortByValues(_termCorpusFrequency, true);
 
     for(int i=0;i<50;i++) {  // extracting the top 50 terms (the order is preserved)
       Map.Entry<Integer, Integer> me = sortedTermCorpusFrequency.get(i);
@@ -200,11 +200,12 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   }
   
   // This helper method sorts the given map by value in a decreasing order.
-  private <K,V extends Comparable<V>> List<Map.Entry<K,V>> sortByValues(Map<K, V> map) {
+  private <K,V extends Comparable<V>> List<Map.Entry<K,V>> sortByValues(Map<K, V> map, final boolean desc) {
     Comparator<Map.Entry<K,V>> byMapValues = new Comparator<Map.Entry<K,V>>() {
+      int reverse = desc ? -1 : 1;
       @Override
       public int compare(Map.Entry<K,V> left, Map.Entry<K,V> right) {
-        return left.getValue().compareTo(right.getValue());
+        return left.getValue().compareTo(right.getValue()) * reverse;
       }
     };
     List<Map.Entry<K,V>> sortedMap = Lists.newArrayList(map.entrySet());
@@ -213,17 +214,24 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
  }
 
   private void populateTopFrequentTerms(Map<Integer, Vector<Integer>> docBodies) {
+    System.out.println("Packaging most frequent words for documents.");
     for(DocumentIndexed documentIndexed : _documents) {
+      if(documentIndexed._docid % 1000 == 0) {
+        System.out.println("Finished packaging most frequent words for for " + documentIndexed._docid + " documents.");
+      }
       Vector<Integer> words = docBodies.get(documentIndexed._docid);
       Map<Integer, Integer> wordFrequencies = Maps.newHashMap();
       for(int word : words) {
         int frequency = wordFrequencies.containsKey(word) ? wordFrequencies.get(word) : 0;
         wordFrequencies.put(word, frequency + 1);
       }
-      List<Map.Entry<Integer, Integer>> topWordFrequencies = sortByValues(wordFrequencies);
+      List<Map.Entry<Integer, Integer>> topWordFrequencies = sortByValues(wordFrequencies, true);
       Map<Integer, Integer> topWordFrequenciesMap = Maps.newHashMap();
-      for(int i = 0; i < TOP_WORDS_TO_STORE && i < topWordFrequencies.size(); i++) {
-        topWordFrequenciesMap.put(topWordFrequencies.get(i).getKey(), topWordFrequencies.get(i).getValue());
+      for(int i = 0; topWordFrequenciesMap.size() < TOP_WORDS_TO_STORE && i < topWordFrequencies.size(); i++) {
+        String word = _dictionary.inverse().get(topWordFrequencies.get(i).getKey());
+        if(!_stoppingWords.contains(word)) {
+          topWordFrequenciesMap.put(topWordFrequencies.get(i).getKey(), topWordFrequencies.get(i).getValue());
+        }
       }
       documentIndexed.setTopFrequentTerms(topWordFrequenciesMap);
     }
