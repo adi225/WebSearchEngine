@@ -5,13 +5,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Created by farah farhat on 11/14/14.
@@ -126,14 +125,12 @@ public class Bhattacharyya
 			BufferedWriter bw = new BufferedWriter(fw);
 			DecimalFormat df = new DecimalFormat("#.##"); 
 			
-			Iterator it = allQueries.entrySet().iterator();
-		    while (it.hasNext()) 
-		    {
-		        Map.Entry pairs = (Map.Entry)it.next();
-		        List<QueryPrf> list1 = (List<QueryPrf>)pairs.getValue();
+	        
+			for (Entry<String, List<QueryPrf>> firstEntry : allQueries.entrySet())
+	        {
+		        List<QueryPrf> list1 = (List<QueryPrf>)firstEntry.getValue();
 		        
 		        List<String> localVocab = new ArrayList<String>();
-		        it.remove(); 
 		        
 		        for(QueryPrf singleQueryPrf : list1)
 		        {
@@ -141,9 +138,9 @@ public class Bhattacharyya
 		        		localVocab.add(singleQueryPrf._term);
 		        }
 		        		
-		        for (Map.Entry<String, List<QueryPrf>> entry : allQueries.entrySet())
+		        for (Map.Entry<String, List<QueryPrf>> secondEntry : allQueries.entrySet())
 		        {
-		        	List<QueryPrf> list2 = (List<QueryPrf>)entry.getValue();
+		        	List<QueryPrf> list2 = (List<QueryPrf>)secondEntry.getValue();
 		        	
 		        	for(QueryPrf singleQueryPrf : list2)
 			        {
@@ -152,22 +149,26 @@ public class Bhattacharyya
 			        }
 		        	
 		        	/*Compare 1 & 2*/
-		        	double similarity = 0;
-		        	for(String word : localVocab)
+		        	if(!firstEntry.getKey().equals(secondEntry.getKey()))
 		        	{
-		        		QueryPrf temp = new QueryPrf(word, 0);
-		        		//if none or only 1 contain it, the value will be 0 - we can skip
-		        		if(list1.contains(temp) && list2.contains(temp))
-		        		{
-		        			QueryPrf firstTerm = list1.get(list1.indexOf(temp));
-		        			QueryPrf secondTerm = list2.get(list2.indexOf(temp));
-		        			
-		        			
-		        			similarity += Math.sqrt(firstTerm._probability * secondTerm._probability);
-		        		}
+		        		double similarity = 0;
+		        		for(String word : localVocab)
+			        	{
+			        		QueryPrf temp = new QueryPrf(word, 0);
+			        		//if none or only 1 contain it, the value will be 0 - we can skip
+			        		if(list1.contains(temp) && list2.contains(temp))
+			        		{
+			        			QueryPrf firstTerm = list1.get(list1.indexOf(temp));
+			        			QueryPrf secondTerm = list2.get(list2.indexOf(temp));
+			        			
+			        			
+			        			similarity += Math.sqrt(firstTerm._probability * secondTerm._probability);
+			        		}
+			        	}
+			        	
+			        	bw.write(firstEntry.getKey() + "\t" + secondEntry.getKey() + "\t" + df.format(similarity) + "\n");
 		        	}
 		        	
-		        	bw.write(pairs.getKey() + "\t" + entry.getKey() + "\t" + df.format(similarity) + "\n");
 		        	
 		        }
 		    }
