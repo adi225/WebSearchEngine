@@ -489,6 +489,11 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     _utilityIndexFlatSize = 0;
   }
 
+  public String getTerm(int termId)
+  {
+	  String term = _dictionary.inverse().get(termId);
+	  return term;
+  }
   protected abstract int nextPhrase(List<String> phraseTokens, int docid) throws IOException;
 
   protected abstract int next(String term, int docid) throws IOException;

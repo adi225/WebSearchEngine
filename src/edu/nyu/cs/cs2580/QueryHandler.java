@@ -1,9 +1,21 @@
 package edu.nyu.cs.cs2580;
 
-import java.io.*;
-import java.net.URLDecoder;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Timer;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.Vector;
 
@@ -34,6 +46,8 @@ class QueryHandler implements HttpHandler {
     public String _query = "";
     // How many results to return
     private int _numResults = 10;
+    
+    private int _numTerms = 10;
     
     // The type of the ranker we will be using.
     public enum RankerType {
@@ -67,7 +81,7 @@ class QueryHandler implements HttpHandler {
         String val = keyval[1];
         if (key.equals("query")) {
           _query = val;
-        } else if (key.equals("num")) {
+        } else if (key.equals("num") || key.equals("numdocs")) {
           try {
             _numResults = Integer.parseInt(val);
           } catch (NumberFormatException e) {
@@ -86,6 +100,13 @@ class QueryHandler implements HttpHandler {
             // Ignored, search engine should never fail upon invalid user input.
           }
         }
+        else if (key.equals("numterms")) {
+            try {
+              _numTerms = Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+              // Ignored, search engine should never fail upon invalid user input.
+            }
+          }
       }  // End of iterating over params
     }
   }
@@ -140,6 +161,38 @@ class QueryHandler implements HttpHandler {
 	  response.append("</body></html>");
   }
 
+  private Vector<ScoredDocument> searchQuery(HttpExchange exchange, String uriQuery) throws IOException
+  {
+	  Vector<ScoredDocument> scoredDocs = null;
+	 
+      // Process the CGI arguments.
+      CgiArguments cgiArgs = new CgiArguments(uriQuery);
+      if (cgiArgs._query.isEmpty()) {
+          respondWithMsg(exchange, "No query is given!");
+      }
+
+      // Create the ranker.
+      Ranker ranker = Ranker.Factory.getRankerByArguments(cgiArgs, SearchEngine.OPTIONS, _indexer);
+      if (ranker == null) {
+          respondWithMsg(exchange, "Ranker " + cgiArgs._rankerType.toString() + " is not valid!");
+      }
+
+      // Processing the query - check if we have exact match
+      // TODO Remove dependency on implementation.
+      Query processedQuery;
+      if(cgiArgs._query.indexOf('"') == -1)
+          processedQuery = new Query(cgiArgs._query);
+      else
+          processedQuery = new QueryPhrase(cgiArgs._query);
+
+      processedQuery.processQuery();
+
+      // Ranking.
+      
+      scoredDocs = ranker.runQuery(processedQuery, cgiArgs._numResults);
+      return scoredDocs;
+  }
+  
   public void handle(HttpExchange exchange) throws IOException {
     String requestMethod = exchange.getRequestMethod();
     if (!requestMethod.equalsIgnoreCase("GET")) { // GET requests only.
@@ -173,8 +226,8 @@ class QueryHandler implements HttpHandler {
     String uriPath = exchange.getRequestURI().getPath();
     if (uriPath == null || uriQuery == null) {
       respondWithMsg(exchange, "Something wrong with the URI!");
-    } else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack")) {
-      respondWithMsg(exchange, "Only /search is handled!");
+    } else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack") && !uriPath.equals("/prf")) {
+      respondWithMsg(exchange, "Only /search or /prf are handled!");
     } else if(uriPath.equalsIgnoreCase("/clicktrack")) {
 
       // writing out to files
@@ -202,50 +255,130 @@ class QueryHandler implements HttpHandler {
 //      exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
       exchange.getResponseBody().close();
       return;
-    } else {
+    } else if(uriPath.equalsIgnoreCase("/search")){
+    	
+  	  	System.out.println("Query: " + uriQuery);
     	long startTime = Calendar.getInstance().getTimeInMillis();
-      System.out.println("Query: " + uriQuery);
+    	Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
+        long endTime = Calendar.getInstance().getTimeInMillis();
 
-      // Process the CGI arguments.
-      CgiArguments cgiArgs = new CgiArguments(uriQuery);
-      if (cgiArgs._query.isEmpty()) {
-          respondWithMsg(exchange, "No query is given!");
-      }
+        
+    	CgiArguments cgiArgs = new CgiArguments(uriQuery);
+    	
+    	StringBuffer response = new StringBuffer();
+    	
+        switch (cgiArgs._outputFormat) {
+            case TEXT:
+                constructTextOutput(scoredDocs, response);
+                respondWithMsg(exchange, response.toString());
+                break;
+            case HTML:
+                constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
+                respondWithHTML(exchange, response.toString());
+                break;
+            default:	
+                // nothing
+        }
+        System.out.println("Finished query: " + cgiArgs._query);
+    }
+    else if(uriPath.equalsIgnoreCase("/prf")){
+    	
+    	CgiArguments cgiArgs = new CgiArguments(uriQuery);
+    	
+  	  	System.out.println("Query: " + uriQuery);
+    	Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
 
-      // Create the ranker.
-      Ranker ranker = Ranker.Factory.getRankerByArguments(cgiArgs, SearchEngine.OPTIONS, _indexer);
-      if (ranker == null) {
-          respondWithMsg(exchange, "Ranker " + cgiArgs._rankerType.toString() + " is not valid!");
-      }
-
-      // Processing the query - check if we have exact match
-      // TODO Remove dependency on implementation.
-      Query processedQuery;
-      if(cgiArgs._query.indexOf('"') == -1)
-          processedQuery = new Query(cgiArgs._query);
-      else
-          processedQuery = new QueryPhrase(cgiArgs._query);
-
-      processedQuery.processQuery();
-
-      // Ranking.
-      
-      Vector<ScoredDocument> scoredDocs = ranker.runQuery(processedQuery, cgiArgs._numResults);
-      StringBuffer response = new StringBuffer();
-      long endTime = Calendar.getInstance().getTimeInMillis();
-      switch (cgiArgs._outputFormat) {
-          case TEXT:
-              constructTextOutput(scoredDocs, response);
-              respondWithMsg(exchange, response.toString());
-              break;
-          case HTML:
-              constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
-              respondWithHTML(exchange, response.toString());
-              break;
-          default:
-              // nothing
-      }
-      System.out.println("Finished query: " + cgiArgs._query);
+        /* get most frequent terms for all documents
+         * get total number of words in all documents: total
+         * for each term:
+         * 	compute how many times it appears in each document: freq
+         * 	compute freq/total -> Prob
+         * When the loop is done, normalize and output
+         */
+    	StringBuffer response = new StringBuffer();
+    	
+    	Map<Integer, Integer> allTerms = new TreeMap<Integer, Integer>();
+    	Integer allWordCounts = 0;
+    	
+    	//Loop over documents to get all the terms and count total occurence of the term in all the documents
+    	for(ScoredDocument singleDoc : scoredDocs)
+    	{
+    		DocumentIndexed docIndexed = (DocumentIndexed)(_indexer.getDoc(singleDoc.getDocId()));
+    		Map<Integer, Integer> docTerms = docIndexed.getTopFrequentTerms();
+    		
+    		//As we're looping, we can compute the total words of all the documents
+    		//This is the denominator of the probability
+    		allWordCounts+= docIndexed.getDocumentSize();
+    		
+    		for (Map.Entry<Integer, Integer> entry : docTerms.entrySet())
+	        {
+    			Integer totalCount = 0;
+    			if(allTerms.containsKey(entry.getKey()))
+    				totalCount = allTerms.get(entry.getKey());
+    			
+    			totalCount += entry.getValue();
+    			
+    			allTerms.put(entry.getKey(), totalCount);
+	        }
+    	}
+    	
+    	//Transform the Map to a List and sort it based on the value
+    	//Reference: http://www.java2novice.com/java-interview-programs/sort-a-map-by-value/
+    	Set<Entry<Integer, Integer>> tempSet = allTerms.entrySet();
+        List<Entry<Integer, Integer>> allTermsList = new ArrayList<Entry<Integer, Integer>>(tempSet);
+        Collections.sort( allTermsList, new Comparator<Map.Entry<Integer, Integer>>()
+        {
+            public int compare( Map.Entry<Integer, Integer> o1, Map.Entry<Integer, Integer> o2 )
+            {
+                return (o2.getValue()).compareTo( o1.getValue() );
+            }
+        } );
+        
+        
+        Map<Integer, Double> probabilities = new HashMap<Integer, Double>();
+        
+        Double total = 0.0;
+        
+        //Loop over the top m terms based on the numTerms param specified in the url
+        int termsToLoopOver = allTermsList.size() > cgiArgs._numTerms ? cgiArgs._numTerms : allTermsList.size();
+        for(int i = 0; i<termsToLoopOver; i++) 
+        {
+        	//For each term
+        	Entry<Integer, Integer> entry = allTermsList.get(i);
+        	
+        	//value = total count of term in all docs / total count of all words in all docs
+        	double value = entry.getValue().doubleValue()/allWordCounts;
+        	
+        	//Add value to total to use for normalization
+        	total += value;
+        	//Add value to probabilities list
+          	probabilities.put(entry.getKey(), value);
+        }
+    	
+        //Do the same thing to sort the probabilities
+        Set<Entry<Integer, Double>> newset = probabilities.entrySet();
+        List<Entry<Integer, Double>> probabilitiesList = new ArrayList<Entry<Integer, Double>>(newset);
+        Collections.sort( probabilitiesList, new Comparator<Map.Entry<Integer, Double>>()
+        {
+            public int compare( Map.Entry<Integer, Double> o1, Map.Entry<Integer, Double> o2 )
+            {
+                return (o2.getValue()).compareTo( o1.getValue() );
+            }
+        } );
+        
+        DecimalFormat df = new DecimalFormat("#.##"); 
+        
+        //Loop over each value in the list and output formatted normalized result
+        for (Entry<Integer, Double> entry : probabilitiesList)
+        {
+        	double normalizedProbability = entry.getValue()/total;
+        	response.append(_indexer.getTerm(entry.getKey())).append("\t").append(df.format(normalizedProbability)).append("\n");
+        }
+    	
+        response.append("");
+        
+        respondWithMsg(exchange, response.toString());
+      	System.out.println("Finished query: " + cgiArgs._query);
     }
   }
   }

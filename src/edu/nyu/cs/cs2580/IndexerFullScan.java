@@ -15,6 +15,9 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.Vector;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
@@ -27,7 +30,7 @@ class IndexerFullScan extends Indexer implements Serializable {
   private static final long serialVersionUID = 1077111905740085030L;
 
   // Maps each term to their integer representation
-  private Map<String, Integer> _dictionary = new HashMap<String, Integer>();
+  private BiMap<String, Integer> _dictionary = HashBiMap.create();
   // All unique terms appeared in corpus. Offsets are integer representations.
   private Vector<String> _terms = new Vector<String>();
 
@@ -236,4 +239,9 @@ class IndexerFullScan extends Indexer implements Serializable {
     return retval;
   }
 
+  public String getTerm(int termId)
+  {
+	  String term = _dictionary.inverse().get(termId);
+	  return term;
+  }
 }
