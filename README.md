@@ -5,6 +5,38 @@ This repository contains homework solutions for the Web Search Engines class tau
 
 The homeworks lead to building a simple web search engine.
 
+#Assignment 3
+
+##COMPILATION AND RUNNING THE SEARCH ENGINE
+
+Assuming that the current directory is the parent directory of src. Please also make sure that the all JAR files in the "lib" folder are included in the compilation, like below.
+
+To compile,
+$ javac -cp .:./lib/*:./src src/edu/nyu/cs/cs2580/*.java
+
+To run in mining mode,
+$ java -Xmx512m -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=mining --options=conf/engine.conf
+
+To run in indexing mode,
+$ java -Xmx512m -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=index --options=conf/engine.conf
+
+To run in serving mode,
+$ java -Xmx512m -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=serve --port=25814 --options=conf/engine.conf
+
+##Choice of PageRank parameters
+
+We conform to the following formula in calculating the values of PageRank
+
+PageRank[i] = (1 - DAMPING_FACTOR)*(sum of contributions from other pages) + DAMPING_FACTPR*(1/n)
+
+That is, lambda = 1 - DAMPING_FACTOR.
+
+The parameters that yield the best estimated results are lambda = 1 - DAMPING_FACTOR = 0.9 with 2 iterations. This is because the portion of the value of PageRank that comes from the outlinks of the other pages should have more impact than the random jump from any page, in which its purpose is to resolve the problem of pages that have no incoming links. 2 iterations give more accurate values since it is closer to the values at convergence.
+
+##Spearman's rank correlation coefficient
+
+The computed correlation coefficient between PageRank and NumViews is ___.
+
 
 #Assignment 2
 
@@ -158,3 +190,4 @@ Click logging is also implemented. The log file is saved in the "results" folder
 The result of the click tracking links is an HTTP redirect to the search results page.
 
 Note that this works well in Firefox and Chrome, but not in Safari because of a known bug.
+
