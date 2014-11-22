@@ -23,19 +23,22 @@ $ java -Xmx512m -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=index 
 To run in serving mode,
 $ java -Xmx512m -cp .:./lib/*:./src edu.nyu.cs.cs2580.SearchEngine --mode=serve --port=25814 --options=conf/engine.conf
 
-##Choice of PageRank parameters
+##CHOICE OF PAGERANK PARAMETERS
 
 We conform to the following formula in calculating the values of PageRank
 
-PageRank[i] = (1 - DAMPING_FACTOR)*(sum of contributions from other pages) + DAMPING_FACTPR*(1/n)
+PageRank[i] = (1 - DAMPING_FACTOR)*(sum of contributions from other pages) + DAMPING_FACTOR*(1/n)
 
 That is, lambda = 1 - DAMPING_FACTOR.
 
 The parameters that yield the best estimated results are lambda = 1 - DAMPING_FACTOR = 0.9 with 2 iterations. This is because the portion of the value of PageRank that comes from the outlinks of the other pages should have more impact than the random jump from any page, in which its purpose is to resolve the problem of pages that have no incoming links. 2 iterations give more accurate values since it is closer to the values at convergence.
 
-##Spearman's rank correlation coefficient
+##SPEARMAN'S RANK CORRELATION COEFFICIENT
 
-The computed correlation coefficient between PageRank and NumViews is ___.
+To run the Spearman class,
+$ java -cp .:./lib/*:./src edu.nyu.cs.cs2580.Spearman ./data/index/pagerank ./data/index/numviews
+
+The computed correlation coefficient between PageRank and NumViews is 5.414377157557319E-12.
 
 
 #Assignment 2
