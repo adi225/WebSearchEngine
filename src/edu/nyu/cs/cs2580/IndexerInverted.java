@@ -11,6 +11,8 @@ import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import edu.nyu.cs.cs2580.FileUtils.FileRange;
 import org.xml.sax.SAXException;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * @CS2580: Implement this class for HW2.
  */
@@ -20,6 +22,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   protected static long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
   protected static long INDEX_CACHE_THRESHOLD = 500000;
   protected static int TOP_WORDS_TO_STORE = 100;
+  protected static int MAX_DOCS = 100000;
 
   protected RandomAccessFile _indexRAF;
   protected final String indexFilePath = _options._indexPrefix + "/index.idx";
@@ -28,7 +31,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   protected Map<Integer, List<Integer>> _utilityIndex = new HashMap<Integer, List<Integer>>();
   protected long _utilityIndexFlatSize = 0;
   protected long _utilityPartialIndexCounter = 0;
-  protected int MAX_DOCS = 100000;
 
   // An index, which is a mapping between an integer representation of a term
   // and a byte range in the file where the postings list for the term is located.
@@ -79,61 +81,56 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       indexAuxFile = new File(indexFile.getAbsolutePath() + "_aux");
     }
     new File(_options._indexPrefix + WORDS_DIR).mkdir();
-    File dir = new File(_options._corpusPrefix);
-    File[] directoryListing = dir.listFiles();
+    File[] directoryListing = checkNotNull(new File(_options._corpusPrefix)).listFiles();
 
-    if (directoryListing != null) {
-      Map<Integer, Vector<Integer>> docBodies = new HashMap<Integer, Vector<Integer>>();
-      for (File docFile : directoryListing) {
-        StringBuffer text = new StringBuffer();  // the original text of the document
+    Map<Integer, Vector<Integer>> docBodies = new HashMap<Integer, Vector<Integer>>();
+    for (File docFile : directoryListing) {
+      StringBuffer text = new StringBuffer();  // the original text of the document
 
-        // getting the original text of the document
-        BufferedReader reader = new BufferedReader(new FileReader(docFile));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-          text.append(line + "\n");
-        }
-        reader.close();
+      // getting the original text of the document
+      BufferedReader reader = new BufferedReader(new FileReader(docFile));
+      String line = null;
+      while ((line = reader.readLine()) != null) {
+        text.append(line + "\n");
+      }
+      reader.close();
 
-        // adding an indexed document
-        int docId = _numDocs++;     // the current number of doc is ID for the current document
-        DocumentIndexed docIndexed = new DocumentIndexed(docId);
-        docIndexed.setUrl(docFile.getName());
-        _documents.add(docIndexed);
+      // adding an indexed document
+      int docId = _numDocs++;     // the current number of doc is ID for the current document
+      DocumentIndexed docIndexed = new DocumentIndexed(docId);
+      docIndexed.setUrl(docFile.getName());
+      _documents.add(docIndexed);
 
-        if(docIndexed.getTitle().equals("2008_World_Music_Awards")) {
-          System.out.print("");
-        }
-
-        try {
-          // process the raw content of the document and build maps
-          Vector<Integer> processedBody = processDocument(docIndexed, text.toString());
-          updatePostingsLists(docId, processedBody);
-          docBodies.put(docId, processedBody);
-        } catch (BoilerpipeProcessingException e) {
-          throw new IOException("File format could not be processed by Boilerplate.");
-        } catch (SAXException e) {
-          throw new IOException("File format could not be processed by Boilerplate.");
-        }
-        System.out.println("Finished indexing document id: " + docId);
-
-        if(_numDocs > MAX_DOCS) break;
+      if(docIndexed.getTitle().equals("2008_World_Music_Awards")) {
+        System.out.print("");
       }
 
-      // dump any leftover partial index
-      if(_utilityIndexFlatSize > 0) {
-        dumpUtilityIndexToFileAndClearFromMemory(
-                _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++);
+      try {
+        // process the raw content of the document and build maps
+        Vector<Integer> processedBody = processDocument(docIndexed, text.toString());
+        updatePostingsLists(docId, processedBody);
+        docBodies.put(docId, processedBody);
+      } catch (BoilerpipeProcessingException e) {
+        throw new IOException("File format could not be processed by Boilerplate.");
+      } catch (SAXException e) {
+        throw new IOException("File format could not be processed by Boilerplate.");
       }
+      System.out.println("Finished indexing document id: " + docId);
 
-      loadPageRanks();
-      loadNumViews();
-      populateStoppingWords();
-      populateTopFrequentTerms(docBodies);
-      precomputeSquareTFIDFSum(docBodies);
-    } else {
-        throw new IOException("Invalid directory.");
+      if(_numDocs > MAX_DOCS) break;
     }
+
+    // dump any leftover partial index
+    if(_utilityIndexFlatSize > 0) {
+      dumpUtilityIndexToFileAndClearFromMemory(
+              _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++);
+    }
+
+    loadPageRanks();
+    loadNumViews();
+    populateStoppingWords();
+    populateTopFrequentTerms(docBodies);
+    precomputeSquareTFIDFSum(docBodies);
 
     // Merge all partial indexes.
     System.out.println("Generated " + _utilityPartialIndexCounter + " partial indexes.");
@@ -173,7 +170,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   
   // This method populates the top 50 most frequent words into _stoppingWords.
   private void populateStoppingWords(){
-    List<Map.Entry<Integer, Integer>> sortedTermCorpusFrequency = sortByValues(_termCorpusFrequency, true);
+    List<Map.Entry<Integer, Integer>> sortedTermCorpusFrequency = Utils.sortByValues(_termCorpusFrequency, true);
 
     for(int i=0;i<50;i++) {  // extracting the top 50 terms (the order is preserved)
       Map.Entry<Integer, Integer> me = sortedTermCorpusFrequency.get(i);
@@ -187,7 +184,9 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     CorpusAnalyzer corpusAnalyzer = CorpusAnalyzer.Factory.getCorpusAnalyzerByOption(_options);
     Map<String, Float> pageRanks = (Map<String, Float>)corpusAnalyzer.load();
     for(Document document : _documents) {
-      document.setPageRank(pageRanks.get(document.getUrl()));
+      if(pageRanks.containsKey(document.getUrl())) {
+        document.setPageRank(pageRanks.get(document.getUrl()));
+      }
     }
   }
 
@@ -198,20 +197,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       document.setNumViews(numViews.get(document.getUrl()));
     }
   }
-  
-  // This helper method sorts the given map by value in a decreasing order.
-  private <K,V extends Comparable<V>> List<Map.Entry<K,V>> sortByValues(Map<K, V> map, final boolean desc) {
-    Comparator<Map.Entry<K,V>> byMapValues = new Comparator<Map.Entry<K,V>>() {
-      int reverse = desc ? -1 : 1;
-      @Override
-      public int compare(Map.Entry<K,V> left, Map.Entry<K,V> right) {
-        return left.getValue().compareTo(right.getValue()) * reverse;
-      }
-    };
-    List<Map.Entry<K,V>> sortedMap = Lists.newArrayList(map.entrySet());
-    Collections.sort(sortedMap, byMapValues);
-    return sortedMap;
- }
 
   private void populateTopFrequentTerms(Map<Integer, Vector<Integer>> docBodies) {
     System.out.println("Packaging most frequent words for documents.");
@@ -225,7 +210,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
         int frequency = wordFrequencies.containsKey(word) ? wordFrequencies.get(word) : 0;
         wordFrequencies.put(word, frequency + 1);
       }
-      List<Map.Entry<Integer, Integer>> topWordFrequencies = sortByValues(wordFrequencies, true);
+      List<Map.Entry<Integer, Integer>> topWordFrequencies = Utils.sortByValues(wordFrequencies, true);
       Map<Integer, Integer> topWordFrequenciesMap = Maps.newHashMap();
       for(int i = 0; topWordFrequenciesMap.size() < TOP_WORDS_TO_STORE && i < topWordFrequencies.size(); i++) {
         String word = _dictionary.inverse().get(topWordFrequencies.get(i).getKey());
@@ -317,7 +302,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
   /**
    * Tokenize {@code content} into terms, translate terms into their integer
-   * representation, store the integers in {@code tokens}.
+   * representation.
    * @param content
    */
   protected Vector<Integer> readTermVector(String content) {

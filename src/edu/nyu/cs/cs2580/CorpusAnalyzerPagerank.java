@@ -22,6 +22,7 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
 
   protected BiMap<String, Integer> _documents;
   protected List<Set<Integer>> invertedAdjacencyList;
+  Map<String, String> _redirects;
   protected int[] outlinks;
 
   public CorpusAnalyzerPagerank(Options options) {
@@ -60,24 +61,30 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
     _documents = HashBiMap.create(directories.length);
     outlinks = new int[directories.length];
     int docId = 0;
+    _redirects = Maps.newHashMap();
 
     for(File document : directories) {
       System.out.println("Preparing document " + docId);
-      HeuristicLinkExtractor extractor = new HeuristicLinkExtractor(document);
 
-      _documents.put(extractor.getLinkSource(), docId++);
-      intermediateAdjacencyListWriter.print(extractor.getLinkSource() + " ");
+      HeuristicLinkExtractor extractor = new HeuristicLinkExtractor(document);
       String nextLink = extractor.getNextInCorpusLinkTarget();
-      while(nextLink != null) {
-        intermediateAdjacencyListWriter.print(nextLink + " ");
-        nextLink = extractor.getNextInCorpusLinkTarget();
+      if(extractor.getRedirect() != null) {
+        _redirects.put(extractor.getLinkSource(), extractor.getRedirect());
+      } else {
+        _documents.put(extractor.getLinkSource(), docId++);
+        intermediateAdjacencyListWriter.print(extractor.getLinkSource() + " ");
+        while (nextLink != null) {
+          intermediateAdjacencyListWriter.print(nextLink + " ");
+          nextLink = extractor.getNextInCorpusLinkTarget();
+        }
+        intermediateAdjacencyListWriter.println();
       }
-      intermediateAdjacencyListWriter.println();
+      if(docId >= IndexerInverted.MAX_DOCS) break;
     }
     intermediateAdjacencyListWriter.close();
 
     invertedAdjacencyList = new ArrayList<Set<Integer>>(directories.length);
-    for(int i = 0; i < directories.length; ++i) {
+    for(int i = 0; i < docId; ++i) {
       invertedAdjacencyList.add(new HashSet<Integer>());
     }
     Scanner intermediateAdjacencyListScanner =
@@ -88,6 +95,9 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
       checkState(_documents.containsKey(tokens[0]));
       int fromDocId = _documents.get(tokens[0]);
       for(int i = 1; i < tokens.length; i++) {
+        while(_redirects.containsKey(tokens[i])) {
+          tokens[i] = _redirects.get(tokens[i]);
+        }
         if(_documents.containsKey(tokens[i])) {
           int toDocId = _documents.get(tokens[i]);
           invertedAdjacencyList.get(toDocId).add(fromDocId);
@@ -122,16 +132,6 @@ public class CorpusAnalyzerPagerank extends CorpusAnalyzer {
     }
     pageRank = M.iteratePageRank(pageRank);
     pageRank = M.iteratePageRank(pageRank);
-
-    int maxPRDocId = -1;
-    float maxPR = -1;
-    for(int i = 0; i < pageRank.length; i++) {
-      if(maxPR < pageRank[i]) {
-        maxPR = pageRank[i];
-        maxPRDocId = i;
-      }
-    }
-    System.out.println("Max PR: " + _documents.inverse().get(maxPRDocId));
 
     File pageRankFile = new File(pageRankFilePath);
     PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(pageRankFile)));

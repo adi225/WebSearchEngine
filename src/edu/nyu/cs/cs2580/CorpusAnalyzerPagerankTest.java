@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -70,11 +71,20 @@ public class CorpusAnalyzerPagerankTest {
     expectedPageRank[2] = 0.274375f;
     expectedPageRank[3] = 0.17875f;
 
-    float[] pageRank = (float[])prAnalyzer.load();
+    Map<String, Float> pageRank = (Map<String, Float>)prAnalyzer.load();
 
-    for(int i = 0; i < expectedPageRank.length; i++) {
-      assertEquals(expectedPageRank[i], pageRank[i], 0.001);
-    }
+    assertEquals(expectedPageRank[0], pageRank.get("A"), 0.001);
+    assertEquals(expectedPageRank[1], pageRank.get("B"), 0.001);
+    assertEquals(expectedPageRank[2], pageRank.get("C"), 0.001);
+    assertEquals(expectedPageRank[3], pageRank.get("D"), 0.001);
+  }
+
+  @Test
+  public void testRedirect() throws Exception {
+    File file = new File("data/wiki/Symphony_No._5_(Beethoven)");
+    CorpusAnalyzer.HeuristicLinkExtractor extractor = new CorpusAnalyzer.HeuristicLinkExtractor(file);
+    extractor.getNextInCorpusLinkTarget();
+    assertEquals("Symphony_No._5_(Beethoven).html", extractor.getRedirect());
   }
 
 }

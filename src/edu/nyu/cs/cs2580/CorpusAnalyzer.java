@@ -34,11 +34,15 @@ public abstract class CorpusAnalyzer {
    */
   protected static class HeuristicLinkExtractor {
     private static final Pattern LINK_PATTERN =
-        Pattern.compile("<[a|A].*?href=\"([^ /#]*)\".*?>");
+      Pattern.compile("<[a|A].*?href=\"([^ /#]*)\".*?>");
+    private static final Pattern REDIRECT_PATTERN =
+      Pattern.compile("<[meta|META].*http-equiv=\"refresh\".*content=\".*url=(.*)\">");
 
     private String _linkSource = null;
     private BufferedReader _reader = null;
     private Matcher _matcher = null;
+    private Matcher _redirectMatcher = null;
+    private String _redirectTo = null;
 
     // Constructs the extractor based on the content of the provided file.
     public HeuristicLinkExtractor(File file) throws IOException {
@@ -47,7 +51,13 @@ public abstract class CorpusAnalyzer {
       String line = _reader.readLine();
       if (line != null) {
         _matcher = LINK_PATTERN.matcher(line);
+        _redirectMatcher = REDIRECT_PATTERN.matcher(line);
       }
+    }
+
+    // Returns the document this document redirects to.
+    public String getRedirect() {
+      return _redirectTo;
     }
 
     // Returns the simple file name as the link source.
@@ -59,11 +69,17 @@ public abstract class CorpusAnalyzer {
     // file name. Returns null if not more links are found. The returned link
     // is extracted heuristically and may not necessarily appear in the corpus.
     public String getNextInCorpusLinkTarget() throws IOException {
-      if (_matcher == null) {  // Not initialized
+      if (_matcher == null || _redirectTo != null) {  // Not initialized
         return null;
       }
       String linkTarget = null;
       while (linkTarget == null) {
+        if(_redirectMatcher.find()) {
+          _redirectTo = _redirectMatcher.group(1);
+          if(_redirectTo != null) {
+            return null;
+          }
+        }
         if (_matcher.find()) {
           if ((linkTarget = _matcher.group(1)) != null) {
             return linkTarget;
@@ -76,6 +92,7 @@ public abstract class CorpusAnalyzer {
           break;
         }
         _matcher = LINK_PATTERN.matcher(line);
+        _redirectMatcher = REDIRECT_PATTERN.matcher(line);
       }
       return linkTarget;
     }
