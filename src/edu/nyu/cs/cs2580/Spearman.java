@@ -39,6 +39,7 @@ public class Spearman
     }
     br.close();
 
+    // collect PageRank and Numviews data
     String[] singleLine;
     String doc;
     float[] pageRank = new float[n];
@@ -65,8 +66,9 @@ public class Spearman
     }
     br.close();
 
-    x_k = sortRank(pageRank);
-    y_k = sortRank(numView);
+    // assign rank for each document
+    x_k = assignRank(pageRank);
+    y_k = assignRank(numView);
 
     System.out.println(docName);
     System.out.println(Arrays.toString(pageRank));
@@ -74,6 +76,7 @@ public class Spearman
     System.out.println(Arrays.toString(x_k));
     System.out.println(Arrays.toString(y_k));
 
+    // calculate Spearman coefficient
     int z = 0;
     for(int i = 0; i < x_k.length; i++) {
       z += x_k[i];
@@ -90,29 +93,32 @@ public class Spearman
     System.out.print(rho);
   }
 
-  public static float[] sortRank(float[] data) throws Exception {
-    int n = data.length;
+  // assigns rank values of each element in score
+  public static float[] assignRank(float[] score) throws Exception {
+    int n = score.length;
     int numDuplicates;
-    float rankEle, rankNum = 1.0f;
+    float rankValue, rankNum = 1.0f;
     float[] rank = new float[n];
-    Float[] tempData = new Float[n];
+    Float[] descendingRank = new Float[n];
     for(int i = 0; i < n; i++) {
-      tempData[i] = data[i];
+      descendingRank[i] = score[i];
     }
-    tempData = removeDuplicates(tempData);
-    Arrays.sort(tempData, Collections.reverseOrder());
+    descendingRank = removeDuplicates(descendingRank);
+    Arrays.sort(descendingRank, Collections.reverseOrder());
 
-    for(int i = 0; i < tempData.length; i++) {
+    for(int i = 0; i < descendingRank.length; i++) {
+      // count the number of duplicates
       numDuplicates = 0;
       for(int j = 0; j < n; j++) {
-        if(data[j] == tempData[i]) {
+        if(score[j] == descendingRank[i]) {
           numDuplicates++;
         }
       }
-      rankEle = rankNum + 0.5f * (numDuplicates - 1);
+      // assigns rank values
+      rankValue = rankNum + 0.5f * (numDuplicates - 1);
       for(int j = 0; j < n; j++) {
-        if(data[j]==tempData[i]) {
-          rank[j] = rankEle;
+        if(score[j]==descendingRank[i]) {
+          rank[j] = rankValue;
         }
       }
       rankNum = rankNum + numDuplicates;
@@ -120,29 +126,33 @@ public class Spearman
     return rank;
   }
 
-  public static float[] sortRank(int[] data) throws Exception {
-    int n = data.length;
+  // assigns rank values of each element in score
+  public static float[] assignRank(int[] score) throws Exception {
+    int n = score.length;
     int numDuplicates;
-    float rankEle, rankNum = 1;
+    float rankValue, rankNum = 1;
     float[] rank = new float[n];
-    Integer[] tempData= new Integer[n];
+    Integer[] descendingRank= new Integer[n];
     for(int i = 0; i < n; i++) {
-      tempData[i] = data[i];
+      descendingRank[i] = score[i];
     }
-    tempData = removeDuplicates(tempData);
-    Arrays.sort(tempData, Collections.reverseOrder());
+    descendingRank = removeDuplicates(descendingRank);
+    Arrays.sort(descendingRank, Collections.reverseOrder());
 
-    for (int i = 0; i < tempData.length; i++) {
+    for (int i = 0; i < descendingRank.length; i++) {
+      // count the number of duplicates
       numDuplicates = 0;
       for (int j = 0; j < n; j++) {
-        if (data[j] == tempData[i]) {
+        if (score[j] == descendingRank[i]) {
           numDuplicates++;
         }
       }
-      rankEle = rankNum + 0.5f * (numDuplicates - 1);
+
+      // assigns rank values
+      rankValue = rankNum + 0.5f * (numDuplicates - 1);
       for (int j = 0; j < n; j++) {
-        if (data[j] == tempData[i]) {
-          rank[j] = rankEle;
+        if (score[j] == descendingRank[i]) {
+          rank[j] = rankValue;
         }
       }
       rankNum = rankNum + numDuplicates;
