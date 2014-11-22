@@ -3,10 +3,7 @@ package edu.nyu.cs.cs2580;
 import java.io.*;
 import java.util.*;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.*;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import edu.nyu.cs.cs2580.FileUtils.FileRange;
 import org.xml.sax.SAXException;
@@ -23,24 +20,25 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   protected static long INDEX_CACHE_THRESHOLD = 500000;
   protected static int TOP_WORDS_TO_STORE = 100;
   protected static int MAX_DOCS = 100000;
+  protected static int STOPWORDS_NUM = 100;
 
   protected RandomAccessFile _indexRAF;
   protected final String indexFilePath = _options._indexPrefix + "/index.idx";
 
   // Utility index is only used during index construction.
-  protected Map<Integer, List<Integer>> _utilityIndex = new HashMap<Integer, List<Integer>>();
+  protected Map<Integer, List<Integer>> _utilityIndex = Maps.newTreeMap();
   protected long _utilityIndexFlatSize = 0;
   protected long _utilityPartialIndexCounter = 0;
 
   // An index, which is a mapping between an integer representation of a term
   // and a byte range in the file where the postings list for the term is located.
-  protected Map<Integer, FileRange> _index = new HashMap<Integer, FileRange>();
+  protected Map<Integer, FileRange> _index = Maps.newTreeMap();
 
   // A cache for postings lists to contain some of the lists in memory.
-  protected Map<Integer, List<Integer>> _indexCache = new HashMap<Integer, List<Integer>>();
+  protected Map<Integer, List<Integer>> _indexCache = Maps.newTreeMap();
   protected long _indexCacheFlatSize = 0;
-  protected Map<Integer, Integer> _cachedDocId = Maps.newHashMap();
-  protected Map<Integer, Integer> _cachedOffset = Maps.newHashMap();
+  protected Map<Integer, Integer> _cachedDocId = Maps.newTreeMap();
+  protected Map<Integer, Integer> _cachedOffset = Maps.newTreeMap();
 
   // An offset in the file where the postings lists begin (after all metadata).
   protected long _indexOffset = 0;
@@ -53,10 +51,10 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
   // Term frequency, key is the integer representation of the term and value is
   // the number of times the term appears in the corpus.
-  protected Map<Integer, Integer> _termCorpusFrequency = new HashMap<Integer, Integer>();
+  protected Map<Integer, Integer> _termCorpusFrequency = Maps.newTreeMap();;
 
   // The set contains stopping words, corresponding to the top 50 most frequent words in a corpus.
-  protected Set<String> _stoppingWords = new HashSet<String>();
+  protected Set<String> _stoppingWords = Sets.newTreeSet();
   
   // Provided for serialization.
   public IndexerInverted() { }
@@ -129,8 +127,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     loadPageRanks();
     loadNumViews();
     populateStoppingWords();
-    populateTopFrequentTerms(docBodies);
-    precomputeSquareTFIDFSum(docBodies);
+    processDocBodies(docBodies);
 
     // Merge all partial indexes.
     System.out.println("Generated " + _utilityPartialIndexCounter + " partial indexes.");
@@ -172,7 +169,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   private void populateStoppingWords(){
     List<Map.Entry<Integer, Integer>> sortedTermCorpusFrequency = Utils.sortByValues(_termCorpusFrequency, true);
 
-    for(int i=0;i<50;i++) {  // extracting the top 50 terms (the order is preserved)
+    for(int i = 0; i < STOPWORDS_NUM; i++) {  // extracting the top 50 terms (the order is preserved)
       Map.Entry<Integer, Integer> me = sortedTermCorpusFrequency.get(i);
       int termId = me.getKey();
       String term = _dictionary.inverse().get(termId);
@@ -198,63 +195,53 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     }
   }
 
-  private void populateTopFrequentTerms(Map<Integer, Vector<Integer>> docBodies) {
+  private void processDocBodies(Map<Integer, Vector<Integer>> docBodies) {
     System.out.println("Packaging most frequent words for documents.");
     for(DocumentIndexed documentIndexed : _documents) {
       if(documentIndexed._docid % 1000 == 0) {
         System.out.println("Finished packaging most frequent words for for " + documentIndexed._docid + " documents.");
       }
-      Vector<Integer> words = docBodies.get(documentIndexed._docid);
-      Map<Integer, Integer> wordFrequencies = Maps.newHashMap();
+
+      Vector<Integer> words = docBodies.remove(documentIndexed._docid);
+      documentIndexed.setDocumentSize(words.size());
+
+      Map<Integer, Integer> documentMap = Maps.newTreeMap();
       for(int word : words) {
-        int frequency = wordFrequencies.containsKey(word) ? wordFrequencies.get(word) : 0;
-        wordFrequencies.put(word, frequency + 1);
+        int frequency = documentMap.containsKey(word) ? documentMap.get(word) : 0;
+        documentMap.put(word, frequency + 1);
       }
-      List<Map.Entry<Integer, Integer>> topWordFrequencies = Utils.sortByValues(wordFrequencies, true);
-      Map<Integer, Integer> topWordFrequenciesMap = Maps.newHashMap();
-      for(int i = 0; topWordFrequenciesMap.size() < TOP_WORDS_TO_STORE && i < topWordFrequencies.size(); i++) {
-        String word = _dictionary.inverse().get(topWordFrequencies.get(i).getKey());
+      words = null; // discard the words from memory.
+
+      // Precompute the tfIdf sum and store it in document.
+      documentIndexed.setTfidfSumSquared(computeSquareTFIDFSum(documentMap));
+
+      // Sort the words by most frequent ones first.
+      List<Map.Entry<Integer, Integer>> sortedDocumentMap = Utils.sortByValues(documentMap, true);
+      documentMap = null; // discard the map from memory.
+
+      Map<Integer, Integer> topWordFrequenciesTruncated = Maps.newTreeMap();
+      for(int i = 0; topWordFrequenciesTruncated.size() < TOP_WORDS_TO_STORE && i < sortedDocumentMap.size(); i++) {
+        String word = _dictionary.inverse().get(sortedDocumentMap.get(i).getKey());
         if(!_stoppingWords.contains(word)) {
-          topWordFrequenciesMap.put(topWordFrequencies.get(i).getKey(), topWordFrequencies.get(i).getValue());
+          topWordFrequenciesTruncated.put(sortedDocumentMap.get(i).getKey(), sortedDocumentMap.get(i).getValue());
         }
       }
-      documentIndexed.setTopFrequentTerms(topWordFrequenciesMap);
+      documentIndexed.setTopFrequentTerms(topWordFrequenciesTruncated);
     }
   }
 
-  private void precomputeSquareTFIDFSum(Map<Integer, Vector<Integer>> docBodies) {
+  private double computeSquareTFIDFSum(Map<Integer, Integer> documentMap) {
     // Precompute squared tfidf sum of documents.
-    System.out.println("Precomputing cosine ranker data.");
-    for(int docId = 0; docId < _numDocs; docId++) {
-      if(docId % 1000 == 0) {
-        System.out.println("Finished precomputing cosine ranker data for " + docId + " documents.");
-      }
-      DocumentIndexed doc = (DocumentIndexed) this.getDoc(docId);
-      Vector<Integer> docBody = docBodies.get(docId);
-      doc.setDocumentSize(docBody.size());
-      docBodies.remove(docId);
-
-      Map<Integer, Integer> documentMap = new HashMap<Integer, Integer>();
-      for(int word : docBody) {
-        if(documentMap.containsKey(word)) {
-          documentMap.put(word, documentMap.get(word) + 1);
-        } else {
-          documentMap.put(word, 1);
-        }
-      }
-
-      // we precompute sum(tfidf^2)
-      double d_sqr = 0;
-      double idf, tf_d, tfidf_d;
-      for(int word : documentMap.keySet()) {
-        String wordString = _dictionary.inverse().get(word);
-        idf = 1 + Math.log(((double)_numDocs) / corpusDocFrequencyByTerm(wordString)) / Math.log(2);
-        tf_d = documentMap.get(word);
-        tfidf_d = tf_d * idf;  // tfidf of term in document
-        d_sqr += tfidf_d * tfidf_d; // computing sum(y^2) term of cosine similarity
-      }
-      doc.setTfidfSumSquared(d_sqr);
+    double d_sqr = 0;
+    double idf, tf_d, tfidf_d;
+    for(int word : documentMap.keySet()) {
+      String wordString = _dictionary.inverse().get(word);
+      idf = 1 + Math.log(((double)_numDocs) / corpusDocFrequencyByTerm(wordString)) / Math.log(2);
+      tf_d = documentMap.get(word);
+      tfidf_d = tf_d * idf;  // tfidf of term in document
+      d_sqr += tfidf_d * tfidf_d; // computing sum(y^2) term of cosine similarity
     }
+    return d_sqr;
   }
 
   protected List<Object> selectMetadataToStore() {

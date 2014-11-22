@@ -309,7 +309,7 @@ class QueryHandler implements HttpHandler {
     		//As we're looping, we can compute the total words of all the documents
     		//This is the denominator of the probability
     		allWordCounts+= docIndexed.getDocumentSize();
-    		
+
     		for (Map.Entry<Integer, Integer> entry : docTerms.entrySet())
 	        {
     			Integer totalCount = 0;
@@ -321,20 +321,9 @@ class QueryHandler implements HttpHandler {
     			allTerms.put(entry.getKey(), totalCount);
 	        }
     	}
-    	
-    	//Transform the Map to a List and sort it based on the value
-    	//Reference: http://www.java2novice.com/java-interview-programs/sort-a-map-by-value/
-    	Set<Entry<Integer, Integer>> tempSet = allTerms.entrySet();
-        List<Entry<Integer, Integer>> allTermsList = new ArrayList<Entry<Integer, Integer>>(tempSet);
-        Collections.sort( allTermsList, new Comparator<Map.Entry<Integer, Integer>>()
-        {
-            public int compare( Map.Entry<Integer, Integer> o1, Map.Entry<Integer, Integer> o2 )
-            {
-                return (o2.getValue()).compareTo( o1.getValue() );
-            }
-        } );
-        
-        
+
+        List<Entry<Integer, Integer>> allTermsList = Utils.sortByValues(allTerms, true);
+
         Map<Integer, Double> probabilities = new HashMap<Integer, Double>();
         
         Double total = 0.0;
@@ -354,21 +343,11 @@ class QueryHandler implements HttpHandler {
         	//Add value to probabilities list
           	probabilities.put(entry.getKey(), value);
         }
-    	
-        //Do the same thing to sort the probabilities
-        Set<Entry<Integer, Double>> newset = probabilities.entrySet();
-        List<Entry<Integer, Double>> probabilitiesList = new ArrayList<Entry<Integer, Double>>(newset);
-        Collections.sort( probabilitiesList, new Comparator<Map.Entry<Integer, Double>>()
-        {
-            public int compare( Map.Entry<Integer, Double> o1, Map.Entry<Integer, Double> o2 )
-            {
-                return (o2.getValue()).compareTo( o1.getValue() );
-            }
-        } );
-        
+
+        List<Entry<Integer, Double>> probabilitiesList = Utils.sortByValues(probabilities, true);
         DecimalFormat df = new DecimalFormat("#.##"); 
         
-        //Loop over each value in the list and output formatted normalized result
+        // Loop over each value in the list and output formatted normalized result
         for (Entry<Integer, Double> entry : probabilitiesList)
         {
         	double normalizedProbability = entry.getValue()/total;
