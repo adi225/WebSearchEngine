@@ -38,7 +38,7 @@ The parameters that yield the best estimated results are lambda = 1 - DAMPING_FA
 To run the Spearman class,
 $ java -cp .:./lib/*:./src edu.nyu.cs.cs2580.Spearman ./data/index/pagerank ./data/index/numviews
 
-The computed correlation coefficient between PageRank and NumViews is 5.414377157557319E-12.
+The computed correlation coefficient between PageRank and NumViews is 0.412.
 
 
 #Assignment 2
