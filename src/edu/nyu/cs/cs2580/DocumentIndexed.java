@@ -14,8 +14,7 @@ public class DocumentIndexed extends Document {
 
   private int _documentSize;
   private double _tfidfSumSquared;
-  private Map<Integer, Integer> _topFrequentTerms;
-  
+
   public void setDocumentSize(int size){
   	_documentSize = size;
   }
@@ -30,14 +29,6 @@ public class DocumentIndexed extends Document {
 
   public double getTfidfSumSquared() {
     return _tfidfSumSquared;
-  }
-
-  public void setTopFrequentTerms(Map<Integer, Integer> topFrequentTerms) {
-    _topFrequentTerms = topFrequentTerms;
-  }
-
-  public Map<Integer, Integer> getTopFrequentTerms() {
-    return _topFrequentTerms;
   }
 
   public DocumentIndexed(int docid) {

@@ -238,10 +238,4 @@ class IndexerFullScan extends Indexer implements Serializable {
     }
     return retval;
   }
-
-  public String getTerm(int termId)
-  {
-	  String term = _dictionary.inverse().get(termId);
-	  return term;
-  }
 }

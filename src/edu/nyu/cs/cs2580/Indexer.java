@@ -132,8 +132,6 @@ public abstract class Indexer {
   // *** @CS2580: Note the function signature change from url to docid. ***
   public abstract int documentTermFrequency(String term, int docid);
 
-  public abstract String getTerm(int termId);
-  
   /**
    * All Indexers must be created through this factory class based on the
    * provided {@code options}.

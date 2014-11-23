@@ -157,7 +157,6 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
   @Override
   protected void dumpUtilityIndexToFileAndClearFromMemory(String filePath) throws IOException {
     FileUtils.dumpIndexToFileBytes(_utilityIndex, new File(filePath));
-    //_utilityIndex = new HashMap<Integer, List<Byte>>();
     _utilityIndex.clear();
     _utilityIndexFlatSize = 0;
   }

@@ -8,6 +8,7 @@ import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import edu.nyu.cs.cs2580.FileUtils.FileRange;
 import org.xml.sax.SAXException;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -17,18 +18,20 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
   private static final long serialVersionUID = 1077111905740085030L;
   protected static final String WORDS_DIR = "/.partials";
   protected static long UTILITY_INDEX_FLAT_SIZE_THRESHOLD = 1000000;
+  protected static long UTILITY_DOC_WORDS_FLAT_SIZE_THRESHOLD = 1000000;
   protected static long INDEX_CACHE_THRESHOLD = 500000;
-  protected static int TOP_WORDS_TO_STORE = 100;
-  protected static int MAX_DOCS = 100000;
-  protected static int STOPWORDS_NUM = 100;
+  protected static int TOP_WORDS_TO_STORE = Integer.MAX_VALUE;
+  protected static int MAX_DOCS = Integer.MAX_VALUE;
+  protected static int STOPWORDS_NUM = 70;
 
   protected RandomAccessFile _indexRAF;
   protected final String indexFilePath = _options._indexPrefix + "/index.idx";
 
+  //-----------------------------INVERTED INDEX------------------------------------//
   // Utility index is only used during index construction.
   protected Map<Integer, List<Integer>> _utilityIndex = Maps.newTreeMap();
   protected long _utilityIndexFlatSize = 0;
-  protected long _utilityPartialIndexCounter = 0;
+  protected int _utilityPartialIndexCounter = 0;
 
   // An index, which is a mapping between an integer representation of a term
   // and a byte range in the file where the postings list for the term is located.
@@ -42,7 +45,22 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
   // An offset in the file where the postings lists begin (after all metadata).
   protected long _indexOffset = 0;
-	
+  protected long _indexByteSize = 0;
+
+  //-----------------------------DOCUMENT WORDS-------------------------------------//
+  // Utility map is only used during index construction.
+  protected Map<Integer, List<Integer>> _utilityDocWords = Maps.newTreeMap();
+  protected long _utilityDocWordsFlatSize = 0;
+  protected int _utilityPartialDocWordsCounter = 0;
+
+  // An index, which is a mapping between an integer representation of a term
+  // and a byte range in the file where the postings list for the term is located.
+  protected Map<Integer, FileRange> _docWords = Maps.newTreeMap();
+
+  // An offset in the file where the postings lists begin (after all metadata).
+  protected long _docWordsOffset = 0;
+
+  //--------------------------------METADATA----------------------------------------//
   // Metadata of documents.
   protected Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   
@@ -70,6 +88,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     long startTime = System.currentTimeMillis();
     File indexFile = new File(indexFilePath);
     File indexAuxFile = new File(indexFile.getAbsolutePath() + "_aux");
+    File docWordsAuxFile = new File(indexFile.getAbsolutePath() + "_words_aux");
     if(indexFile.exists()) {
       indexFile.delete();
       indexFile = new File(indexFilePath);
@@ -78,10 +97,13 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       indexAuxFile.delete();
       indexAuxFile = new File(indexFile.getAbsolutePath() + "_aux");
     }
+    if(docWordsAuxFile.exists()) {
+      docWordsAuxFile.delete();
+      docWordsAuxFile = new File(indexFile.getAbsolutePath() + "_words_aux");
+    }
     new File(_options._indexPrefix + WORDS_DIR).mkdir();
     File[] directoryListing = checkNotNull(new File(_options._corpusPrefix)).listFiles();
 
-    Map<Integer, Vector<Integer>> docBodies = new HashMap<Integer, Vector<Integer>>();
     for (File docFile : directoryListing) {
       StringBuffer text = new StringBuffer();  // the original text of the document
 
@@ -99,15 +121,11 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       docIndexed.setUrl(docFile.getName());
       _documents.add(docIndexed);
 
-      if(docIndexed.getTitle().equals("2008_World_Music_Awards")) {
-        System.out.print("");
-      }
-
       try {
         // process the raw content of the document and build maps
         Vector<Integer> processedBody = processDocument(docIndexed, text.toString());
         updatePostingsLists(docId, processedBody);
-        docBodies.put(docId, processedBody);
+        updateDocWords(docId, processedBody); // destructive! processedBody is cleared from memory.
       } catch (BoilerpipeProcessingException e) {
         throw new IOException("File format could not be processed by Boilerplate.");
       } catch (SAXException e) {
@@ -120,118 +138,126 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
     // dump any leftover partial index
     if(_utilityIndexFlatSize > 0) {
-      dumpUtilityIndexToFileAndClearFromMemory(
-              _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++);
+      String filePath = _options._indexPrefix + WORDS_DIR + "/" + _utilityPartialIndexCounter++;
+      dumpUtilityIndexToFileAndClearFromMemory(filePath);
     }
-
-    loadPageRanks();
-    loadNumViews();
-    populateStoppingWords();
-    processDocBodies(docBodies);
+    if(_utilityDocWordsFlatSize > 0) {
+      String filePath = _options._indexPrefix + WORDS_DIR + "/words" + _utilityPartialDocWordsCounter++;
+      dumpUtilityDocWordsToFileAndClearFromMemory(filePath);
+    }
 
     // Merge all partial indexes.
     System.out.println("Generated " + _utilityPartialIndexCounter + " partial indexes.");
     String filePathBase = _options._indexPrefix + WORDS_DIR + "/";
-    String filePath1 =  filePathBase + 0;
-    String resFilePath = filePath1;
-    long mergeStart = System.currentTimeMillis();
-    for(int i = 1; i < _utilityPartialIndexCounter; i++) {
-      String filePath2 = filePathBase + i;
-      Map<Integer, FileRange> tempIndex = new HashMap<Integer, FileRange>();
-      resFilePath = filePath1 + i;
-      System.out.println("Merging file #" + i);
-      long offset = FileUtils.mergeFilesIntoIndexAndFile(filePath1, filePath2, tempIndex, resFilePath);
-      filePath1 = resFilePath;
-      if(i == _utilityPartialIndexCounter - 1) {
-        _index = tempIndex;
-        _indexOffset = offset;
-      }
-    }
-    new File(resFilePath).renameTo(indexAuxFile);
+    FileUtils.mergeFilesWithBasePathIntoIndexAndFile(filePathBase, _utilityPartialIndexCounter, _index, indexAuxFile);
+
+    // Merge all partial words lists.
+    System.out.println("Generated " + _utilityPartialDocWordsCounter + " document word lists.");
+    filePathBase = _options._indexPrefix + WORDS_DIR + "/words";
+    FileUtils.mergeFilesWithBasePathIntoIndexAndFile(filePathBase, _utilityPartialDocWordsCounter, _docWords, docWordsAuxFile);
+
     new File(_options._indexPrefix + WORDS_DIR).delete();
     System.out.println("Done merging files.");
 
+    // Calculate some corpus-holistic metadata.
+    loadPageRanks(_documents);
+    loadNumViews(_documents);
+    _stoppingWords = findStoppingWords();
+    precomputeTfIdfSumSquared(_documents, docWordsAuxFile);
+
     // Add metadata to file.
-    FileUtils.writeObjectsToFile(selectMetadataToStore(), indexFile);
+    _indexByteSize = indexAuxFile.length();
+    long metadataSize = FileUtils.writeObjectsToFile(selectMetadataToStore(), indexFile);
     FileUtils.appendFileToFile(indexAuxFile, indexFile);
+    FileUtils.appendFileToFile(docWordsAuxFile, indexFile);
 
     System.out.println(
             "Indexed " + Integer.toString(_numDocs) + " docs with " +
                     Long.toString(_totalTermFrequency) + " terms.");
 
     long timeTaken = (System.currentTimeMillis() - startTime) / 60000;
-    long mergingTime = (System.currentTimeMillis() - mergeStart) / 60000;
     System.out.println("Total indexing time: " + timeTaken + " min");
-    System.out.println("Total partial index merging time: " + mergingTime + " min");
   }
   
-  // This method populates the top 50 most frequent words into _stoppingWords.
-  private void populateStoppingWords(){
+  // This method finds the top most frequent words in the corpus.
+  private Set<String> findStoppingWords(){
+    Set<String> stoppingWords = Sets.newHashSet();
     List<Map.Entry<Integer, Integer>> sortedTermCorpusFrequency = Utils.sortByValues(_termCorpusFrequency, true);
 
-    for(int i = 0; i < STOPWORDS_NUM; i++) {  // extracting the top 50 terms (the order is preserved)
-      Map.Entry<Integer, Integer> me = sortedTermCorpusFrequency.get(i);
-      int termId = me.getKey();
+    for(int i = 0; i < STOPWORDS_NUM && i < sortedTermCorpusFrequency.size(); i++) {  // extracting the top terms
+      int termId = sortedTermCorpusFrequency.get(i).getKey();
       String term = _dictionary.inverse().get(termId);
-      _stoppingWords.add(term);
+      stoppingWords.add(term);
     }
+    return stoppingWords;
   }
 
-  private void loadPageRanks() throws IOException {
+  private void loadPageRanks(Vector<DocumentIndexed> documents) throws IOException {
     CorpusAnalyzer corpusAnalyzer = CorpusAnalyzer.Factory.getCorpusAnalyzerByOption(_options);
     Map<String, Float> pageRanks = (Map<String, Float>)corpusAnalyzer.load();
-    for(Document document : _documents) {
+    for(Document document : documents) {
       if(pageRanks.containsKey(document.getUrl())) {
         document.setPageRank(pageRanks.get(document.getUrl()));
       }
     }
   }
 
-  private void loadNumViews() throws IOException {
+  private void loadNumViews(Vector<DocumentIndexed> documents) throws IOException {
     LogMiner logMiner = LogMinerNumviews.Factory.getLogMinerByOption(_options);
     Map<String, Integer> numViews = (Map<String, Integer>)logMiner.load();
-    for(Document document : _documents) {
+    for(Document document : documents) {
       document.setNumViews(numViews.get(document.getUrl()));
     }
   }
 
-  private void processDocBodies(Map<Integer, Vector<Integer>> docBodies) {
-    System.out.println("Packaging most frequent words for documents.");
-    for(DocumentIndexed documentIndexed : _documents) {
-      if(documentIndexed._docid % 1000 == 0) {
-        System.out.println("Finished packaging most frequent words for for " + documentIndexed._docid + " documents.");
-      }
+  private void updateDocWords(int docId, Vector<Integer> docBody) throws IOException {
+    checkArgument(docId < _documents.size());
+    DocumentIndexed doc = _documents.get(docId);
 
-      Vector<Integer> words = docBodies.remove(documentIndexed._docid);
-      documentIndexed.setDocumentSize(words.size());
+    doc.setDocumentSize(docBody.size());
 
-      Map<Integer, Integer> documentMap = Maps.newTreeMap();
-      for(int word : words) {
-        int frequency = documentMap.containsKey(word) ? documentMap.get(word) : 0;
-        documentMap.put(word, frequency + 1);
-      }
-      words = null; // discard the words from memory.
+    // Count word frequencies.
+    Map<Integer, Integer> documentMap = Maps.newTreeMap();
+    for(int word : docBody) {
+      int frequency = documentMap.containsKey(word) ? documentMap.get(word) : 0;
+      documentMap.put(word, frequency + 1);
+    }
+    docBody.clear(); // discard the words from memory.
 
-      // Precompute the tfIdf sum and store it in document.
-      documentIndexed.setTfidfSumSquared(computeSquareTFIDFSum(documentMap));
+    // Sort the words by most frequent ones first.
+    List<Map.Entry<Integer, Integer>> sortedDocumentMap = Utils.sortByValues(documentMap, true);
+    documentMap = null; // discard the map from memory.
 
-      // Sort the words by most frequent ones first.
-      List<Map.Entry<Integer, Integer>> sortedDocumentMap = Utils.sortByValues(documentMap, true);
-      documentMap = null; // discard the map from memory.
-
-      Map<Integer, Integer> topWordFrequenciesTruncated = Maps.newTreeMap();
-      for(int i = 0; topWordFrequenciesTruncated.size() < TOP_WORDS_TO_STORE && i < sortedDocumentMap.size(); i++) {
-        String word = _dictionary.inverse().get(sortedDocumentMap.get(i).getKey());
-        if(!_stoppingWords.contains(word)) {
-          topWordFrequenciesTruncated.put(sortedDocumentMap.get(i).getKey(), sortedDocumentMap.get(i).getValue());
-        }
-      }
-      documentIndexed.setTopFrequentTerms(topWordFrequenciesTruncated);
+    List<Integer> docWords = Lists.newArrayList();
+    _utilityDocWords.put(docId, docWords);
+    for(int i = 0; docWords.size() / 2 < TOP_WORDS_TO_STORE && i < sortedDocumentMap.size(); i++) {
+      docWords.add(sortedDocumentMap.get(i).getKey());
+      docWords.add(sortedDocumentMap.get(i).getValue());
+      _utilityDocWordsFlatSize += 2;
+    }
+    if(_utilityDocWordsFlatSize > UTILITY_DOC_WORDS_FLAT_SIZE_THRESHOLD) {
+      String filePath = _options._indexPrefix + WORDS_DIR + "/words" + _utilityPartialDocWordsCounter++;
+      dumpUtilityDocWordsToFileAndClearFromMemory(filePath);
     }
   }
 
-  private double computeSquareTFIDFSum(Map<Integer, Integer> documentMap) {
-    // Precompute squared tfidf sum of documents.
+  private void precomputeTfIdfSumSquared(Vector<DocumentIndexed> documents, File docWordsFile) throws IOException {
+    DataInputStream docWordsFileDIS = new DataInputStream(new FileInputStream(docWordsFile));
+
+    // Load word frequency lists.
+    long docWordsOffset = FileUtils.loadFromFileIntoIndex(docWordsFileDIS, _docWords);
+    docWordsFileDIS.close();
+    RandomAccessFile docWordsRAF = new RandomAccessFile(docWordsFile, "r");
+
+    for(DocumentIndexed doc : documents) {
+      Map<Integer, Integer> documentMap = wordListForDoc(doc._docid, docWordsRAF, docWordsOffset);
+      doc.setTfidfSumSquared(computeSquareTFIDFSumSquared(documentMap));
+    }
+    docWordsRAF.close();
+  }
+
+  private double computeSquareTFIDFSumSquared(Map<Integer, Integer> documentMap) {
+    // Compute squared tfidf sum of documents.
     double d_sqr = 0;
     double idf, tf_d, tfidf_d;
     for(int word : documentMap.keySet()) {
@@ -250,6 +276,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     indexMetadata.add(_dictionary);
     indexMetadata.add(_termCorpusFrequency);
     indexMetadata.add(_stoppingWords);
+    indexMetadata.add(_indexByteSize);
     return indexMetadata;
   }
 
@@ -258,6 +285,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     _dictionary          = (BiMap<String, Integer>)indexMetadata.get(1);
     _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
     _stoppingWords       = (Set<String>)indexMetadata.get(3);
+    _indexByteSize      = (Long)indexMetadata.get(4);
   }
 
   @Override
@@ -265,15 +293,29 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     File indexFile = new File(indexFilePath);
     List<Object> indexMetadata = new ArrayList<Object>();
     DataInputStream indexFileDIS = new DataInputStream(new FileInputStream(indexFile));
+
+    // Read metadata from beginning of file.
     long bytesRead = FileUtils.readObjectsFromFileIntoList(indexFileDIS, indexMetadata);
     setLoadedMetadata(indexMetadata);
-    bytesRead += FileUtils.loadFromFileIntoIndex(indexFileDIS, _index);
-    indexFileDIS.close();
     _numDocs = _documents.size();
-    for(int freq: _termCorpusFrequency.values()) {
+    for(int freq : _termCorpusFrequency.values()) {
       _totalTermFrequency += freq;
     }
+
+    // Load inverted index.
+    long indexFileRangesLength = FileUtils.loadFromFileIntoIndex(indexFileDIS, _index);
+    bytesRead += indexFileRangesLength;
     _indexOffset = bytesRead;
+
+    // Skip postings lists.
+    indexFileDIS.skipBytes((int)(_indexByteSize - indexFileRangesLength));
+    bytesRead += _indexByteSize - indexFileRangesLength;
+
+    // Load word frequency lists.
+    bytesRead += FileUtils.loadFromFileIntoIndex(indexFileDIS, _docWords);
+    _docWordsOffset = bytesRead;
+
+    indexFileDIS.close();
     _indexRAF = new RandomAccessFile(indexFile, "r");
     _indexRAF.seek(_indexOffset);
   }
@@ -454,18 +496,48 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     return postingsList;
   }
 
+  public Map<String, Integer> wordListWithoutStopwordsForDoc(int docId) throws IOException {
+    Map<String, Integer> result = wordListForDoc(docId);
+    for(String stopword : _stoppingWords) {
+      result.remove(stopword);
+    }
+    return result;
+  }
+
+  public Map<String, Integer> wordListForDoc(int docId) throws IOException {
+    Map<Integer, Integer> internalWordList = wordListForDoc(docId, _indexRAF, _docWordsOffset);
+    Map<String, Integer> result = Maps.newTreeMap();
+    for(int word : internalWordList.keySet()) {
+      result.put(_dictionary.inverse().get(word), internalWordList.get(word));
+    }
+    return result;
+  }
+
+  protected Map<Integer, Integer> wordListForDoc(int docId, RandomAccessFile store, long storeOffset) throws IOException {
+    Map<Integer, Integer> wordsList = Maps.newTreeMap();
+    FileUtils.FileRange fileRange = _docWords.get(docId);
+    store.seek(storeOffset + fileRange.offset);
+    byte[] loadedList = new byte[(int)fileRange.length];
+    store.read(loadedList);
+    DataInputStream loadedListDIS = new DataInputStream(new ByteArrayInputStream(loadedList));
+    for(int i = 0; i < fileRange.length / 4; i+=2) {
+      wordsList.put(loadedListDIS.readInt(), loadedListDIS.readInt());
+    }
+    return wordsList;
+  }
+
   protected void dumpUtilityIndexToFileAndClearFromMemory(String filePath) throws IOException {
     FileUtils.dumpIndexToFile(_utilityIndex, new File(filePath));
-    //_utilityIndex = new HashMap<Integer, List<Integer>>();
     _utilityIndex.clear();
     _utilityIndexFlatSize = 0;
   }
 
-  public String getTerm(int termId)
-  {
-	  String term = _dictionary.inverse().get(termId);
-	  return term;
+  protected void dumpUtilityDocWordsToFileAndClearFromMemory(String filePath) throws IOException {
+    FileUtils.dumpIndexToFile(_utilityDocWords, new File(filePath));
+    _utilityDocWords.clear();
+    _utilityDocWordsFlatSize = 0;
   }
+
   protected abstract int nextPhrase(List<String> phraseTokens, int docid) throws IOException;
 
   protected abstract int next(String term, int docid) throws IOException;

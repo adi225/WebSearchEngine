@@ -19,6 +19,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.Vector;
 
+import com.google.common.collect.Maps;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -297,20 +298,21 @@ class QueryHandler implements HttpHandler {
          */
     	StringBuffer response = new StringBuffer();
     	
-    	Map<Integer, Integer> allTerms = new TreeMap<Integer, Integer>();
-    	Integer allWordCounts = 0;
+    	Map<String, Integer> allTerms = Maps.newTreeMap();
+        Integer allWordCounts = 0;
     	
     	//Loop over documents to get all the terms and count total occurence of the term in all the documents
     	for(ScoredDocument singleDoc : scoredDocs)
     	{
     		DocumentIndexed docIndexed = (DocumentIndexed)(_indexer.getDoc(singleDoc.getDocId()));
-    		Map<Integer, Integer> docTerms = docIndexed.getTopFrequentTerms();
+    		Map<String, Integer> docTerms = ((IndexerInverted)_indexer).wordListWithoutStopwordsForDoc(docIndexed._docid);
+
     		
     		//As we're looping, we can compute the total words of all the documents
     		//This is the denominator of the probability
     		allWordCounts+= docIndexed.getDocumentSize();
 
-    		for (Map.Entry<Integer, Integer> entry : docTerms.entrySet())
+    		for (Map.Entry<String, Integer> entry : docTerms.entrySet())
 	        {
     			Integer totalCount = 0;
     			if(allTerms.containsKey(entry.getKey()))
@@ -322,9 +324,9 @@ class QueryHandler implements HttpHandler {
 	        }
     	}
 
-        List<Entry<Integer, Integer>> allTermsList = Utils.sortByValues(allTerms, true);
+        List<Entry<String, Integer>> allTermsList = Utils.sortByValues(allTerms, true);
 
-        Map<Integer, Double> probabilities = new HashMap<Integer, Double>();
+        Map<String, Double> probabilities = Maps.newHashMap();
         
         Double total = 0.0;
         
@@ -333,7 +335,7 @@ class QueryHandler implements HttpHandler {
         for(int i = 0; i<termsToLoopOver; i++) 
         {
         	//For each term
-        	Entry<Integer, Integer> entry = allTermsList.get(i);
+        	Entry<String, Integer> entry = allTermsList.get(i);
         	
         	//value = total count of term in all docs / total count of all words in all docs
         	double value = entry.getValue().doubleValue()/allWordCounts;
@@ -344,14 +346,14 @@ class QueryHandler implements HttpHandler {
           	probabilities.put(entry.getKey(), value);
         }
 
-        List<Entry<Integer, Double>> probabilitiesList = Utils.sortByValues(probabilities, true);
+        List<Entry<String, Double>> probabilitiesList = Utils.sortByValues(probabilities, true);
         DecimalFormat df = new DecimalFormat("#.##"); 
         
         // Loop over each value in the list and output formatted normalized result
-        for (Entry<Integer, Double> entry : probabilitiesList)
+        for (Entry<String, Double> entry : probabilitiesList)
         {
         	double normalizedProbability = entry.getValue()/total;
-        	response.append(_indexer.getTerm(entry.getKey())).append("\t").append(df.format(normalizedProbability)).append("\n");
+        	response.append(entry.getKey()).append("\t").append(df.format(normalizedProbability)).append("\n");
         }
     	
         response.append("");

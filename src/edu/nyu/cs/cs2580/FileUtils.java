@@ -3,6 +3,8 @@ package edu.nyu.cs.cs2580;
 import java.io.*;
 import java.util.*;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Created by andreidinuionita on 10/16/14.
  */
@@ -93,6 +95,29 @@ public class FileUtils {
       e.printStackTrace();
       throw new IllegalArgumentException("File is not correctly deserializable.");
     }
+  }
+
+  protected static long mergeFilesWithBasePathIntoIndexAndFile(String filePathBase,
+                                                               int numFiles,
+                                                               Map<Integer, FileRange> index,
+                                                               File resFileURL) throws IOException {
+    index.clear();
+    long offset = -1;
+    String filePath1 =  filePathBase + 0;
+    String resFilePath = filePath1;
+    for(int i = 1; i < numFiles; i++) {
+      String filePath2 = filePathBase + i;
+      Map<Integer, FileRange> tempIndex = new HashMap<Integer, FileRange>();
+      resFilePath = filePath1 + i;
+      System.out.println("Merging file: " + filePathBase + i);
+      offset = FileUtils.mergeFilesIntoIndexAndFile(filePath1, filePath2, tempIndex, resFilePath);
+      filePath1 = resFilePath;
+      if(i == numFiles - 1) {
+        index.putAll(tempIndex);
+      }
+    }
+    new File(resFilePath).renameTo(resFileURL);
+    return offset;
   }
 
   protected static long mergeFilesIntoIndexAndFile(String file1URL,
@@ -236,7 +261,7 @@ public class FileUtils {
   }
 
   protected static long readObjectsFromFileIntoList(DataInputStream fileDIS, List<Object> store) throws IOException, ClassNotFoundException {
-    if(store == null) throw new IllegalArgumentException("Cannot read into null list.");
+    checkNotNull(store, "Cannot read into null list.");
     store.clear();
     int size = fileDIS.readInt();
     long totalSize = size;
