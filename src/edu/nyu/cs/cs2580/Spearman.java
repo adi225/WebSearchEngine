@@ -89,7 +89,7 @@ public class Spearman
       bottom1 += (x_k[i] - z) * (x_k[i] - z);
       bottom2 += (y_k[i] - z) * (y_k[i] - z);
     }
-    double rho = top / (bottom1 * bottom2);
+    double rho = top / Math.sqrt(bottom1 * bottom2);
     System.out.print(rho);
   }
 
