@@ -87,6 +87,10 @@ public class Spearman
   }
 
   public static <V extends Comparable<V>> List<Float> assignRank(Map<String, V> values) {
+    return assignRankWithTieBreaking(values);
+  }
+
+  public static <V extends Comparable<V>> List<Float> assignRankWithTieAveraging(Map<String, V> values) {
     Map<String, Float> ranks = Maps.newHashMap();
     List<Map.Entry<String, V>> sortedValues = Utils.sortByValues(values, true);
     int actualRank = 1;
@@ -104,6 +108,24 @@ public class Spearman
         ranks.put(key, calculatedRank / duplicates.size());
       }
     }
+    List<Map.Entry<String, Float>> sortedResults = Utils.sortByKeys(ranks, false);
+    List<Float> results = Lists.newArrayList();
+    for(Map.Entry<String, Float> result : sortedResults) {
+      results.add(result.getValue());
+    }
+    checkState(values.size() == results.size(), "Ranks incorrectly generated.");
+    return results;
+  }
+
+  public static <V extends Comparable<V>> List<Float> assignRankWithTieBreaking(Map<String, V> values) {
+    Map<String, Float> ranks = Maps.newHashMap();
+    List<Map.Entry<String, V>> sortedValues = Utils.sortByValuesThenKeys(values, true, false);
+    int actualRank = 1;
+
+    for(Map.Entry<String, V> entry : sortedValues) {
+      ranks.put(entry.getKey(), (float)actualRank++);
+    }
+
     List<Map.Entry<String, Float>> sortedResults = Utils.sortByKeys(ranks, false);
     List<Float> results = Lists.newArrayList();
     for(Map.Entry<String, Float> result : sortedResults) {

@@ -66,8 +66,13 @@ public class SpearmanTest {
     assertTrue(x_k.size() == 5);
     assertTrue(y_k.size() == 5);
 
+    // Expected values when breaking ties by URL.
     float[] expectedPageRank = {1.0F, 5.0F, 3.0F, 4.0F, 2.0F};
-    float[] expectedNumViews = {1.0F, 4.0F, 2.5F, 5.0F, 2.5F};
+    float[] expectedNumViews = {1.0F, 4.0F, 2.0F, 5.0F, 3.0F};
+
+    // Expected values when averaging ranks for ties.
+    //float[] expectedPageRank = {1.0F, 5.0F, 3.0F, 4.0F, 2.0F};
+    //float[] expectedNumViews = {1.0F, 4.0F, 2.5F, 5.0F, 2.5F};
 
     for (int i = 1; i < expectedPageRank.length; i++) {
       assertEquals(expectedPageRank[i], x_k.get(i), tolerance);
