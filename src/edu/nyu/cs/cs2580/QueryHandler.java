@@ -347,13 +347,12 @@ class QueryHandler implements HttpHandler {
         }
 
         List<Entry<String, Double>> probabilitiesList = Utils.sortByValues(probabilities, true);
-        DecimalFormat df = new DecimalFormat("#.##"); 
-        
+
         // Loop over each value in the list and output formatted normalized result
         for (Entry<String, Double> entry : probabilitiesList)
         {
         	double normalizedProbability = entry.getValue()/total;
-        	response.append(entry.getKey()).append("\t").append(df.format(normalizedProbability)).append("\n");
+        	response.append(entry.getKey()).append("\t").append(normalizedProbability).append("\n");
         }
     	
         response.append("");
