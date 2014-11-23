@@ -63,6 +63,12 @@ public class Spearman
     List<Float> y_k = assignRank(numViews);
 
     // calculate Spearman coefficient
+    double rho = spearmanCoefficient(x_k,y_k);
+    System.out.println(rho);
+  }
+
+  public static double spearmanCoefficient(List<Float> x_k, List<Float> y_k){
+    // calculate Spearman coefficient
     float z = 0;
     for(int i = 0; i < x_k.size(); i++) {
       z += x_k.get(i);
@@ -76,7 +82,7 @@ public class Spearman
       bottom2 += (y_k.get(i) - z) * (y_k.get(i) - z);
     }
     double rho = top / Math.sqrt(bottom1 * bottom2);
-    System.out.println(rho);
+    return rho;
   }
 
   public static <V extends Comparable<V>> List<Float> assignRank(Map<String, V> values) {
