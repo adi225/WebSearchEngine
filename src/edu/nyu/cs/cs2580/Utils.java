@@ -25,4 +25,18 @@ public class Utils {
     Collections.sort(sortedMap, byMapValues);
     return sortedMap;
   }
+
+  // This helper method sorts the given map by key.
+  public static <K extends Comparable<K>, V> List<Map.Entry<K,V>> sortByKeys(Map<K, V> map, final boolean desc) {
+    Comparator<Map.Entry<K,V>> byMapValues = new Comparator<Map.Entry<K,V>>() {
+      int reverse = desc ? -1 : 1;
+      @Override
+      public int compare(Map.Entry<K,V> left, Map.Entry<K,V> right) {
+        return left.getKey().compareTo(right.getKey()) * reverse;
+      }
+    };
+    List<Map.Entry<K,V>> sortedMap = Lists.newArrayList(map.entrySet());
+    Collections.sort(sortedMap, byMapValues);
+    return sortedMap;
+  }
 }

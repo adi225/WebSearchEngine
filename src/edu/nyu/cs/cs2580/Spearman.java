@@ -2,6 +2,7 @@ package edu.nyu.cs.cs2580;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -86,24 +87,29 @@ public class Spearman
   }
 
   public static <V extends Comparable<V>> List<Float> assignRank(Map<String, V> values) {
-    List<Float> ranks = Lists.newArrayList();
+    Map<String, Float> ranks = Maps.newHashMap();
     List<Map.Entry<String, V>> sortedValues = Utils.sortByValues(values, true);
     int actualRank = 1;
 
     for(int i = 0; i < sortedValues.size(); i++) {
       float calculatedRank = actualRank++;
-      int numDuplicates = 1;
+      Set<String> duplicates = Sets.newHashSet(sortedValues.get(i).getKey());
       while(i+1 < sortedValues.size()
             && sortedValues.get(i+1).getValue().compareTo(sortedValues.get(i).getValue()) == 0) {
         calculatedRank += actualRank++;
-        numDuplicates++;
+        duplicates.add(sortedValues.get(i+1).getKey());
         i++;
       }
-      for(int j = 0; j < numDuplicates; j++) {
-        ranks.add(calculatedRank / numDuplicates);
+      for(String key : duplicates) {
+        ranks.put(key, calculatedRank / duplicates.size());
       }
     }
-    checkState(values.size() == ranks.size(), "Ranks incorrectly generated.");
-    return ranks;
+    List<Map.Entry<String, Float>> sortedResults = Utils.sortByKeys(ranks, false);
+    List<Float> results = Lists.newArrayList();
+    for(Map.Entry<String, Float> result : sortedResults) {
+      results.add(result.getValue());
+    }
+    checkState(values.size() == results.size(), "Ranks incorrectly generated.");
+    return results;
   }
 }
