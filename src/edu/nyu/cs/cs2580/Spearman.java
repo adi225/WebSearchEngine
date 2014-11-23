@@ -35,23 +35,25 @@ public class Spearman
     Map<String, Float> pageRanks = Maps.newHashMap();
     Map<String, Integer> numViews = Maps.newHashMap();
 
-    scanner = new Scanner(new BufferedReader(new FileReader(pathToPagerank)));
-    while(scanner.hasNextLine()) {
-      String[] line = scanner.nextLine().split("\\s+");
-      checkState(line.length == 2);
-      pageRanks.put(line[0], Float.parseFloat(line[1]));
-    }
-    scanner.close();
-
     scanner = new Scanner(new BufferedReader(new FileReader(pathToNumviews)));
     while(scanner.hasNextLine()) {
       String[] line = scanner.nextLine().split("\\s+");
       checkState(line.length == 2);
-      if(pageRanks.containsKey(line[0])) {
-        numViews.put(line[0], Integer.parseInt(line[1]));
+      numViews.put(line[0], Integer.parseInt(line[1]));
+    }
+    scanner.close();
+
+    scanner = new Scanner(new BufferedReader(new FileReader(pathToPagerank)));
+    while(scanner.hasNextLine()) {
+      String[] line = scanner.nextLine().split("\\s+");
+      checkState(line.length == 2);
+      if(numViews.containsKey(line[0])) {
+        pageRanks.put(line[0], Float.parseFloat(line[1]));
       }
     }
     scanner.close();
+
+    Set<String> diff = Sets.difference(numViews.keySet(), pageRanks.keySet());
 
     // Verify assumption that pageRanks pages and numViews pages are the same.
     checkState(pageRanks.size() == numViews.size(), "Different number of pages for numviews and pagerank.");
@@ -87,7 +89,7 @@ public class Spearman
   }
 
   public static <V extends Comparable<V>> List<Float> assignRank(Map<String, V> values) {
-    return assignRankWithTieBreaking(values);
+    return assignRankWithTieAveraging(values);
   }
 
   public static <V extends Comparable<V>> List<Float> assignRankWithTieAveraging(Map<String, V> values) {

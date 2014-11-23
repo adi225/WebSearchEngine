@@ -4,7 +4,9 @@ import java.io.*;
 import java.net.URLDecoder;
 import java.util.*;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -42,9 +44,8 @@ public class LogMinerNumviews extends LogMiner {
     Map<String, Integer> numViews = Maps.newHashMap();
  
     String[] directories = checkNotNull(new File(_options._corpusPrefix)).list();
-    for(String document : directories) {
-      numViews.put(document, 0);
-    }
+    Set<String> dirs = Sets.newHashSet(directories);
+    Set<String> excludedDocuments = Sets.newHashSet();
 
     File[] logFilesDirectory = checkNotNull(new File(_options._logPrefix)).listFiles();
     for(File logFile : logFilesDirectory) {
@@ -54,16 +55,52 @@ public class LogMinerNumviews extends LogMiner {
         if(tokens.length != 3) {
           continue;
         }
+
+        // Handle redirect.
+        if(dirs.contains(tokens[1])) {
+          File file = new File(_options._corpusPrefix + "/" + tokens[1]);
+          CorpusAnalyzer.HeuristicLinkExtractor extractor = new CorpusAnalyzer.HeuristicLinkExtractor(file);
+          extractor.getNextInCorpusLinkTarget();
+          while(extractor.getRedirect() != null) {
+            excludedDocuments.add(tokens[1]);
+            tokens[1] = extractor.getRedirect();
+            file = new File(_options._corpusPrefix + "/" + tokens[1]);
+            extractor = new CorpusAnalyzer.HeuristicLinkExtractor(file);
+            extractor.getNextInCorpusLinkTarget();
+          }
+        }
+
         try {
           int count = Integer.parseInt(tokens[2]);
           if(numViews.keySet().contains(tokens[1])) {
             numViews.put(tokens[1], numViews.get(tokens[1]) + count);
+          } else if(dirs.contains(tokens[1])) {
+            numViews.put(tokens[1], count);
           }
         } catch (NumberFormatException e) {
           continue;
-        };
+        }
       }
       scanner.close();
+    }
+
+    for(String document : directories) {
+      File file = new File(_options._corpusPrefix + "/" + document);
+      CorpusAnalyzer.HeuristicLinkExtractor extractor = new CorpusAnalyzer.HeuristicLinkExtractor(file);
+      extractor.getNextInCorpusLinkTarget();
+      while(extractor.getRedirect() != null) {
+        excludedDocuments.add(document);
+        document = extractor.getRedirect();
+        file = new File(_options._corpusPrefix + "/" + document);
+        extractor = new CorpusAnalyzer.HeuristicLinkExtractor(file);
+        extractor.getNextInCorpusLinkTarget();
+      }
+    }
+
+    for(String document : directories) {
+      if(!numViews.containsKey(document) && !excludedDocuments.contains(document)) {
+        numViews.put(document, 0);
+      }
     }
 
     File numViewsFile  = new File(numViewFilePath);
