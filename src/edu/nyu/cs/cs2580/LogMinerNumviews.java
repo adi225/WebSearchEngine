@@ -63,7 +63,12 @@ public class LogMinerNumviews extends LogMiner {
           extractor.getNextInCorpusLinkTarget();
           while(extractor.getRedirect() != null) {
             excludedDocuments.add(tokens[1]);
-            tokens[1] = extractor.getRedirect();
+            if(!(new File(_options._corpusPrefix + "/" + extractor.getRedirect()).exists())) {
+              System.out.println("hickup");
+              tokens[1] = tokens[1] + ".html";
+            } else {
+              tokens[1] = extractor.getRedirect();
+            }
             file = new File(_options._corpusPrefix + "/" + tokens[1]);
             extractor = new CorpusAnalyzer.HeuristicLinkExtractor(file);
             extractor.getNextInCorpusLinkTarget();
