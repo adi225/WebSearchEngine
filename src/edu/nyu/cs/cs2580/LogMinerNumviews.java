@@ -85,15 +85,17 @@ public class LogMinerNumviews extends LogMiner {
     }
 
     for(String document : directories) {
-      File file = new File(_options._corpusPrefix + "/" + document);
-      CorpusAnalyzer.HeuristicLinkExtractor extractor = new CorpusAnalyzer.HeuristicLinkExtractor(file);
-      extractor.getNextInCorpusLinkTarget();
-      while(extractor.getRedirect() != null) {
-        excludedDocuments.add(document);
-        document = extractor.getRedirect();
-        file = new File(_options._corpusPrefix + "/" + document);
-        extractor = new CorpusAnalyzer.HeuristicLinkExtractor(file);
+      if(dirs.contains(document)) {
+        File file = new File(_options._corpusPrefix + "/" + document);
+        CorpusAnalyzer.HeuristicLinkExtractor extractor = new CorpusAnalyzer.HeuristicLinkExtractor(file);
         extractor.getNextInCorpusLinkTarget();
+        while (extractor.getRedirect() != null) {
+          excludedDocuments.add(document);
+          document = extractor.getRedirect();
+          file = new File(_options._corpusPrefix + "/" + document);
+          extractor = new CorpusAnalyzer.HeuristicLinkExtractor(file);
+          extractor.getNextInCorpusLinkTarget();
+        }
       }
     }
 
