@@ -46,6 +46,24 @@ We implemented the method of assigning ranks for Spearman coefficient in such a 
 
 The computed correlation coefficient between PageRank and NumViews is 0.4228893347462366 when using the canonical method of averaging ranks of documents with same pagerank/numviews. When using tie breaking based on URL, we obtained a Spearman coefficient of 0.4033400123446214.
 
+## Getting PRF results
+
+To get PRF, results, run the search engine in serve mode as above. Provide the query to /prf in the established format and obtain a list of words.
+
+We used the following script to be able to run multiple queries and save their output:
+
+rm -f prf*.tsv
+i=0
+while read q ; do
+i=$((i + 1));
+prfout=prf-$i.tsv;
+curl "http://localhost:25814/prf?ranker=cosine&numdocs=10&numterms=5&query=$q" > $prfout;
+echo $q:$prfout >> prf.tsv
+done < data/queries.tsv
+
+Once this script runs, you can calculate the Bhattacharyya coefficient by running:
+
+$ java -cp .:./lib/*:./src edu.nyu.cs.cs2580.Bhattacharyya <PATH-TO-PRF-OUTPUT> <PATH-TO-OUTPUT>
 
 #Assignment 2
 

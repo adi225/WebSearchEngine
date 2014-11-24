@@ -123,8 +123,7 @@ public class Bhattacharyya
 	
 			FileWriter fw = new FileWriter(file.getAbsoluteFile());
 			BufferedWriter bw = new BufferedWriter(fw);
-			DecimalFormat df = new DecimalFormat("#.##"); 
-			
+
 	        
 			for (Entry<String, List<QueryPrf>> firstEntry : allQueries.entrySet())
 	        {
@@ -166,7 +165,7 @@ public class Bhattacharyya
 			        		}
 			        	}
 			        	
-			        	bw.write(firstEntry.getKey() + "\t" + secondEntry.getKey() + "\t" + df.format(similarity) + "\n");
+			        	bw.write(firstEntry.getKey() + "\t" + secondEntry.getKey() + "\t" + similarity + "\n");
 		        	}
 		        	
 		        	
