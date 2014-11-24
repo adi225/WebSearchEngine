@@ -66,6 +66,7 @@ public class LogMinerNumviews extends LogMiner {
             if(!(new File(_options._corpusPrefix + "/" + extractor.getRedirect()).exists())) {
               System.out.println("hickup");
               tokens[1] = tokens[1] + ".html";
+              break;
             } else {
               tokens[1] = extractor.getRedirect();
             }
@@ -98,6 +99,7 @@ public class LogMinerNumviews extends LogMiner {
         if(!(new File(_options._corpusPrefix + "/" + extractor.getRedirect()).exists())) {
           System.out.println("hickup");
           document = document + ".html";
+          break;
         } else {
           document = extractor.getRedirect();
         }
