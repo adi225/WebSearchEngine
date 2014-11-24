@@ -87,7 +87,7 @@ public class Spearman
   }
 
   public static <V extends Comparable<V>> List<Float> assignRank(Map<String, V> values) {
-    return assignRankWithTieBreaking(values);
+    return assignRankWithTieAveraging(values);
   }
 
   public static <V extends Comparable<V>> List<Float> assignRankWithTieAveraging(Map<String, V> values) {

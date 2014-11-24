@@ -33,10 +33,16 @@ That is, lambda = 1 - DAMPING_FACTOR.
 
 The parameters that yield the best estimated results are lambda = 1 - DAMPING_FACTOR = 0.9 with 2 iterations. This is because the portion of the value of PageRank that comes from the outlinks of the other pages should have more impact than the random jump from any page, in which its purpose is to resolve the problem of pages that have no incoming links. 2 iterations give more accurate values since it is closer to the values at convergence.
 
+##HANDLING NUMVIEWS
+
+For documents that were present in our corpus, but not in the log file, we assumed that the numViews number is 0. We also tried avoiding this assumption by only calculating the Spearman coefficient using the documents for which we have an explicit number of views given. This however slightly reduced the Spearman coefficient, giving us more confidence in the assumption that missing documents should have a numViews score of 0.
+
 ##SPEARMAN'S RANK CORRELATION COEFFICIENT
 
 To run the Spearman class,
 $ java -cp .:./lib/*:./src edu.nyu.cs.cs2580.Spearman ./data/index/pagerank ./data/index/numviews
+
+We implemented the method of assigning ranks for Spearman coefficient in such a way that we are averaging the ranks of multiple documents that have the same score value (whether it is pagerank or numviews).
 
 The computed correlation coefficient between PageRank and NumViews is 0.4228893347462366 when using the canonical method of averaging ranks of documents with same pagerank/numviews. When using tie breaking based on URL, we obtained a Spearman coefficient of 0.4033400123446214.
 
