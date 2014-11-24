@@ -206,7 +206,9 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     LogMiner logMiner = LogMinerNumviews.Factory.getLogMinerByOption(_options);
     Map<String, Integer> numViews = (Map<String, Integer>)logMiner.load();
     for(Document document : documents) {
-      document.setNumViews(numViews.get(document.getUrl()));
+      if(numViews.containsKey(document.getUrl())) {
+        document.setNumViews(numViews.get(document.getUrl()));
+      }
     }
   }
 
