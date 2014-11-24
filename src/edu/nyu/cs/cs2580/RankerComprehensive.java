@@ -16,10 +16,10 @@ public class RankerComprehensive extends Ranker {
 
 	// TODO: Adjust the weighing parameters below by experimentation.
   public static final double alpha = 0.75;
-  public static final double beta = 0.000001;
+  public static final double beta = 0.25;
 
-  public static final double maxPageRank = 0.016616534;
-  public static final double minPageRank = 9.777083 * Math.pow(10, -6);
+  public static final double maxPageRank = 0.01712521;
+  public static final double minPageRank = 1.0040161E-5;
   
   public static final double maxNumViews = 420930;
   public static final double minNumViews = 0;

@@ -53,8 +53,6 @@ public class Spearman
     }
     scanner.close();
 
-    Set<String> diff = Sets.difference(numViews.keySet(), pageRanks.keySet());
-
     // Verify assumption that pageRanks pages and numViews pages are the same.
     checkState(pageRanks.size() == numViews.size(), "Different number of pages for numviews and pagerank.");
     for(String page : pageRanks.keySet()) {
@@ -89,7 +87,7 @@ public class Spearman
   }
 
   public static <V extends Comparable<V>> List<Float> assignRank(Map<String, V> values) {
-    return assignRankWithTieAveraging(values);
+    return assignRankWithTieBreaking(values);
   }
 
   public static <V extends Comparable<V>> List<Float> assignRankWithTieAveraging(Map<String, V> values) {
