@@ -104,6 +104,24 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     new File(_options._indexPrefix + WORDS_DIR).mkdir();
     File[] directoryListing = checkNotNull(new File(_options._corpusPrefix)).listFiles();
 
+    // ensure that documents are processed in an ascending order of docid
+    Arrays.sort(directoryListing, new Comparator(){
+      @Override
+      public int compare(Object f1, Object f2) {
+      	String f1Name = ((File) f1).getName();
+      	String f2Name = ((File) f2).getName();
+      	try{
+         	int f1ID = Integer.parseInt(f1Name);
+        	int f2ID = Integer.parseInt(f2Name);       		
+        	return f1ID - f2ID;	        	
+      	}
+      	catch(Exception e){
+      		return f1Name.compareTo(f2Name);
+      	}
+
+      }
+    });
+    
     for (File docFile : directoryListing) {
       StringBuffer text = new StringBuffer();  // the original text of the document
 

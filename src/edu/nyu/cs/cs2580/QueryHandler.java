@@ -147,6 +147,13 @@ class QueryHandler implements HttpHandler {
     response.append(response.length() > 0 ? "\n" : "");
   }
   
+  private void constructEvaluationOutput(final Vector<ScoredDocument> docs, StringBuffer response, String query) {
+    for(ScoredDocument doc : docs) {
+      response.append(query+"\t"+doc.getDocId()+"\t"+doc.getDocTitle()+"\t"+doc.getScore()+"\n");
+    }
+    response.append(response.length() > 0 ? "\n" : "");
+  }
+  
   private void constructHTMLOutput(final Vector<ScoredDocument> docs, StringBuffer response, String query, long timeTaken) {
     response.append("<html><head><style>font-family: arial,sans-serif;</style></head><body>");
     response.append("<p style=\"color:#A8A8A8;font-size:16px\">Your search has returned ");
@@ -223,8 +230,8 @@ class QueryHandler implements HttpHandler {
     String uriPath = exchange.getRequestURI().getPath();
     if (uriPath == null || uriQuery == null) {
       respondWithMsg(exchange, "Something wrong with the URI!");
-    } else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack") && !uriPath.equals("/prf")) {
-      respondWithMsg(exchange, "Only /search or /prf are handled!");
+    } else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack") && !uriPath.equals("/prf") && !uriPath.equals("/evaluation")) {
+      respondWithMsg(exchange, "Only /search or /prf or /evaluation are handled!");
     } else if(uriPath.equalsIgnoreCase("/clicktrack")) {
       // writing out to files
       String logFileName = "hw3.4-log.tsv";
@@ -288,6 +295,19 @@ class QueryHandler implements HttpHandler {
       }
 
       respondWithMsg(exchange, response.toString());
+      System.out.println("Finished query: " + cgiArgs._query);
+    }else if(uriPath.equalsIgnoreCase("/evaluation")) {
+      System.out.println("Query: " + uriQuery);
+
+      Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
+
+      CgiArguments cgiArgs = new CgiArguments(uriQuery);
+
+      StringBuffer response = new StringBuffer();
+
+      constructEvaluationOutput(scoredDocs, response, cgiArgs._query);
+      respondWithMsg(exchange, response.toString());
+      
       System.out.println("Finished query: " + cgiArgs._query);
     }
   }

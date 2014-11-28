@@ -127,7 +127,9 @@ class Evaluator {
     }
     
     // Ensuring that all lines have the same query
-    if(queries.size() != 1){
+    Set<String> querySet = new HashSet<String>();
+    querySet.addAll(queries);
+    if(querySet.size() != 1){
     	System.out.println("Input must have the same query (only considering one query per call)");
     	return;
     }
