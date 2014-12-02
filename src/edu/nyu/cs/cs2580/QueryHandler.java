@@ -35,7 +35,7 @@ import com.sun.net.httpserver.HttpHandler;
  */
 class QueryHandler implements HttpHandler {
 
-	private static final int NUM_ADDED_TOP_WORDS = 3;
+	private static final int NUM_ADDED_TOP_WORDS = 1;
   public final static int SESSION_TIMEOUT = 60000;
 
   /**
@@ -321,9 +321,13 @@ class QueryHandler implements HttpHandler {
       String outputFormat = cgiArgs._outputFormat.toString();
       String newQuery = cgiArgs._query;
       // add top words into the original query
-      for (int i = 0; i < NUM_ADDED_TOP_WORDS; i++) {
+      int numTopWordsAdded = 0;
+      for (int i = 0; i < topWords.size() && numTopWordsAdded < NUM_ADDED_TOP_WORDS; i++) {
         String topWord = topWords.get(i).getKey();
-        newQuery += " "+topWord;
+        if(!cgiArgs._query.toLowerCase().contains(topWord.toLowerCase())){
+        	newQuery += " "+topWord;
+        	numTopWordsAdded++;
+        }
       }
       
       newUriQuery += "query=" + newQuery +"&";
@@ -333,6 +337,8 @@ class QueryHandler implements HttpHandler {
       newUriQuery += "numterms=" + numTerms;
       
       scoredDocs = searchQuery(exchange, newUriQuery);
+      
+      cgiArgs._query = newQuery;
       
       long endTime = Calendar.getInstance().getTimeInMillis();
 
