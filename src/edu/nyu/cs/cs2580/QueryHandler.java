@@ -35,6 +35,7 @@ import com.sun.net.httpserver.HttpHandler;
  */
 class QueryHandler implements HttpHandler {
 
+	private static final int NUM_ADDED_TOP_WORDS = 3;
   public final static int SESSION_TIMEOUT = 60000;
 
   /**
@@ -230,9 +231,11 @@ class QueryHandler implements HttpHandler {
     String uriPath = exchange.getRequestURI().getPath();
     if (uriPath == null || uriQuery == null) {
       respondWithMsg(exchange, "Something wrong with the URI!");
-    } else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack") && !uriPath.equals("/prf") && !uriPath.equals("/evaluation")) {
-      respondWithMsg(exchange, "Only /search or /prf or /evaluation are handled!");
-    } else if(uriPath.equalsIgnoreCase("/clicktrack")) {
+    } 
+    else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack") && !uriPath.equals("/prf") && !uriPath.equals("/prfsearch") && !uriPath.equals("/evaluation")) {
+      respondWithMsg(exchange, "Only /search or /prf or /prfsearch or /evaluation are handled!");
+    } 
+    else if(uriPath.equalsIgnoreCase("/clicktrack")) {
       // writing out to files
       String logFileName = "hw3.4-log.tsv";
       FileWriter logFileWriter = new FileWriter("results/" + logFileName, true);
@@ -257,7 +260,8 @@ class QueryHandler implements HttpHandler {
       //exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
       exchange.getResponseBody().close();
       return;
-    } else if(uriPath.equalsIgnoreCase("/search")) {
+    } 
+    else if(uriPath.equalsIgnoreCase("/search")) {
       System.out.println("Query: " + uriQuery);
       long startTime = Calendar.getInstance().getTimeInMillis();
       Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
@@ -280,7 +284,8 @@ class QueryHandler implements HttpHandler {
           // nothing
       }
       System.out.println("Finished query: " + cgiArgs._query);
-    } else if(uriPath.equalsIgnoreCase("/prf")){
+    } 
+    else if(uriPath.equalsIgnoreCase("/prf")){
       CgiArguments cgiArgs = new CgiArguments(uriQuery);
 
       System.out.println("Query: " + uriQuery);
@@ -296,7 +301,58 @@ class QueryHandler implements HttpHandler {
 
       respondWithMsg(exchange, response.toString());
       System.out.println("Finished query: " + cgiArgs._query);
-    }else if(uriPath.equalsIgnoreCase("/evaluation")) {
+    }
+    else if(uriPath.equalsIgnoreCase("/prfsearch")){
+      System.out.println("Query: " + uriQuery);
+      CgiArguments cgiArgs = new CgiArguments(uriQuery);
+      
+      long startTime = Calendar.getInstance().getTimeInMillis();
+      
+      Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
+      
+      PseudoRelevanceFeedbackProvider prf = new PseudoRelevanceFeedbackProvider((IndexerInverted)_indexer);
+      List<Entry<String, Double>> topWords = prf.getExpansionTermsForDocuments(scoredDocs, cgiArgs._numTerms);
+      
+      String newUriQuery = "";
+      
+      String numResults = Integer.toString(cgiArgs._numResults);
+      String numTerms = Integer.toString(cgiArgs._numTerms);
+      String rankerType = cgiArgs._rankerType.toString();
+      String outputFormat = cgiArgs._outputFormat.toString();
+      String newQuery = cgiArgs._query;
+      // add top words into the original query
+      for (int i = 0; i < NUM_ADDED_TOP_WORDS; i++) {
+        String topWord = topWords.get(i).getKey();
+        newQuery += " "+topWord;
+      }
+      
+      newUriQuery += "query=" + newQuery +"&";
+      newUriQuery += "num=" + numResults +"&";
+      newUriQuery += "ranker=" + rankerType +"&";
+      newUriQuery += "format=" + outputFormat +"&";
+      newUriQuery += "numterms=" + numTerms;
+      
+      scoredDocs = searchQuery(exchange, newUriQuery);
+      
+      long endTime = Calendar.getInstance().getTimeInMillis();
+
+      StringBuffer response = new StringBuffer();
+
+      switch (cgiArgs._outputFormat) {
+        case TEXT:
+          constructTextOutput(scoredDocs, response);
+          respondWithMsg(exchange, response.toString());
+          break;
+        case HTML:
+          constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
+          respondWithHTML(exchange, response.toString());
+          break;
+        default:
+          // nothing
+      }
+      System.out.println("Finished query: " + cgiArgs._query);
+    }
+    else if(uriPath.equalsIgnoreCase("/evaluation")) {
       System.out.println("Query: " + uriQuery);
 
       Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
