@@ -22,9 +22,28 @@ import java.util.Vector;
 
 /**
  * Usage: java -cp src edu.nyu.cs.cs2580.Evaluator [judge_file]
+ * 
+ * Also, this supports client-call via, for example,
+ * http://localhost:25814/evaluation?query=bing&ranker=cosine&format=text
  */
 
 class Evaluator {
+	
+	public static String relevanceFilePath = "./data/qrels.tsv";
+	public static Map<String, DocumentRelevances> judgements = new HashMap<String, DocumentRelevances>();
+	public static String query = "";
+	
+	public Evaluator(String query){
+		try {
+			this.query = query;
+			readRelevanceJudgments(relevanceFilePath, judgements);
+			
+		} 
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
   public static class DocumentRelevances {
     private Map<Integer, Double> relevances = new HashMap<Integer, Double>();
     
@@ -70,7 +89,7 @@ class Evaluator {
     }
   }
   
-
+  
   public static void main(String[] args) throws IOException {
     Map<String, DocumentRelevances> judgments =
         new HashMap<String, DocumentRelevances>();
@@ -79,13 +98,11 @@ class Evaluator {
     evaluateStdin(judgments);
   }
 
-  public static void readRelevanceJudgments(
-      String judgeFile, Map<String, DocumentRelevances> judgements)
-      throws IOException {
+  public static void readRelevanceJudgments(String judgeFile, Map<String, DocumentRelevances> judgements) throws IOException {
     String line = null;
     BufferedReader reader = new BufferedReader(new FileReader(judgeFile));
     while ((line = reader.readLine()) != null) {
-      // Line format: query \t docid \t grade
+      // Line format: query \t docid
       Scanner s = new Scanner(line).useDelimiter("\t");
       String query = s.next();
       DocumentRelevances relevances = judgements.get(query);
@@ -98,9 +115,9 @@ class Evaluator {
     }
     reader.close();
   }
-
+  
 /*  - The input into the Evaluator is via standard input, corresponding to
-    the format of the output of the ranker: QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE
+    the format of the output of the ranker: QUERY <TAB> DOCUMENTID
   - It is assumed that the input fed into the EvaluatorHW1 is more than
     or equal to 10 lines. This is because some metrics, e.g, precision at 10,
     require such a minimum amount line of input.
@@ -111,7 +128,7 @@ class Evaluator {
     System.out.println("Please provide at least 10 lines of input to be evaluated.");
     
     // Strings in this vector is the output of the retrieval system (RankingMethod)
-    // That is, it is in the format: QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE
+    // That is, it is in the format: QUERY <TAB> DOCUMENTID
     Vector<String> retrievalResults = new Vector<String>();
     
     String fixedQuery = "";
@@ -151,7 +168,7 @@ class Evaluator {
   }
   
   // This method returns a full evaluation for a given vector of string inputs
-  // in the format of QUERY<TAB>DOCUMENTID-1<TAB>TITLE<TAB>SCORE.
+  // in the format of QUERY <TAB> DOCUMENTID
   // Assuming that all Strings contain the same query (that we process each 
   // query at a time)
   public static String getEvaluationAsString(String query, Vector<String> retrievalResults, Map<String, DocumentRelevances> judgments) throws IOException{

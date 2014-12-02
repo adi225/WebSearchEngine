@@ -300,13 +300,24 @@ class QueryHandler implements HttpHandler {
       System.out.println("Query: " + uriQuery);
 
       Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
-
+      if(scoredDocs.size() < 10){
+      	System.out.println("Unable to evaluate in case that less than 10 documents are returned.");
+      	return;
+      }
+      
       CgiArguments cgiArgs = new CgiArguments(uriQuery);
 
-      StringBuffer response = new StringBuffer();
-
-      constructEvaluationOutput(scoredDocs, response, cgiArgs._query);
-      respondWithMsg(exchange, response.toString());
+      Evaluator evaluator = new Evaluator(cgiArgs._query);
+      
+      Vector<String> retrievalResults = new Vector<String>();
+      for(ScoredDocument scoredDoc : scoredDocs){
+      	String retrievalResult = cgiArgs._query + "\t" + scoredDoc.getDocId();
+      	retrievalResults.add(retrievalResult);
+      }
+      
+      String evaluationResult = evaluator.getEvaluationAsString(cgiArgs._query, retrievalResults, evaluator.judgements);
+      
+      respondWithMsg(exchange, evaluationResult);
       
       System.out.println("Finished query: " + cgiArgs._query);
     }
