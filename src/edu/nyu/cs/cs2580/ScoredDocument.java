@@ -60,4 +60,12 @@ class ScoredDocument implements Comparable<ScoredDocument> {
   {
 	  return _doc._docid;
   }
+  
+  public String getDocTitle(){
+  	return _doc.getTitle();
+  }
+  
+  public double getScore(){
+  	return _score;
+  }
 }

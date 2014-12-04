@@ -14,21 +14,20 @@ public class GenerateSimpleCorpus {
 
 	public static final String corpusPath = "./data/simple/";
 	public static final String corpusFileName = "corpus.tsv";
-	public static HashMap<String,String> docMap = new HashMap<String,String>();  // key is the file name, value is the content
 	
 	public static void main(String[] args) throws Exception{
 		generateFiles();
-		System.out.println(docMap.size());
 	}
 	
 	public static void generateFiles() throws Exception{
 		BufferedReader reader = new BufferedReader(new FileReader(new File(corpusPath+corpusFileName)));
 		String line = "";
+		int docid = 0;
 		while((line = reader.readLine()) != null){
 			String[] currentDoc = line.split("\t");
-			docMap.put(currentDoc[0], currentDoc[1]);
-			PrintWriter writer = new PrintWriter(corpusPath+"multiple files/"+currentDoc[0]);
+			PrintWriter writer = new PrintWriter(corpusPath+"multiple files/"+docid);
 			writer.print(currentDoc[1]);
+			docid++;
 			writer.close();
 		}
 		reader.close();
