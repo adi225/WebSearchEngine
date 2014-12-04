@@ -198,6 +198,51 @@ class QueryHandler implements HttpHandler {
     return scoredDocs;
   }
   
+  private Vector<ScoredDocument> searchQueryPRF(HttpExchange exchange, String uriQuery) throws IOException {
+    Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
+
+    // Process the CGI arguments.
+    CgiArguments cgiArgs = new CgiArguments(uriQuery);
+    if(cgiArgs._query.isEmpty()) {
+      respondWithMsg(exchange, "No query is given!");
+    }
+    
+    PseudoRelevanceFeedbackProvider prf = new PseudoRelevanceFeedbackProvider((IndexerInverted)_indexer);
+    List<Entry<String, Double>> topWords = prf.getExpansionTermsForDocuments(scoredDocs, cgiArgs._numTerms);
+    
+    String newUriQuery = getNewUriQuery(cgiArgs, topWords);
+    
+    scoredDocs = searchQuery(exchange, newUriQuery);
+    return scoredDocs;
+  }
+  
+  private String getNewUriQuery(CgiArguments cgiArgs, List<Entry<String, Double>> topWords){
+    String newUriQuery = "";
+    
+    String numResults = Integer.toString(cgiArgs._numResults);
+    String numTerms = Integer.toString(cgiArgs._numTerms);
+    String rankerType = cgiArgs._rankerType.toString();
+    String outputFormat = cgiArgs._outputFormat.toString();
+    String newQuery = cgiArgs._query;
+    // add top words into the original query
+    int numTopWordsAdded = 0;
+    for (int i = 0; i < topWords.size() && numTopWordsAdded < NUM_ADDED_TOP_WORDS; i++) {
+      String topWord = topWords.get(i).getKey();
+      if(!cgiArgs._query.toLowerCase().contains(topWord.toLowerCase())){
+      	newQuery += " "+topWord;
+      	numTopWordsAdded++;
+      }
+    }
+    
+    newUriQuery += "query=" + newQuery +"&";
+    newUriQuery += "num=" + numResults +"&";
+    newUriQuery += "ranker=" + rankerType +"&";
+    newUriQuery += "format=" + outputFormat +"&";
+    newUriQuery += "numterms=" + numTerms;
+    
+    return newUriQuery;
+  }
+  
   public void handle(HttpExchange exchange) throws IOException {
     String requestMethod = exchange.getRequestMethod();
     if (!requestMethod.equalsIgnoreCase("GET")) { // GET requests only.
@@ -232,8 +277,8 @@ class QueryHandler implements HttpHandler {
     if (uriPath == null || uriQuery == null) {
       respondWithMsg(exchange, "Something wrong with the URI!");
     } 
-    else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack") && !uriPath.equals("/prf") && !uriPath.equals("/prfsearch") && !uriPath.equals("/evaluation")) {
-      respondWithMsg(exchange, "Only /search or /prf or /prfsearch or /evaluation are handled!");
+    else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack") && !uriPath.equals("/prf") && !uriPath.equals("/prfsearch") && !uriPath.equals("/evaluation" ) && !uriPath.equals("/prfevaluation" )) {
+      respondWithMsg(exchange, "Only /search or /prf or /prfsearch or /evaluation or /prfevaluation are handled!");
     } 
     else if(uriPath.equalsIgnoreCase("/clicktrack")) {
       // writing out to files
@@ -308,37 +353,7 @@ class QueryHandler implements HttpHandler {
       
       long startTime = Calendar.getInstance().getTimeInMillis();
       
-      Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
-      
-      PseudoRelevanceFeedbackProvider prf = new PseudoRelevanceFeedbackProvider((IndexerInverted)_indexer);
-      List<Entry<String, Double>> topWords = prf.getExpansionTermsForDocuments(scoredDocs, cgiArgs._numTerms);
-      
-      String newUriQuery = "";
-      
-      String numResults = Integer.toString(cgiArgs._numResults);
-      String numTerms = Integer.toString(cgiArgs._numTerms);
-      String rankerType = cgiArgs._rankerType.toString();
-      String outputFormat = cgiArgs._outputFormat.toString();
-      String newQuery = cgiArgs._query;
-      // add top words into the original query
-      int numTopWordsAdded = 0;
-      for (int i = 0; i < topWords.size() && numTopWordsAdded < NUM_ADDED_TOP_WORDS; i++) {
-        String topWord = topWords.get(i).getKey();
-        if(!cgiArgs._query.toLowerCase().contains(topWord.toLowerCase())){
-        	newQuery += " "+topWord;
-        	numTopWordsAdded++;
-        }
-      }
-      
-      newUriQuery += "query=" + newQuery +"&";
-      newUriQuery += "num=" + numResults +"&";
-      newUriQuery += "ranker=" + rankerType +"&";
-      newUriQuery += "format=" + outputFormat +"&";
-      newUriQuery += "numterms=" + numTerms;
-      
-      scoredDocs = searchQuery(exchange, newUriQuery);
-      
-      cgiArgs._query = newQuery;
+      Vector<ScoredDocument> scoredDocs = searchQueryPRF(exchange, uriQuery);
       
       long endTime = Calendar.getInstance().getTimeInMillis();
 
@@ -362,6 +377,31 @@ class QueryHandler implements HttpHandler {
       System.out.println("Query: " + uriQuery);
 
       Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
+      if(scoredDocs.size() < 10){
+      	System.out.println("Unable to evaluate in case that less than 10 documents are returned.");
+      	return;
+      }
+      
+      CgiArguments cgiArgs = new CgiArguments(uriQuery);
+
+      Evaluator evaluator = new Evaluator(cgiArgs._query);
+      
+      Vector<String> retrievalResults = new Vector<String>();
+      for(ScoredDocument scoredDoc : scoredDocs){
+      	String retrievalResult = cgiArgs._query + "\t" + scoredDoc.getDocId();
+      	retrievalResults.add(retrievalResult);
+      }
+      
+      String evaluationResult = evaluator.getEvaluationAsString(cgiArgs._query, retrievalResults, evaluator.judgements);
+      
+      respondWithMsg(exchange, evaluationResult);
+      
+      System.out.println("Finished query: " + cgiArgs._query);
+    }
+    else if(uriPath.equalsIgnoreCase("/prfevaluation")) {
+      System.out.println("Query: " + uriQuery);
+
+      Vector<ScoredDocument> scoredDocs = searchQueryPRF(exchange, uriQuery);
       if(scoredDocs.size() < 10){
       	System.out.println("Unable to evaluate in case that less than 10 documents are returned.");
       	return;
