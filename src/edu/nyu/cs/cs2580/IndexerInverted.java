@@ -195,6 +195,9 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
     long timeTaken = (System.currentTimeMillis() - startTime) / 60000;
     System.out.println("Total indexing time: " + timeTaken + " min");
+
+    // Prepare autocomplete file.
+    AutocompleteQueryLog.getInstance().prepareMainFile();
   }
   
   // This method finds the top most frequent words in the corpus.

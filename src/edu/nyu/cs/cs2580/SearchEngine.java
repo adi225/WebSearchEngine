@@ -195,7 +195,9 @@ public class SearchEngine {
     Check(indexer != null,
         "Indexer " + SearchEngine.OPTIONS._indexerType + " not found!");
     indexer.loadIndex();
-    QueryHandler handler = new QueryHandler(SearchEngine.OPTIONS, indexer);
+    AutocompleteQueryLog autocompleter = AutocompleteQueryLog.getInstance();
+    autocompleter.loadAutocomplete();
+    QueryHandler handler = new QueryHandler(SearchEngine.OPTIONS, indexer, autocompleter);
 
     // Establish the serving environment
     InetSocketAddress addr = new InetSocketAddress(SearchEngine.PORT);

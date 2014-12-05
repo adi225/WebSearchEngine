@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.Vector;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -35,7 +36,8 @@ import com.sun.net.httpserver.HttpHandler;
  */
 class QueryHandler implements HttpHandler {
 
-	private static final int NUM_ADDED_TOP_WORDS = 1;
+  private static final int NUM_ADDED_TOP_WORDS = 1;
+  private static final int NUM_SUGGESTED_QUERIES = 5;
   public final static int SESSION_TIMEOUT = 60000;
 
   /**
@@ -118,8 +120,11 @@ class QueryHandler implements HttpHandler {
   // care of thread-safety.
   private Indexer _indexer;
 
-  public QueryHandler(SearchEngine.Options options, Indexer indexer) {
+  private AutocompleteQueryLog _autocompleter;
+
+  public QueryHandler(SearchEngine.Options options, Indexer indexer, AutocompleteQueryLog autocompleter) {
     _indexer = indexer;
+    _autocompleter = autocompleter;
   }
 
   private void respondWithMsg(HttpExchange exchange, final String message) throws IOException {
@@ -227,15 +232,15 @@ class QueryHandler implements HttpHandler {
     System.out.println();
 
     // Validate the incoming request.
+    Set<String> validEndpoints = Sets.newHashSet("/search", "/clicktrack", "/prf", "/prfsearch", "/evaluation", "/instant");
+
     String uriQuery = exchange.getRequestURI().getQuery();
     String uriPath = exchange.getRequestURI().getPath();
     if (uriPath == null || uriQuery == null) {
       respondWithMsg(exchange, "Something wrong with the URI!");
-    } 
-    else if (!uriPath.equals("/search") && !uriPath.equals("/clicktrack") && !uriPath.equals("/prf") && !uriPath.equals("/prfsearch") && !uriPath.equals("/evaluation")) {
-      respondWithMsg(exchange, "Only /search or /prf or /prfsearch or /evaluation are handled!");
-    } 
-    else if(uriPath.equalsIgnoreCase("/clicktrack")) {
+    } else if (!validEndpoints.contains(uriPath)) {
+      respondWithMsg(exchange, "Endpoint is not handled!");
+    } else if(uriPath.equalsIgnoreCase("/clicktrack")) {
       // writing out to files
       String logFileName = "hw3.4-log.tsv";
       FileWriter logFileWriter = new FileWriter("results/" + logFileName, true);
@@ -381,6 +386,54 @@ class QueryHandler implements HttpHandler {
       
       respondWithMsg(exchange, evaluationResult);
       
+      System.out.println("Finished query: " + cgiArgs._query);
+    } else if(uriPath.equalsIgnoreCase("/instant")) {
+      System.out.println("Query: " + uriQuery);
+      long startTime = Calendar.getInstance().getTimeInMillis();
+
+      // Process the CGI arguments.
+      CgiArguments cgiArgs = new CgiArguments(uriQuery);
+      if(cgiArgs._query.isEmpty()) {
+        respondWithMsg(exchange, "No query is given!");
+      }
+
+      List<String> suggestions = _autocompleter.topAutoCompleteSuggestions(cgiArgs._query, NUM_SUGGESTED_QUERIES);
+      cgiArgs._query = cgiArgs._query + suggestions.get(0);
+
+      // Create the ranker.
+      Ranker ranker = Ranker.Factory.getRankerByArguments(cgiArgs, SearchEngine.OPTIONS, _indexer);
+      if(ranker == null) {
+        respondWithMsg(exchange, "Ranker " + cgiArgs._rankerType.toString() + " is not valid!");
+      }
+
+      // Processing the query - check if we have exact match
+      // TODO Remove dependency on implementation.
+      Query processedQuery;
+      if(cgiArgs._query.indexOf('"') == -1) {
+        processedQuery = new Query(cgiArgs._query);
+      } else {
+        processedQuery = new QueryPhrase(cgiArgs._query);
+      }
+      processedQuery.processQuery();
+
+      // Ranking.
+      Vector<ScoredDocument> scoredDocs = ranker.runQuery(processedQuery, cgiArgs._numResults);
+      long endTime = Calendar.getInstance().getTimeInMillis();
+
+      StringBuffer response = new StringBuffer();
+
+      switch (cgiArgs._outputFormat) {
+        case TEXT:
+          constructTextOutput(scoredDocs, response);
+          respondWithMsg(exchange, response.toString());
+          break;
+        case HTML:
+          constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
+          respondWithHTML(exchange, response.toString());
+          break;
+        default:
+          // nothing
+      }
       System.out.println("Finished query: " + cgiArgs._query);
     }
   }
