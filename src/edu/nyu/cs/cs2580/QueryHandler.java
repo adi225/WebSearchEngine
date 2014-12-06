@@ -1,21 +1,16 @@
 package edu.nyu.cs.cs2580;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Vector;
-
 import com.google.common.collect.Sets;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.json.JSONException;
+import org.json.JSONStringer;
+import org.json.JSONWriter;
+
+import java.io.*;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * Handles each incoming query, students do not need to change this class except
@@ -63,6 +58,7 @@ class QueryHandler implements HttpHandler {
     public enum OutputFormat {
       TEXT,
       HTML,
+      JSON
     }
     public OutputFormat _outputFormat = OutputFormat.TEXT;
 
@@ -132,6 +128,15 @@ class QueryHandler implements HttpHandler {
   private void respondWithHTML(HttpExchange exchange, final String message) throws IOException {
     Headers responseHeaders = exchange.getResponseHeaders();
     responseHeaders.set("Content-Type", "text/html");
+    exchange.sendResponseHeaders(200, 0); // arbitrary number of bytes
+    OutputStream responseBody = exchange.getResponseBody();
+    responseBody.write(message.getBytes());
+    responseBody.close();
+  }
+
+  private void respondWithJSON(HttpExchange exchange, final String message) throws IOException {
+    Headers responseHeaders = exchange.getResponseHeaders();
+    responseHeaders.set("Content-Type", "application/json");
     exchange.sendResponseHeaders(200, 0); // arbitrary number of bytes
     OutputStream responseBody = exchange.getResponseBody();
     responseBody.write(message.getBytes());
@@ -373,6 +378,18 @@ class QueryHandler implements HttpHandler {
 
         StringBuffer response = new StringBuffer();
 
+        try {
+          JSONWriter jsonWriter = new JSONStringer().object().key("suggestions").array();
+          for (String suggestion : suggestions) {
+            jsonWriter = jsonWriter.value(suggestion);
+          }
+          jsonWriter = jsonWriter.endArray().key("results").array();
+          for(ScoredDocument doc : scoredDocs) {
+            jsonWriter = jsonWriter.value(doc.asTextResult());
+          }
+          response.append(jsonWriter.endArray().endObject().toString());
+        } catch (JSONException e) {}
+
         switch (cgiArgs._outputFormat) {
           case TEXT:
             constructTextOutput(scoredDocs, response);
@@ -381,6 +398,9 @@ class QueryHandler implements HttpHandler {
           case HTML:
             constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
             respondWithHTML(exchange, response.toString());
+            break;
+          case JSON:
+            respondWithJSON(exchange, response.toString());
             break;
           default:
             // nothing
@@ -409,6 +429,5 @@ class QueryHandler implements HttpHandler {
         System.out.println("Finished query: " + cgiArgs._query);
       }
     }
-  }
   }
 }
