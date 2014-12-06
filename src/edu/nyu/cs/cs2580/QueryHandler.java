@@ -5,21 +5,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.Vector;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -119,8 +111,9 @@ class QueryHandler implements HttpHandler {
   // we are not worried about thread-safety here, the Indexer class must take
   // care of thread-safety.
   private Indexer _indexer;
-
   private AutocompleteQueryLog _autocompleter;
+  private Ranker _ranker;
+  private Query _processedQuery;
 
   public QueryHandler(SearchEngine.Options options, Indexer indexer, AutocompleteQueryLog autocompleter) {
     _indexer = indexer;
@@ -173,79 +166,32 @@ class QueryHandler implements HttpHandler {
     response.append("</body></html>");
   }
 
-  private Vector<ScoredDocument> searchQuery(HttpExchange exchange, String uriQuery) throws IOException {
-    Vector<ScoredDocument> scoredDocs = null;
-
-    // Process the CGI arguments.
-    CgiArguments cgiArgs = new CgiArguments(uriQuery);
-    if(cgiArgs._query.isEmpty()) {
-      respondWithMsg(exchange, "No query is given!");
-    }
-
-    // Create the ranker.
-    Ranker ranker = Ranker.Factory.getRankerByArguments(cgiArgs, SearchEngine.OPTIONS, _indexer);
-    if(ranker == null) {
-        respondWithMsg(exchange, "Ranker " + cgiArgs._rankerType.toString() + " is not valid!");
-    }
-
-    // Processing the query - check if we have exact match
-    // TODO Remove dependency on implementation.
-    Query processedQuery;
-    if(cgiArgs._query.indexOf('"') == -1) {
-      processedQuery = new Query(cgiArgs._query);
-    } else {
-      processedQuery = new QueryPhrase(cgiArgs._query);
-    }
-    processedQuery.processQuery();
-
-    // Ranking.
-    scoredDocs = ranker.runQuery(processedQuery, cgiArgs._numResults);
-    return scoredDocs;
+  private Vector<ScoredDocument> searchQuery(HttpExchange exchange, CgiArguments cgiArgs) throws IOException {
+    return _ranker.runQuery(_processedQuery, cgiArgs._numResults);
   }
-  
-  private Vector<ScoredDocument> searchQueryPRF(HttpExchange exchange, String uriQuery) throws IOException {
-    Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
 
-    // Process the CGI arguments.
-    CgiArguments cgiArgs = new CgiArguments(uriQuery);
-    if(cgiArgs._query.isEmpty()) {
-      respondWithMsg(exchange, "No query is given!");
-    }
+  private Vector<ScoredDocument> searchQueryPRF(HttpExchange exchange, CgiArguments cgiArgs) throws IOException {
+    Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
     
     PseudoRelevanceFeedbackProvider prf = new PseudoRelevanceFeedbackProvider((IndexerInverted)_indexer);
     List<Entry<String, Double>> topWords = prf.getExpansionTermsForDocuments(scoredDocs, cgiArgs._numTerms);
-    
-    String newUriQuery = getNewUriQuery(cgiArgs, topWords);
-    
-    scoredDocs = searchQuery(exchange, newUriQuery);
+    cgiArgs = getNewUriQuery(cgiArgs, topWords);
+
+    scoredDocs = searchQuery(exchange, cgiArgs);
     return scoredDocs;
   }
   
-  private String getNewUriQuery(CgiArguments cgiArgs, List<Entry<String, Double>> topWords){
-    String newUriQuery = "";
-    
-    String numResults = Integer.toString(cgiArgs._numResults);
-    String numTerms = Integer.toString(cgiArgs._numTerms);
-    String rankerType = cgiArgs._rankerType.toString();
-    String outputFormat = cgiArgs._outputFormat.toString();
-    String newQuery = cgiArgs._query;
+  private CgiArguments getNewUriQuery(CgiArguments cgiArgs, List<Entry<String, Double>> topWords) {
     // add top words into the original query
     int numTopWordsAdded = 0;
     for (int i = 0; i < topWords.size() && numTopWordsAdded < NUM_ADDED_TOP_WORDS; i++) {
       String topWord = topWords.get(i).getKey();
       if(!cgiArgs._query.toLowerCase().contains(topWord.toLowerCase())){
-      	newQuery += " "+topWord;
+        cgiArgs._query += " " + topWord;
       	numTopWordsAdded++;
       }
     }
-    
-    newUriQuery += "query=" + newQuery +"&";
-    newUriQuery += "num=" + numResults +"&";
-    newUriQuery += "ranker=" + rankerType +"&";
-    newUriQuery += "format=" + outputFormat +"&";
-    newUriQuery += "numterms=" + numTerms;
-    
-    return newUriQuery;
+    return cgiArgs;
   }
   
   public void handle(HttpExchange exchange) throws IOException {
@@ -284,7 +230,7 @@ class QueryHandler implements HttpHandler {
     String uriPath = exchange.getRequestURI().getPath();
     if (uriPath == null || uriQuery == null) {
       respondWithMsg(exchange, "Something wrong with the URI!");
-    } else if (!validEndpoints.contains(uriPath)) {
+    } else if (!validEndpoints.contains(uriPath.toLowerCase())) {
       respondWithMsg(exchange, "Endpoint is not handled!");
     } else if(uriPath.equalsIgnoreCase("/clicktrack")) {
       // writing out to files
@@ -306,176 +252,163 @@ class QueryHandler implements HttpHandler {
       vsmWriter.write(logEntry + "\n");
       vsmWriter.close();
       // Construct a simple response.
-      responseHeaders.set("Location", exchange.getRequestHeaders().getFirst("Referer"));
-      //responseHeaders.set("Location", "file:///" + _indexer.getDoc(Integer.parseInt(documentId)).getUrl());
-      //exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
+      try {
+        responseHeaders.set("Location", _indexer.getDoc(Integer.parseInt(documentId)).getUrl());
+      } catch (NumberFormatException e ) {}
+      exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
       exchange.getResponseBody().close();
       return;
-    } 
-    else if(uriPath.equalsIgnoreCase("/search")) {
-      System.out.println("Query: " + uriQuery);
-      long startTime = Calendar.getInstance().getTimeInMillis();
-      Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
-      long endTime = Calendar.getInstance().getTimeInMillis();
-
-      CgiArguments cgiArgs = new CgiArguments(uriQuery);
-
-      StringBuffer response = new StringBuffer();
-
-      switch (cgiArgs._outputFormat) {
-        case TEXT:
-          constructTextOutput(scoredDocs, response);
-          respondWithMsg(exchange, response.toString());
-          break;
-        case HTML:
-          constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
-          respondWithHTML(exchange, response.toString());
-          break;
-        default:
-          // nothing
-      }
-      System.out.println("Finished query: " + cgiArgs._query);
-    } 
-    else if(uriPath.equalsIgnoreCase("/prf")){
-      CgiArguments cgiArgs = new CgiArguments(uriQuery);
-
-      System.out.println("Query: " + uriQuery);
-      Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
-
-      PseudoRelevanceFeedbackProvider prf = new PseudoRelevanceFeedbackProvider((IndexerInverted)_indexer);
-      List<Entry<String, Double>> topWords = prf.getExpansionTermsForDocuments(scoredDocs, cgiArgs._numTerms);
-
-      StringBuffer response = new StringBuffer();
-      for (Entry<String, Double> entry : topWords) {
-        response.append(entry.getKey()).append("\t").append(entry.getValue()).append("\n");
-      }
-
-      respondWithMsg(exchange, response.toString());
-      System.out.println("Finished query: " + cgiArgs._query);
-    }
-    else if(uriPath.equalsIgnoreCase("/prfsearch")){
-      System.out.println("Query: " + uriQuery);
-      CgiArguments cgiArgs = new CgiArguments(uriQuery);
-      
-      long startTime = Calendar.getInstance().getTimeInMillis();
-      
-      Vector<ScoredDocument> scoredDocs = searchQueryPRF(exchange, uriQuery);
-      
-      long endTime = Calendar.getInstance().getTimeInMillis();
-
-      StringBuffer response = new StringBuffer();
-
-      switch (cgiArgs._outputFormat) {
-        case TEXT:
-          constructTextOutput(scoredDocs, response);
-          respondWithMsg(exchange, response.toString());
-          break;
-        case HTML:
-          constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
-          respondWithHTML(exchange, response.toString());
-          break;
-        default:
-          // nothing
-      }
-      System.out.println("Finished query: " + cgiArgs._query);
-    }
-    else if(uriPath.equalsIgnoreCase("/evaluation")) {
-      System.out.println("Query: " + uriQuery);
-
-      Vector<ScoredDocument> scoredDocs = searchQuery(exchange, uriQuery);
-      if(scoredDocs.size() < 10){
-      	System.out.println("Unable to evaluate in case that less than 10 documents are returned.");
-      	return;
-      }
-      
-      CgiArguments cgiArgs = new CgiArguments(uriQuery);
-
-      Evaluator evaluator = new Evaluator(cgiArgs._query);
-      
-      Vector<String> retrievalResults = new Vector<String>();
-      for(ScoredDocument scoredDoc : scoredDocs){
-      	String retrievalResult = cgiArgs._query + "\t" + scoredDoc.getDocId();
-      	retrievalResults.add(retrievalResult);
-      }
-      
-      String evaluationResult = evaluator.getEvaluationAsString(cgiArgs._query, retrievalResults, evaluator.judgements);
-      
-      respondWithMsg(exchange, evaluationResult);
-      
-      System.out.println("Finished query: " + cgiArgs._query);
-    } else if(uriPath.equalsIgnoreCase("/instant")) {
-      System.out.println("Query: " + uriQuery);
-      long startTime = Calendar.getInstance().getTimeInMillis();
-
-      // Process the CGI arguments.
+    } else {
       CgiArguments cgiArgs = new CgiArguments(uriQuery);
       if(cgiArgs._query.isEmpty()) {
         respondWithMsg(exchange, "No query is given!");
       }
 
-      List<String> suggestions = _autocompleter.topAutoCompleteSuggestions(cgiArgs._query, NUM_SUGGESTED_QUERIES);
-      cgiArgs._query = cgiArgs._query + suggestions.get(0);
-
       // Create the ranker.
-      Ranker ranker = Ranker.Factory.getRankerByArguments(cgiArgs, SearchEngine.OPTIONS, _indexer);
-      if(ranker == null) {
+      _ranker = Ranker.Factory.getRankerByArguments(cgiArgs, SearchEngine.OPTIONS, _indexer);
+      if(_ranker == null) {
         respondWithMsg(exchange, "Ranker " + cgiArgs._rankerType.toString() + " is not valid!");
       }
 
       // Processing the query - check if we have exact match
       // TODO Remove dependency on implementation.
-      Query processedQuery;
       if(cgiArgs._query.indexOf('"') == -1) {
-        processedQuery = new Query(cgiArgs._query);
+        _processedQuery = new Query(cgiArgs._query);
       } else {
-        processedQuery = new QueryPhrase(cgiArgs._query);
+        _processedQuery = new QueryPhrase(cgiArgs._query);
       }
-      processedQuery.processQuery();
+      _processedQuery.processQuery();
 
-      // Ranking.
-      Vector<ScoredDocument> scoredDocs = ranker.runQuery(processedQuery, cgiArgs._numResults);
-      long endTime = Calendar.getInstance().getTimeInMillis();
+      if(uriPath.equalsIgnoreCase("/search")) {
+        System.out.println("Query: " + uriQuery);
+        long startTime = Calendar.getInstance().getTimeInMillis();
+        Vector<ScoredDocument> scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
+        long endTime = Calendar.getInstance().getTimeInMillis();
 
-      StringBuffer response = new StringBuffer();
+        StringBuffer response = new StringBuffer();
 
-      switch (cgiArgs._outputFormat) {
-        case TEXT:
-          constructTextOutput(scoredDocs, response);
-          respondWithMsg(exchange, response.toString());
-          break;
-        case HTML:
-          constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
-          respondWithHTML(exchange, response.toString());
-          break;
-        default:
-          // nothing
+        switch (cgiArgs._outputFormat) {
+          case TEXT:
+            constructTextOutput(scoredDocs, response);
+            respondWithMsg(exchange, response.toString());
+            break;
+          case HTML:
+            constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
+            respondWithHTML(exchange, response.toString());
+            break;
+          default:
+            // nothing
+        }
+        System.out.println("Finished query: " + cgiArgs._query);
+
+      } else if(uriPath.equalsIgnoreCase("/prf")){
+        System.out.println("Query: " + uriQuery);
+        Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
+
+        PseudoRelevanceFeedbackProvider prf = new PseudoRelevanceFeedbackProvider((IndexerInverted)_indexer);
+        List<Entry<String, Double>> topWords = prf.getExpansionTermsForDocuments(scoredDocs, cgiArgs._numTerms);
+
+        StringBuffer response = new StringBuffer();
+        for (Entry<String, Double> entry : topWords) {
+          response.append(entry.getKey()).append("\t").append(entry.getValue()).append("\n");
+        }
+
+        respondWithMsg(exchange, response.toString());
+        System.out.println("Finished query: " + cgiArgs._query);
+
+      } else if(uriPath.equalsIgnoreCase("/prfsearch")){
+        System.out.println("Query: " + uriQuery);
+        long startTime = Calendar.getInstance().getTimeInMillis();
+        Vector<ScoredDocument> scoredDocs = searchQueryPRF(exchange, cgiArgs);
+        long endTime = Calendar.getInstance().getTimeInMillis();
+
+        StringBuffer response = new StringBuffer();
+
+        switch (cgiArgs._outputFormat) {
+          case TEXT:
+            constructTextOutput(scoredDocs, response);
+            respondWithMsg(exchange, response.toString());
+            break;
+          case HTML:
+            constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
+            respondWithHTML(exchange, response.toString());
+            break;
+          default:
+            // nothing
+        }
+        System.out.println("Finished query: " + cgiArgs._query);
+
+      } else if(uriPath.equalsIgnoreCase("/evaluation")) {
+        System.out.println("Query: " + uriQuery);
+
+        Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
+        if(scoredDocs.size() < 10){
+          System.out.println("Unable to evaluate in case that less than 10 documents are returned.");
+          return;
+        }
+
+        Evaluator evaluator = new Evaluator(cgiArgs._query);
+
+        Vector<String> retrievalResults = new Vector<String>();
+        for(ScoredDocument scoredDoc : scoredDocs){
+          String retrievalResult = cgiArgs._query + "\t" + scoredDoc.getDocId();
+          retrievalResults.add(retrievalResult);
+        }
+
+        String evaluationResult = evaluator.getEvaluationAsString(cgiArgs._query, retrievalResults, evaluator.judgements);
+
+        respondWithMsg(exchange, evaluationResult);
+
+        System.out.println("Finished query: " + cgiArgs._query);
+
+      } else if(uriPath.equalsIgnoreCase("/instant")) {
+        System.out.println("Query: " + uriQuery);
+        long startTime = Calendar.getInstance().getTimeInMillis();
+
+        List<String> suggestions = _autocompleter.topAutoCompleteSuggestions(cgiArgs._query, NUM_SUGGESTED_QUERIES);
+        cgiArgs._query = cgiArgs._query + suggestions.get(0);
+
+        Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
+        long endTime = Calendar.getInstance().getTimeInMillis();
+
+        StringBuffer response = new StringBuffer();
+
+        switch (cgiArgs._outputFormat) {
+          case TEXT:
+            constructTextOutput(scoredDocs, response);
+            respondWithMsg(exchange, response.toString());
+            break;
+          case HTML:
+            constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
+            respondWithHTML(exchange, response.toString());
+            break;
+          default:
+            // nothing
+        }
+        System.out.println("Finished query: " + cgiArgs._query);
+      } else if(uriPath.equalsIgnoreCase("/prfevaluation")) {
+        System.out.println("Query: " + uriQuery);
+
+        Vector<ScoredDocument> scoredDocs = searchQueryPRF(exchange, cgiArgs);
+        if(scoredDocs.size() < 10){
+          System.out.println("Unable to evaluate in case that less than 10 documents are returned.");
+          return;
+        }
+
+        Evaluator evaluator = new Evaluator(cgiArgs._query);
+
+        Vector<String> retrievalResults = new Vector<String>();
+        for(ScoredDocument scoredDoc : scoredDocs){
+          String retrievalResult = cgiArgs._query + "\t" + scoredDoc.getDocId();
+          retrievalResults.add(retrievalResult);
+        }
+
+        String evaluationResult = evaluator.getEvaluationAsString(cgiArgs._query, retrievalResults, evaluator.judgements);
+        respondWithMsg(exchange, evaluationResult);
+
+        System.out.println("Finished query: " + cgiArgs._query);
       }
-      System.out.println("Finished query: " + cgiArgs._query);
     }
-    else if(uriPath.equalsIgnoreCase("/prfevaluation")) {
-      System.out.println("Query: " + uriQuery);
-
-      Vector<ScoredDocument> scoredDocs = searchQueryPRF(exchange, uriQuery);
-      if(scoredDocs.size() < 10){
-      	System.out.println("Unable to evaluate in case that less than 10 documents are returned.");
-      	return;
-      }
-      
-      CgiArguments cgiArgs = new CgiArguments(uriQuery);
-
-      Evaluator evaluator = new Evaluator(cgiArgs._query);
-      
-      Vector<String> retrievalResults = new Vector<String>();
-      for(ScoredDocument scoredDoc : scoredDocs){
-      	String retrievalResult = cgiArgs._query + "\t" + scoredDoc.getDocId();
-      	retrievalResults.add(retrievalResult);
-      }
-      
-      String evaluationResult = evaluator.getEvaluationAsString(cgiArgs._query, retrievalResults, evaluator.judgements);
-      
-      respondWithMsg(exchange, evaluationResult);
-      
-      System.out.println("Finished query: " + cgiArgs._query);
-    }
+  }
   }
 }
