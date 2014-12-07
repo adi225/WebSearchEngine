@@ -266,7 +266,7 @@ class QueryHandler implements HttpHandler {
       return;
     } else {
       CgiArguments cgiArgs = new CgiArguments(uriQuery);
-      if(cgiArgs._query.isEmpty()) {
+      if(cgiArgs._query.isEmpty() && !uriPath.equalsIgnoreCase("/generateretrievalresults") && !uriPath.equalsIgnoreCase("/prfgenerateretrievalresults")) {
         respondWithMsg(exchange, "No query is given!");
       }
 
@@ -429,7 +429,7 @@ class QueryHandler implements HttpHandler {
 
         System.out.println("Finished query: " + cgiArgs._query);
       } else if(uriPath.equalsIgnoreCase("/generateretrievalresults")) {
-
+      	
       	ArrayList<String> queries = new ArrayList<String>();
       	BufferedReader reader = new BufferedReader(new FileReader(Evaluator.queriesFilePath));
       	String query = "";
@@ -439,20 +439,28 @@ class QueryHandler implements HttpHandler {
       	reader.close();
       	
       	for(String q : queries){
-      		cgiArgs._query = q;
+      		System.out.println("Retrieving results for query: " +  q);
+      		_processedQuery = new Query(q);
+      		_processedQuery.processQuery();
           Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
+          if(scoredDocs == null){
+          	System.out.println("The query " + q +" failed.");
+          	continue;
+          }
           if(scoredDocs.size() < 10){
             System.out.println("The query " + q +" has less than 10 documents returned.");
             continue;
           }
 
-          PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + cgiArgs._query +".txt");
+          PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + q + ".txt");
           for(ScoredDocument scoredDoc : scoredDocs){
-            String retrievalResult = cgiArgs._query + "\t" + scoredDoc.getDocId();
+            String retrievalResult = q + "\t" + scoredDoc.getDocId();
             writer.println(retrievalResult);
           }
           writer.close();
       	}
+      	
+      	System.out.println("Done generating the retrieval result file!");
       } else if(uriPath.equalsIgnoreCase("/prfgenerateretrievalresults")) {
 
       	ArrayList<String> queries = new ArrayList<String>();
@@ -464,20 +472,28 @@ class QueryHandler implements HttpHandler {
       	reader.close();
       	
       	for(String q : queries){
-      		cgiArgs._query = q;
+      		System.out.println("Retrieving results for query: " +  q);
+      		_processedQuery = new Query(q);
+      		_processedQuery.processQuery();
           Vector<ScoredDocument> scoredDocs = searchQueryPRF(exchange, cgiArgs);
+          if(scoredDocs == null){
+          	System.out.println("The query " + q +" failed.");
+          	continue;
+          }
           if(scoredDocs.size() < 10){
             System.out.println("The query " + q +" has less than 10 documents returned.");
             continue;
           }
 
-          PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + cgiArgs._query +".txt");
+          PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + q + ".txt");
           for(ScoredDocument scoredDoc : scoredDocs){
-            String retrievalResult = cgiArgs._query + "\t" + scoredDoc.getDocId();
+            String retrievalResult = q + "\t" + scoredDoc.getDocId();
             writer.println(retrievalResult);
           }
           writer.close();
       	}
+      	
+      	System.out.println("Done generating the retrieval result file!");
       }
     }
   }

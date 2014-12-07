@@ -71,7 +71,7 @@ public class AutocompleteQueryLog {
   }
 
   public void loadAutocomplete() throws IOException {
-    Scanner scanner = new Scanner(new BufferedReader(new FileReader(new File(_mainFile)), CHUNK_SIZE));
+  	Scanner scanner = new Scanner(new BufferedReader(new FileReader(new File(_mainFile)), CHUNK_SIZE));
     long bytesRead = 0;
     for (int i = 0; scanner.hasNext(); ++i) {
       String line = scanner.nextLine();
