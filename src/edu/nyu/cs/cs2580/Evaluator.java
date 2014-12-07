@@ -1,13 +1,16 @@
 package edu.nyu.cs.cs2580;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
@@ -29,7 +32,9 @@ import java.util.Vector;
 
 class Evaluator {
 	
-	public static String relevanceFilePath = "./data/qrels.tsv";
+	public static final String queriesFilePath = "./data/queries.tsv";
+	public static final String retrievalResultsFolderPath = "./data/retrieval_results/";
+	public static final String relevanceFilePath = "./data/qrels.tsv";
 	public static Map<String, DocumentRelevances> judgements = new HashMap<String, DocumentRelevances>();
 	public static String query = "";
 	
@@ -90,13 +95,76 @@ class Evaluator {
   }
   
   
-  public static void main(String[] args) throws IOException {
-    Map<String, DocumentRelevances> judgments =
-        new HashMap<String, DocumentRelevances>();
+  public static void main(String[] args) throws Exception {
+  	Map<String, DocumentRelevances> judgments = new HashMap<String, DocumentRelevances>();
     SearchEngine.Check(args.length == 1, "Must provide judgements!");
     readRelevanceJudgments(args[0], judgments);
-    evaluateStdin(judgments);
+    
+    getEvaluation(judgments);
+    //evaluateStdin(judgments);
   }
+  
+  public static void getEvaluation(Map<String, DocumentRelevances> judgments) throws Exception{
+    ArrayList<Double> averagePrecisions = new ArrayList<Double>();
+    ArrayList<ArrayList<Double>> precisionsAtRecalls = new ArrayList<ArrayList<Double>>();
+    
+    File retrievalResultsFolder = new File(retrievalResultsFolderPath);
+    File[] retrievalResultsFiles = retrievalResultsFolder.listFiles();
+    
+    for(File file : retrievalResultsFiles){
+    	Vector<String> retrievalResults = new Vector<String>();
+    	BufferedReader reader = new BufferedReader(new FileReader(file));
+    	String line = "";
+    	while((line = reader.readLine()) != null){
+    		retrievalResults.add(line);
+    	}
+    	reader.close();
+    	
+    	double averagePrecision = averagePrecision(retrievalResults, judgments);
+    	averagePrecisions.add(averagePrecision);
+    	double[] precisionAtRecall = precisionAtRecall(retrievalResults, judgments);
+    	if(precisionAtRecall.length != 11){
+    		continue;
+    	}
+    	ArrayList<Double> tempPatR = new ArrayList<Double>();
+    	for(int i = 0; i < 11; i++){
+    		tempPatR.add(precisionAtRecall[i]);
+    	}
+    	precisionsAtRecalls.add(tempPatR);
+    }
+    
+    // calculating Mean Average Precision
+    double map = 0.0;
+    for(double averagePrecision : averagePrecisions){
+    	map += averagePrecision;
+    }
+    map /= averagePrecisions.size();
+    
+    // calculating the precision at recall graph
+    double[] averagePrecisionsAtRecalls = new double[11];
+    for(ArrayList<Double> precisionAtRecall : precisionsAtRecalls){
+    	for(int i = 0; i < 11; i++){
+    		averagePrecisionsAtRecalls[i] += precisionAtRecall.get(i);
+    	}
+    }
+    for(int i = 0; i < 11; i++){
+    	averagePrecisionsAtRecalls[i] /= precisionsAtRecalls.size();
+    }
+
+    System.out.println("Mean average precision: "+map);
+    System.out.println("Precision at Recall 0.0: "+averagePrecisionsAtRecalls[0]);
+    System.out.println("Precision at Recall 0.1: "+averagePrecisionsAtRecalls[1]);
+    System.out.println("Precision at Recall 0.2: "+averagePrecisionsAtRecalls[2]);
+    System.out.println("Precision at Recall 0.3: "+averagePrecisionsAtRecalls[3]);
+    System.out.println("Precision at Recall 0.4: "+averagePrecisionsAtRecalls[4]);
+    System.out.println("Precision at Recall 0.5: "+averagePrecisionsAtRecalls[5]);
+    System.out.println("Precision at Recall 0.6: "+averagePrecisionsAtRecalls[6]);
+    System.out.println("Precision at Recall 0.7: "+averagePrecisionsAtRecalls[7]);
+    System.out.println("Precision at Recall 0.8: "+averagePrecisionsAtRecalls[8]);
+    System.out.println("Precision at Recall 0.9: "+averagePrecisionsAtRecalls[9]);
+    System.out.println("Precision at Recall 1.0: "+averagePrecisionsAtRecalls[10]);
+    
+   }
 
   public static void readRelevanceJudgments(String judgeFile, Map<String, DocumentRelevances> judgements) throws IOException {
     String line = null;
@@ -161,7 +229,7 @@ class Evaluator {
       return;
     }
     
-    String outputString = getEvaluationAsString(fixedQuery, retrievalResults, judgments);
+    String outputString = getAllEvaluationAsString(fixedQuery, retrievalResults, judgments);
     System.out.println(outputString);
     
     return;
@@ -171,7 +239,7 @@ class Evaluator {
   // in the format of QUERY <TAB> DOCUMENTID
   // Assuming that all Strings contain the same query (that we process each 
   // query at a time)
-  public static String getEvaluationAsString(String query, Vector<String> retrievalResults, Map<String, DocumentRelevances> judgments) throws IOException{
+  public static String getAllEvaluationAsString(String query, Vector<String> retrievalResults, Map<String, DocumentRelevances> judgments) throws IOException{
     double precisionAt1 = precisionAtK(retrievalResults, 1, judgments);
     double precisionAt5 = precisionAtK(retrievalResults, 5, judgments);
     double precisionAt10 = precisionAtK(retrievalResults, 10, judgments);
@@ -353,7 +421,7 @@ class Evaluator {
 	    	}
 		  }
 	  }
-		if(RR!=0){
+		if(RR != 0){
 		  double averagePrecision = AP/RR;
 		  return averagePrecision;
 		}

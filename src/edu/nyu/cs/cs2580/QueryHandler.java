@@ -26,7 +26,7 @@ class QueryHandler implements HttpHandler {
   private static final int NUM_ADDED_TOP_WORDS = 1;
   private static final int NUM_SUGGESTED_QUERIES = 5;
   public final static int SESSION_TIMEOUT = 60000;
-
+  
   /**
    * CGI arguments provided by the user through the URL. This will determine
    * which Ranker to use and what output format to adopt. For simplicity, all
@@ -229,7 +229,8 @@ class QueryHandler implements HttpHandler {
 
     // Validate the incoming request.
     Set<String> validEndpoints = Sets.newHashSet("/search", "/clicktrack", "/prf", "/prfsearch",
-                                                 "/evaluation", "/prfevaluation", "/instant");
+                                                 "/evaluation", "/prfevaluation", "/instant", 
+                                                 "/generateretrievalresults", "/prfgenerateretrievalresults");
 
     String uriQuery = exchange.getRequestURI().getQuery();
     String uriPath = exchange.getRequestURI().getPath();
@@ -360,7 +361,7 @@ class QueryHandler implements HttpHandler {
           retrievalResults.add(retrievalResult);
         }
 
-        String evaluationResult = evaluator.getEvaluationAsString(cgiArgs._query, retrievalResults, evaluator.judgements);
+        String evaluationResult = evaluator.getAllEvaluationAsString(cgiArgs._query, retrievalResults, evaluator.judgements);
 
         respondWithMsg(exchange, evaluationResult);
 
@@ -423,10 +424,60 @@ class QueryHandler implements HttpHandler {
           retrievalResults.add(retrievalResult);
         }
 
-        String evaluationResult = evaluator.getEvaluationAsString(cgiArgs._query, retrievalResults, evaluator.judgements);
+        String evaluationResult = evaluator.getAllEvaluationAsString(cgiArgs._query, retrievalResults, evaluator.judgements);
         respondWithMsg(exchange, evaluationResult);
 
         System.out.println("Finished query: " + cgiArgs._query);
+      } else if(uriPath.equalsIgnoreCase("/generateretrievalresults")) {
+
+      	ArrayList<String> queries = new ArrayList<String>();
+      	BufferedReader reader = new BufferedReader(new FileReader(Evaluator.queriesFilePath));
+      	String query = "";
+      	while((query = reader.readLine()) != null){
+      		queries.add(query);
+      	}
+      	reader.close();
+      	
+      	for(String q : queries){
+      		cgiArgs._query = q;
+          Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
+          if(scoredDocs.size() < 10){
+            System.out.println("The query " + q +" has less than 10 documents returned.");
+            continue;
+          }
+
+          PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + cgiArgs._query +".txt");
+          for(ScoredDocument scoredDoc : scoredDocs){
+            String retrievalResult = cgiArgs._query + "\t" + scoredDoc.getDocId();
+            writer.println(retrievalResult);
+          }
+          writer.close();
+      	}
+      } else if(uriPath.equalsIgnoreCase("/prfgenerateretrievalresults")) {
+
+      	ArrayList<String> queries = new ArrayList<String>();
+      	BufferedReader reader = new BufferedReader(new FileReader(Evaluator.queriesFilePath));
+      	String query = "";
+      	while((query = reader.readLine()) != null){
+      		queries.add(query);
+      	}
+      	reader.close();
+      	
+      	for(String q : queries){
+      		cgiArgs._query = q;
+          Vector<ScoredDocument> scoredDocs = searchQueryPRF(exchange, cgiArgs);
+          if(scoredDocs.size() < 10){
+            System.out.println("The query " + q +" has less than 10 documents returned.");
+            continue;
+          }
+
+          PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + cgiArgs._query +".txt");
+          for(ScoredDocument scoredDoc : scoredDocs){
+            String retrievalResult = cgiArgs._query + "\t" + scoredDoc.getDocId();
+            writer.println(retrievalResult);
+          }
+          writer.close();
+      	}
       }
     }
   }
