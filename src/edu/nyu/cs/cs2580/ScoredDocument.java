@@ -35,6 +35,7 @@ class ScoredDocument implements Comparable<ScoredDocument> {
     buf.append("&query=").append(query).append("\">");
     buf.append(_doc.getTitle());
     buf.append("</a></p>");
+    buf.append("<p>Document ID: "+_doc._docid+"</p>");
     buf.append("PageRank: "+_doc.getPageRank()+" NumViews: "+_doc.getNumViews());
     buf.append("<p style=\"color:green;font-size:14px;\">");
     
