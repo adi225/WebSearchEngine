@@ -35,6 +35,7 @@ public class AutocompleteQueryLog {
 
   public static void main(String[] args) throws IOException {
     AutocompleteQueryLog ql = AutocompleteQueryLog.getInstance();
+    ql.prepareMainFile();
     ql.loadAutocomplete();
     System.out.println("Loaded autocomplete log.");
     List<String> suggestions = ql.topAutoCompleteSuggestions("how", 500);
@@ -47,18 +48,18 @@ public class AutocompleteQueryLog {
 
   public void prepareMainFile() throws IOException {
     System.out.println("Preparing autocomplete file.");
-    String newMainFile = _mainFileName + System.currentTimeMillis();
+    String newMainFileName = _mainFileName + System.currentTimeMillis();
 
     // Do the work.
-    sortQueries(_mainFile, ".sorted");
-    consolidateQueries(".sorted", newMainFile);
+    sortQueries(_mainFileName, ".sorted");
+    consolidateQueries(".sorted", newMainFileName);
 
     // Cleanup and swap the main file.
     new File(_autocompletePrefix + ".sorted").delete();
     String prevMainFile = _mainFile;
-    _mainFile = _autocompletePrefix + newMainFile;
+    _mainFile = _autocompletePrefix + newMainFileName;
     new File(prevMainFile).delete();
-    new File(_mainFile).renameTo(new File(_mainFileName));
+    new File(_mainFile).renameTo(new File(_autocompletePrefix + _mainFileName));
     _mainFile = _autocompletePrefix + _mainFileName;
   }
 
@@ -167,8 +168,9 @@ public class AutocompleteQueryLog {
     System.out.println("Total length: " + queryLog.length());
     int sortedPointer = 0;
     while (sortedPointer < queryLog.length() - 10000) {
-      BufferedReader reader = new BufferedReader(new FileReader(queryLog));
-      reader.skip(sortedPointer);
+      FileInputStream readerFIS = new FileInputStream(queryLog);
+      readerFIS.skip(sortedPointer);
+      BufferedReader reader = new BufferedReader(new InputStreamReader(readerFIS));
       LinkedList<String> queries = new LinkedList<String>();
       LinkedList<String> existing = new LinkedList<String>();
       int charsRead = 0;
@@ -182,7 +184,7 @@ public class AutocompleteQueryLog {
       Collections.sort(queries);
 
       File resultLog = new File("data/AOL/.trial_intermediary" + sortedPointer);
-      BufferedReader sortedQueries = new BufferedReader(new FileReader(queryLog));
+      BufferedReader sortedQueries = new BufferedReader(new FileReader(queryLog), CHUNK_SIZE);
       BufferedWriter resultQueries = new BufferedWriter(new FileWriter(resultLog));
       int headCharsRead = 0;
       int charsWritten = 0;

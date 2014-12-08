@@ -1,12 +1,12 @@
 package edu.nyu.cs.cs2580;
 
-import java.io.*;
-import java.util.*;
-
 import com.google.common.collect.*;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import edu.nyu.cs.cs2580.FileUtils.FileRange;
 import org.xml.sax.SAXException;
+
+import java.io.*;
+import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -118,7 +118,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       	catch(Exception e){
       		return f1Name.compareTo(f2Name);
       	}
-
       }
     });
     
@@ -197,7 +196,9 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     System.out.println("Total indexing time: " + timeTaken + " min");
 
     // Prepare autocomplete file.
+    System.out.println("Preparing autocomplete...");
     AutocompleteQueryLog.getInstance().prepareMainFile();
+    System.out.println("All systems go...");
   }
   
   // This method finds the top most frequent words in the corpus.

@@ -44,10 +44,7 @@ public class FileUtils {
   }
 
   protected static long dumpIndexToFile(Map<Integer, List<Integer>> partialIndex, File _file) throws IOException {
-    long startTime = System.currentTimeMillis();
     Map<Integer, List<Byte>> asBytes = VByteUtils.integerPostingListAsBytes(partialIndex);
-    long timeTaken = (System.currentTimeMillis() - startTime) / 1000;
-    System.out.println("Conversion to bytes complete: " + timeTaken + " sec");
     return dumpIndexToFileBytes(asBytes, _file);
   }
 

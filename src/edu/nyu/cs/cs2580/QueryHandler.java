@@ -172,6 +172,15 @@ class QueryHandler implements HttpHandler {
   }
 
   private Vector<ScoredDocument> searchQuery(HttpExchange exchange, CgiArguments cgiArgs) throws IOException {
+    // Processing the query - check if we have exact match
+    // TODO Remove dependency on implementation.
+    if (cgiArgs._query.indexOf('"') == -1) {
+      _processedQuery = new Query(cgiArgs._query);
+    } else {
+      _processedQuery = new QueryPhrase(cgiArgs._query);
+    }
+    _processedQuery.processQuery();
+
     return _ranker.runQuery(_processedQuery, cgiArgs._numResults);
   }
 
@@ -276,19 +285,10 @@ class QueryHandler implements HttpHandler {
         respondWithMsg(exchange, "Ranker " + cgiArgs._rankerType.toString() + " is not valid!");
       }
 
-      // Processing the query - check if we have exact match
-      // TODO Remove dependency on implementation.
-      if(cgiArgs._query.indexOf('"') == -1) {
-        _processedQuery = new Query(cgiArgs._query);
-      } else {
-        _processedQuery = new QueryPhrase(cgiArgs._query);
-      }
-      _processedQuery.processQuery();
-
       if(uriPath.equalsIgnoreCase("/search")) {
         System.out.println("Query: " + uriQuery);
         long startTime = Calendar.getInstance().getTimeInMillis();
-        Vector<ScoredDocument> scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
+        Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
         long endTime = Calendar.getInstance().getTimeInMillis();
 
         StringBuffer response = new StringBuffer();
@@ -305,6 +305,7 @@ class QueryHandler implements HttpHandler {
           default:
             // nothing
         }
+        _autocompleter.recordQuery(cgiArgs._query);
         System.out.println("Finished query: " + cgiArgs._query);
 
       } else if(uriPath.equalsIgnoreCase("/prf")){
@@ -342,6 +343,7 @@ class QueryHandler implements HttpHandler {
           default:
             // nothing
         }
+        _autocompleter.recordQuery(cgiArgs._query);
         System.out.println("Finished query: " + cgiArgs._query);
 
       } else if(uriPath.equalsIgnoreCase("/evaluation")) {
