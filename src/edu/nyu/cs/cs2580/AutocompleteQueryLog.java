@@ -23,7 +23,10 @@ public class AutocompleteQueryLog implements Serializable {
   private static final AutocompleteQueryLog _singletonInstance = new AutocompleteQueryLog();
   private static final long serialVersionUID = 7526472295622778647L;
 
-  private AutocompleteQueryLog() {}
+  private AutocompleteQueryLog() {
+    _suggestionsCache = Maps.newTreeMap();
+    _suggestionsCacheFlatSize = 0;
+  }
   public static AutocompleteQueryLog getInstance() {
     return _singletonInstance;
   }
@@ -33,6 +36,11 @@ public class AutocompleteQueryLog implements Serializable {
   private String _mainFile = _autocompletePrefix + _mainFileName;
   private static final int CHUNK_SIZE = 1000000;
   private static final int SEARCH_UNIT_SIZE = 1000;
+  private static final int CACHE_SIZE = 1000000;
+
+  private static Map<String, List<String>> _suggestionsCache;
+  private static int _suggestionsCacheFlatSize;
+
 
   public static void main(String[] args) throws IOException {
     AutocompleteQueryLog ql = AutocompleteQueryLog.getInstance();
@@ -89,9 +97,38 @@ public class AutocompleteQueryLog implements Serializable {
   }
 
   public List<String> topAutoCompleteSuggestions(String query, int maxNum) throws IOException {
+    query = cleanQuery(query);
+    String cacheKey = query + "\t" + maxNum;
+
+    // Do not autocomplete for small strings.
+    if(query == null || query.length() < 3) {
+      return Lists.newArrayList();
+    }
+
+    // Retrieved known results from cache.
+    if(_suggestionsCache.containsKey(cacheKey)) {
+      return _suggestionsCache.get(cacheKey);
+    } else {
+      // Evacuate from cache when it's too big.
+      while(_suggestionsCacheFlatSize > CACHE_SIZE) {
+        List<String> lists = Lists.newArrayList(_suggestionsCache.keySet());
+        Random R = new Random();
+        int randomListIndex = R.nextInt(lists.size());
+
+        _suggestionsCacheFlatSize -= _suggestionsCache.get(lists.get(randomListIndex)).size();
+        _suggestionsCache.remove(lists.get(randomListIndex));
+      }
+      List<String> retrievedResult = topAutoCompleteSuggestionsNonCached(query, maxNum);
+      _suggestionsCache.put(cacheKey, retrievedResult);
+      _suggestionsCacheFlatSize += retrievedResult.size();
+      return retrievedResult;
+    }
+  }
+
+  private List<String> topAutoCompleteSuggestionsNonCached(String query, int maxNum) throws IOException {
     checkArgument(maxNum > 0, "Max num must be > 0.");
     long start = System.currentTimeMillis();
-    query = cleanQuery(checkNotNull(query));
+
     int i = 0;
     while (i < _skipPointer.size() && _skipPointer.get(i).getKey().compareTo(query) < 0) {
       ++i; // traverse until you pass your target
@@ -116,14 +153,14 @@ public class AutocompleteQueryLog implements Serializable {
     };
     TreeSet<Map.Entry<String,Integer>> preliminaryResults = new TreeSet<Map.Entry<String, Integer>>(byMapValues);
 
-    while((line = reader.readLine()) != null && line.startsWith(query)) {
+    do {
       String[] tokens = line.split("\t");
       int score = (tokens.length == 2) ? Integer.parseInt(tokens[1]) : 1;
       preliminaryResults.add(Maps.immutableEntry(tokens[0], score));
       if(preliminaryResults.size() > maxNum) {
         preliminaryResults.pollFirst(); // lowest element
       }
-    }
+    } while((line = reader.readLine()) != null && line.startsWith(query));
     reader.close();
 
     List<String> results = Lists.newArrayList();
