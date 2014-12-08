@@ -1,18 +1,21 @@
 package edu.nyu.cs.cs2580;
 
-import java.io.File;
-import java.io.IOException;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import edu.nyu.cs.cs2580.SearchEngine.Options;
+
+import java.io.*;
 import java.util.*;
 
-import com.google.common.collect.Lists;
-import edu.nyu.cs.cs2580.SearchEngine.Options;
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * @CS2580: Implement this class for HW2.
  */
 public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
 
-  protected Map<Integer, List<Byte>> _utilityIndex = new HashMap<Integer, List<Byte>>();
+  protected Map<Integer, List<Byte>> _utilityIndex = Maps.newHashMap();
+  protected Map<Integer, List<Byte>> _utilityDocWords =  Maps.newHashMap();
 
   protected Map<Integer, Integer> _utilityPrevDocId;
 
@@ -26,6 +29,7 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
     super.constructIndex();
   }
 
+  @Override
   protected void updatePostingsLists(int docId, Vector<Integer> docTokensAsIntegers) throws IOException {
     // Indexing
     Map<Integer, List<Integer>> occurences = new HashMap<Integer,List<Integer>>();
@@ -88,6 +92,44 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
     }
   }
 
+  @Override
+  protected void updateDocWords(int docId, Vector<Integer> docBody) throws IOException {
+    checkArgument(docId < _documents.size());
+    DocumentIndexed doc = _documents.get(docId);
+
+    doc.setDocumentSize(docBody.size());
+
+    // Count word frequencies.
+    Map<Integer, Integer> documentMap = Maps.newTreeMap();
+    for(int word : docBody) {
+      int frequency = documentMap.containsKey(word) ? documentMap.get(word) : 0;
+      documentMap.put(word, frequency + 1);
+    }
+    docBody.clear(); // discard the words from memory.
+
+    // Sort the words by most frequent ones first.
+    List<Map.Entry<Integer, Integer>> sortedDocumentMap = Utils.sortByValues(documentMap, true);
+    documentMap = null; // discard the map from memory.
+
+    List<Byte> docWords = Lists.newArrayList();
+    _utilityDocWords.put(docId, docWords);
+    for(int i = 0; i < TOP_WORDS_TO_STORE && i < sortedDocumentMap.size(); i++) {
+      byte[] word = VByteUtils.encodeInt(sortedDocumentMap.get(i).getKey());
+      for(byte b : word) {
+        docWords.add(b);
+      }
+      byte[] freq = VByteUtils.encodeInt(sortedDocumentMap.get(i).getValue());
+      for(byte b : freq) {
+        docWords.add(b);
+      }
+      _utilityDocWordsFlatSize += word.length + freq.length;
+    }
+    if(_utilityDocWordsFlatSize > UTILITY_DOC_WORDS_FLAT_SIZE_THRESHOLD * 2) {
+      String filePath = _options._indexPrefix + WORDS_DIR + "/words" + _utilityPartialDocWordsCounter++;
+      dumpUtilityDocWordsToFileAndClearFromMemory(filePath);
+    }
+  }
+
   // This method may be deprecated in later versions. Use with caution!
   @Override
   protected List<Integer> postingsListForWord(int word) throws IOException {
@@ -126,6 +168,36 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
     return postingsList;
   }
 
+  @Override
+  protected Map<Integer, Integer> wordListForDoc(int docId, RandomAccessFile store, long storeOffset) throws IOException {
+    Map<Integer, Integer> wordsList = Maps.newTreeMap();
+    FileUtils.FileRange fileRange = _docWords.get(docId);
+    store.seek(storeOffset + fileRange.offset);
+    byte[] loadedList = new byte[(int)fileRange.length];
+    store.read(loadedList);
+
+    int bytesRead = 0;
+    boolean keepGoing;
+    List<Integer> integerStream = Lists.newArrayList();
+    while(bytesRead < fileRange.length) {
+      int pos = 0;
+      byte[] buf = new byte[8];
+      do {
+        buf[pos] = loadedList[bytesRead++];
+        keepGoing = (buf[pos++] & 128) == 0;
+      } while(keepGoing);
+      byte[] asBytes = new byte[pos];
+      for(int i = 0; i < asBytes.length; i++) {
+        asBytes[i] = buf[i];
+      }
+      integerStream.add(VByteUtils.decodeByteArray(asBytes));
+    }
+    for(int i = 0; i < integerStream.size(); i+=2) {
+      wordsList.put(integerStream.get(i), integerStream.get(i+1));
+    }
+    return wordsList;
+  }
+
   protected List<Integer> deltaPostingsListForWord(int word) throws IOException {
     List<Integer> postingsList = new LinkedList<Integer>();
     FileUtils.FileRange fileRange = _index.get(word);
@@ -139,7 +211,6 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
     while(bytesRead < fileRange.length) {
       int pos = 0;
       byte[] buf = new byte[8];
-      keepGoing = true;
       do {
         buf[pos] = loadedList[bytesRead++];
         keepGoing = (buf[pos++] & 128) == 0;
@@ -159,5 +230,12 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
     FileUtils.dumpIndexToFileBytes(_utilityIndex, new File(filePath));
     _utilityIndex.clear();
     _utilityIndexFlatSize = 0;
+  }
+
+  @Override
+  protected void dumpUtilityDocWordsToFileAndClearFromMemory(String filePath) throws IOException {
+    FileUtils.dumpIndexToFileBytes(_utilityDocWords, new File(filePath));
+    _utilityDocWords.clear();
+    _utilityDocWordsFlatSize = 0;
   }
 }

@@ -236,7 +236,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     }
   }
 
-  private void updateDocWords(int docId, Vector<Integer> docBody) throws IOException {
+  protected void updateDocWords(int docId, Vector<Integer> docBody) throws IOException {
     checkArgument(docId < _documents.size());
     DocumentIndexed doc = _documents.get(docId);
 
