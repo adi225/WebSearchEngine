@@ -1,7 +1,5 @@
 package edu.nyu.cs.cs2580;
 
-import com.google.common.collect.Lists;
-
 import java.util.*;
 
 /**
@@ -22,20 +20,6 @@ public class RankerCosine extends Ranker {
     // (Term-at-a-time Query Processing). The former is prefered in practice.
     @Override
     public Vector<ScoredDocument> runQuery(Query query, int numResults) {
-//	Commented below is the previous implementation of query processing, which needed to be changed.
-
-//    	 Vector<ScoredDocument> all = new Vector<ScoredDocument>();
-//    	 for (int i = 0; i < _indexer.numDocs(); ++i) {
-//    		 all.add(new ScoredDocument(_indexer.getDoc(i), scoreDocument(query, i)));
-//    	 }
-//    	 Collections.sort(all, Collections.reverseOrder());
-//    	 Vector<ScoredDocument> results = new Vector<ScoredDocument>();
-//    	 for (int i = 0; i < all.size() && i < numResults; ++i) {
-//    		 results.add(all.get(i));
-//    	 }
-//    	 return results;
-    	
-    	
         Vector<ScoredDocument> results = new Vector<ScoredDocument>();
       
         PriorityQueue<ScoredDocument> scoredDocuments = new PriorityQueue<ScoredDocument>();
@@ -44,7 +28,7 @@ public class RankerCosine extends Ranker {
         while(doc != null) {
           double score = scoreDocument(query, doc._docid);
           scoredDocuments.add(new ScoredDocument(doc, score));
-          if(scoredDocuments.size()>numResults){
+          if(scoredDocuments.size() > numResults) {
               scoredDocuments.poll();
           }
           doc = _indexer.nextDoc(query, doc._docid);      // nextDoc() is conjunctive.

@@ -73,6 +73,8 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
   // The set contains stopping words, corresponding to the top 50 most frequent words in a corpus.
   protected Set<String> _stoppingWords = Sets.newTreeSet();
+
+  protected AutocompleteQueryLog _autocompleter;
   
   // Provided for serialization.
   public IndexerInverted() { }
@@ -182,6 +184,10 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     _stoppingWords = findStoppingWords();
     precomputeTfIdfSumSquared(_documents, docWordsAuxFile);
 
+    // Prepare autocomplete file.
+    System.out.println("Preparing autocomplete...");
+    _autocompleter = AutocompleteQueryLog.getInstance().prepareMainFile().loadAutocomplete();
+
     // Add metadata to file.
     _indexByteSize = indexAuxFile.length();
     long metadataSize = FileUtils.writeObjectsToFile(selectMetadataToStore(), indexFile);
@@ -194,10 +200,6 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
     long timeTaken = (System.currentTimeMillis() - startTime) / 60000;
     System.out.println("Total indexing time: " + timeTaken + " min");
-
-    // Prepare autocomplete file.
-    System.out.println("Preparing autocomplete...");
-    AutocompleteQueryLog.getInstance().prepareMainFile();
     System.out.println("All systems go...");
   }
   
@@ -301,6 +303,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     indexMetadata.add(_termCorpusFrequency);
     indexMetadata.add(_stoppingWords);
     indexMetadata.add(_indexByteSize);
+    indexMetadata.add(_autocompleter);
     return indexMetadata;
   }
 
@@ -309,7 +312,8 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
     _dictionary          = (BiMap<String, Integer>)indexMetadata.get(1);
     _termCorpusFrequency = (Map<Integer, Integer>)indexMetadata.get(2);
     _stoppingWords       = (Set<String>)indexMetadata.get(3);
-    _indexByteSize      = (Long)indexMetadata.get(4);
+    _indexByteSize       = (Long)indexMetadata.get(4);
+    _autocompleter       = (AutocompleteQueryLog)indexMetadata.get(5);
   }
 
   @Override

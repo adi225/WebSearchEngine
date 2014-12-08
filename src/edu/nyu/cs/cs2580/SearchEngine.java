@@ -1,5 +1,7 @@
 package edu.nyu.cs.cs2580;
 
+import com.sun.net.httpserver.HttpServer;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -8,7 +10,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import com.sun.net.httpserver.HttpServer;
 
 /**
  * This is the main entry class for the Search Engine.
@@ -195,9 +196,7 @@ public class SearchEngine {
     Check(indexer != null,
         "Indexer " + SearchEngine.OPTIONS._indexerType + " not found!");
     indexer.loadIndex();
-    AutocompleteQueryLog autocompleter = AutocompleteQueryLog.getInstance();
-    autocompleter.loadAutocomplete();
-    QueryHandler handler = new QueryHandler(SearchEngine.OPTIONS, indexer, autocompleter);
+    QueryHandler handler = new QueryHandler(SearchEngine.OPTIONS, indexer);
 
     // Establish the serving environment
     InetSocketAddress addr = new InetSocketAddress(SearchEngine.PORT);

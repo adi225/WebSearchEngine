@@ -18,9 +18,10 @@ import static java.nio.file.StandardCopyOption.*;
 /**
  * Created by andreidinuionita on 12/1/14.
  */
-public class AutocompleteQueryLog {
+public class AutocompleteQueryLog implements Serializable {
 
   private static final AutocompleteQueryLog _singletonInstance = new AutocompleteQueryLog();
+  private static final long serialVersionUID = 7526472295622778647L;
 
   private AutocompleteQueryLog() {}
   public static AutocompleteQueryLog getInstance() {
@@ -46,7 +47,7 @@ public class AutocompleteQueryLog {
 
   private List<Map.Entry<String, Long>> _skipPointer = Lists.newArrayList();
 
-  public void prepareMainFile() throws IOException {
+  public AutocompleteQueryLog prepareMainFile() throws IOException {
     System.out.println("Preparing autocomplete file.");
     String newMainFileName = _mainFileName + System.currentTimeMillis();
 
@@ -61,6 +62,7 @@ public class AutocompleteQueryLog {
     new File(prevMainFile).delete();
     new File(_mainFile).renameTo(new File(_autocompletePrefix + _mainFileName));
     _mainFile = _autocompletePrefix + _mainFileName;
+    return this;
   }
 
   public void recordQuery(String query) {
@@ -71,7 +73,8 @@ public class AutocompleteQueryLog {
     } catch (IOException e) {}
   }
 
-  public void loadAutocomplete() throws IOException {
+  public AutocompleteQueryLog loadAutocomplete() throws IOException {
+    System.out.println("Building skip pointer.");
   	Scanner scanner = new Scanner(new BufferedReader(new FileReader(new File(_mainFile)), CHUNK_SIZE));
     long bytesRead = 0;
     for (int i = 0; scanner.hasNext(); ++i) {
@@ -82,6 +85,7 @@ public class AutocompleteQueryLog {
         _skipPointer.add(Maps.immutableEntry(tokens[0], bytesRead));
       }
     }
+    return this;
   }
 
   public List<String> topAutoCompleteSuggestions(String query, int maxNum) throws IOException {

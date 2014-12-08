@@ -9,6 +9,8 @@ import org.json.JSONStringer;
 import org.json.JSONWriter;
 
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -111,9 +113,9 @@ class QueryHandler implements HttpHandler {
   private Ranker _ranker;
   private Query _processedQuery;
 
-  public QueryHandler(SearchEngine.Options options, Indexer indexer, AutocompleteQueryLog autocompleter) {
+  public QueryHandler(SearchEngine.Options options, Indexer indexer) {
     _indexer = indexer;
-    _autocompleter = autocompleter;
+    _autocompleter = ((IndexerInverted)indexer)._autocompleter;
   }
 
   private void respondWithMsg(HttpExchange exchange, final String message) throws IOException {
@@ -213,6 +215,8 @@ class QueryHandler implements HttpHandler {
     if (!requestMethod.equalsIgnoreCase("GET")) { // GET requests only.
       return;
     }
+    String uriQuery = exchange.getRequestURI().getQuery();
+    String uriPath = exchange.getRequestURI().getPath();
 
     String sessionId = null;
     // Print the user request header.
@@ -221,10 +225,7 @@ class QueryHandler implements HttpHandler {
     for (String key : requestHeaders.keySet()) {
       System.out.print(key + ":" + requestHeaders.get(key) + "; ");
       if(requestHeaders.containsKey("Cookie")) {
-        String[] info = requestHeaders.getFirst("Cookie").split("&");
-        if(Long.parseLong(info[1]) + SESSION_TIMEOUT > System.currentTimeMillis()) {
-          sessionId = info[0];
-        }
+        sessionId = requestHeaders.getFirst("Cookie");
         break;
       }
     }
@@ -232,7 +233,11 @@ class QueryHandler implements HttpHandler {
     if(sessionId == null) {
       sessionId = UUID.randomUUID().toString();
     }
-    responseHeaders.set("Set-Cookie", sessionId + "&" + System.currentTimeMillis());
+    Date expireAt = new Date(System.currentTimeMillis() + SESSION_TIMEOUT);
+    DateFormat dateFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z");
+    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+    responseHeaders.set("Set-Cookie", sessionId + "; expires=" + dateFormat.format(expireAt));
 
     System.out.println();
 
@@ -241,10 +246,19 @@ class QueryHandler implements HttpHandler {
                                                  "/evaluation", "/prfevaluation", "/instant", 
                                                  "/generateretrievalresults", "/prfgenerateretrievalresults");
 
-    String uriQuery = exchange.getRequestURI().getQuery();
-    String uriPath = exchange.getRequestURI().getPath();
-    if (uriPath == null || uriQuery == null) {
+
+    if (uriPath == null) {
       respondWithMsg(exchange, "Something wrong with the URI!");
+    } else if(uriPath.startsWith("/document/")) {
+      String[] tokens = uriPath.split("/");
+      String fileName = tokens[tokens.length-1];
+      StringBuilder response = new StringBuilder();
+      Scanner scanner = new Scanner(new File(SearchEngine.OPTIONS._corpusPrefix + "/" + fileName));
+      while(scanner.hasNext()) {
+        response.append(scanner.nextLine() + "\n");
+      }
+      scanner.close();
+      respondWithHTML(exchange, response.toString());
     } else if (!validEndpoints.contains(uriPath.toLowerCase())) {
       respondWithMsg(exchange, "Endpoint is not handled!");
     } else if(uriPath.equalsIgnoreCase("/clicktrack")) {
@@ -268,10 +282,11 @@ class QueryHandler implements HttpHandler {
       vsmWriter.close();
       // Construct a simple response.
       try {
-        responseHeaders.set("Location", _indexer.getDoc(Integer.parseInt(documentId)).getUrl());
+        String redirectToURL = "document/" + _indexer.getDoc(Integer.parseInt(documentId)).getUrl();
+        responseHeaders.set("Location", redirectToURL);
+        exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
+        exchange.getResponseBody().close();
       } catch (NumberFormatException e ) {}
-      exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
-      exchange.getResponseBody().close();
       return;
     } else {
       CgiArguments cgiArgs = new CgiArguments(uriQuery);
