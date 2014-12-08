@@ -245,15 +245,21 @@ class QueryHandler implements HttpHandler {
     Set<String> validEndpoints = Sets.newHashSet("/search", "/clicktrack", "/prf", "/prfsearch",
                                                  "/evaluation", "/prfevaluation", "/instant", 
                                                  "/generateretrievalresults", "/prfgenerateretrievalresults");
-
-
     if (uriPath == null) {
       respondWithMsg(exchange, "Something wrong with the URI!");
     } else if(uriPath.startsWith("/document/")) {
       String[] tokens = uriPath.split("/");
       String fileName = tokens[tokens.length-1];
       StringBuilder response = new StringBuilder();
-      Scanner scanner = new Scanner(new File(SearchEngine.OPTIONS._corpusPrefix + "/" + fileName));
+      File fileToReturn = new File(SearchEngine.OPTIONS._corpusPrefix + "/" + fileName);
+      if(!fileToReturn.exists()) {
+        String redirectToURL = "http://wikipedia.org/wiki/" + fileName;
+        responseHeaders.set("Location", redirectToURL);
+        exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
+        exchange.getResponseBody().close();
+        return;
+      }
+      Scanner scanner = new Scanner(fileToReturn);
       while(scanner.hasNext()) {
         response.append(scanner.nextLine() + "\n");
       }
