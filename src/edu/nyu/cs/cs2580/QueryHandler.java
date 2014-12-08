@@ -414,20 +414,8 @@ class QueryHandler implements HttpHandler {
           response.append(jsonWriter.endArray().endObject().toString());
         } catch (JSONException e) {}
 
-        switch (cgiArgs._outputFormat) {
-          case TEXT:
-            constructTextOutput(scoredDocs, response);
-            respondWithMsg(exchange, response.toString());
-            break;
-          case HTML:
-            constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
-            respondWithHTML(exchange, response.toString());
-            break;
-          case JSON:
-            respondWithJSON(exchange, response.toString());
-            break;
-          default:
-            // nothing
+        if(cgiArgs._outputFormat.equals(CgiArguments.OutputFormat.JSON)) {
+          respondWithJSON(exchange, response.toString());
         }
         System.out.println("Finished query: " + cgiArgs._query);
       } else if(uriPath.equalsIgnoreCase("/prfevaluation")) {
