@@ -458,10 +458,10 @@ class QueryHandler implements HttpHandler {
           	System.out.println("The query " + q +" failed.");
           	continue;
           }
-          if(scoredDocs.size() < 10){
-            System.out.println("The query " + q +" has less than 10 documents returned.");
-            continue;
-          }
+//          if(scoredDocs.size() < 10){
+//            System.out.println("The query " + q +" has less than 10 documents returned.");
+//            continue;
+//          }
 
           PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + q + ".txt");
           for(ScoredDocument scoredDoc : scoredDocs){
@@ -491,10 +491,10 @@ class QueryHandler implements HttpHandler {
           	System.out.println("The query " + q +" failed.");
           	continue;
           }
-          if(scoredDocs.size() < 10){
-            System.out.println("The query " + q +" has less than 10 documents returned.");
-            continue;
-          }
+//          if(scoredDocs.size() < 10){
+//            System.out.println("The query " + q +" has less than 10 documents returned.");
+//            continue;
+//          }
 
           PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + q + ".txt");
           for(ScoredDocument scoredDoc : scoredDocs){
