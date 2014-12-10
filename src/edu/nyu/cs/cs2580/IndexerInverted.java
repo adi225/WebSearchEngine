@@ -137,7 +137,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       // adding an indexed document
       int docId = _numDocs++;     // the current number of doc is ID for the current document
       DocumentIndexed docIndexed = new DocumentIndexed(docId);
-      docIndexed.setUrl(docFile.getName());
+      docIndexed.setUrl(docFile.getAbsolutePath());
       _documents.add(docIndexed);
 
       try {

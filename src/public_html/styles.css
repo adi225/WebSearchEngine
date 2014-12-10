@@ -1,0 +1,30 @@
+#query { 
+    width: 32em;
+    z-index: 11;
+    background: transparent;
+    position: fixed;
+ }
+
+  #autocomplete{
+    width: 32em;
+    background: transparent;
+    z-index: 10;
+    color:gray;
+    position: fixed;
+}
+
+div.centre
+{
+  width: 545px;
+  display: block;
+  margin: 50px auto 90px auto;
+}
+
+.loading{background:white; /*border:1px solid #ccc;*/ position:relative; height:500px; padding:40px 0 20px 0; margin-top:3px; text-align:center; width:100%; float:left}
+.loading div{font-size:18px; color:#333}
+
+.noresults{display: block; width:130px; margin: 0 auto;}
+
+  /*.ui-autocomplete-loading {
+    background: white url("images/ui-anim_basic_16x16.gif") right center no-repeat;
+  }*/

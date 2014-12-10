@@ -2,38 +2,48 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>jQuery UI Autocomplete - Remote JSONP datasource</title>
+  <title>Group 14 - AutoComplete</title>
   <link href="jquery-ui.css" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet">
 <script src="jquery.js"></script>
 <script src="jquery-ui.js"></script>
-  <style>
-  /*.ui-autocomplete-loading {
-    background: white url("images/ui-anim_basic_16x16.gif") right center no-repeat;
-  }*/
-  #query { 
-    width: 32em;
-    z-index: 11;
-    background: transparent;
-    position: fixed;
- }
 
-  #autocomplete{
-    width: 32em;
-    background: transparent;
-    z-index: 10;
-    color:gray;
-    position: fixed;
-}
-
-div.centre
-{
-  width: 545px;
-  display: block;
-  margin: 150px auto 90px auto;
-}
-  </style>
   <script>
   $(function() {
+
+    $("#query").val();
+
+    $("#query").keyup(function (e) 
+    {
+        if(e.which === 13) 
+        {
+            $(".ui-menu-item").hide();
+            $.ajax({
+            beforeSend : function (XMLHttpRequest)
+            {
+              showLoadingIcon();
+            },
+            url: "http://autocomplete.local:25814/search",
+            dataType: "JSON",
+            data: {
+              "query": $("#query").val(),
+              "ranker": "linear",
+              "format": "json"
+            },
+            error: function (jqXHR, textStatus, errorThrown)
+            {
+              $("results").html("<p> An error took place </p>");
+            },
+            success: function( data ) 
+            {
+              $('#autocomplete').val();
+              populateResultsHTML(data);
+              
+            }
+          });
+        }            
+    });
+
     $( "#query" ).autocomplete({
       source: function( request, response ) 
       {
@@ -75,7 +85,12 @@ div.centre
       
       select: function( event, ui ) 
       {
+        $(".ui-menu-item").hide();
         $.ajax({
+          beforeSend : function (XMLHttpRequest)
+          {
+            showLoadingIcon();
+          },
           url: "http://autocomplete.local:25814/search",
           dataType: "JSON",
           data: {
@@ -85,11 +100,12 @@ div.centre
           },
           error: function (jqXHR, textStatus, errorThrown)
           {
-            
+            $("results").html("<p> An error took place </p>");
           },
           success: function( data ) 
           {
             populateResultsHTML(data);
+            $('#autocomplete').val();
             
           }
           });
@@ -113,6 +129,13 @@ div.centre
     });
   });
 
+
+function showLoadingIcon()
+{
+  var image = "<div class='loading'><div><br><br><img src='images/ajax-loader.gif' /></div></div>";
+  $("#results").html(image);
+}
+
 function populateResultsHTML(results)
 {
 
@@ -128,13 +151,15 @@ function populateResultsHTML(results)
 
     $("#results").html(allHtml);
   }
+  else
+    $("#results").html("<p class='noresults'> No results found </p>");
 
 }
 
 function generateDocHTML(result)
 {
-  var singleHtml = "<div style=\"line-height:5px\"><p><a style=\"text-decoration:none;cursor:pointer;color:#3300CC;font-size:18px\"";
-  singleHtml += "href=\"http://autocomplete.local:25814/clicktrack?documentId=" + result.id + "\">";
+  var singleHtml = "<div style=\"line-height:5px\"><p><a onclick=\"docClicked('" + result.id + "','" + result.url + "','" + result.query + "');\"";
+  singleHtml += "style=\"text-decoration:none;cursor:pointer;color:#3300CC;font-size:18px\">";
   singleHtml += result.title;
   singleHtml += "</a></p>";
   singleHtml += "<p style=\"color:green;font-size:14px;\">";
@@ -143,6 +168,24 @@ function generateDocHTML(result)
   singleHtml += "<br></br>";
 
   return singleHtml;
+}
+
+function docClicked(id, url, query)
+{
+  //log click
+  $.ajax({
+          
+    url: "http://autocomplete.local:25814/clicktrack",
+    data: {
+      "documentId": id,
+      "query" : query
+    }
+  }); 
+  window.location.href = url;
+  // console.log(id);
+  // console.log(url);
+  // singleHtml += "href=\"http://autocomplete.local:25814/clicktrack?documentId=" + result.id + "\">";
+
 }
 
   </script>

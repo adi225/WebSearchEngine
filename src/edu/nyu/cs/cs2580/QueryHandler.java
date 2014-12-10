@@ -292,10 +292,10 @@ class QueryHandler implements HttpHandler {
       vsmWriter.close();
       // Construct a simple response.
       try {
-        String redirectToURL = "document/" + _indexer.getDoc(Integer.parseInt(documentId)).getUrl();
-        responseHeaders.set("Location", redirectToURL);
-        exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
-        exchange.getResponseBody().close();
+//        String redirectToURL = "document/" + _indexer.getDoc(Integer.parseInt(documentId)).getUrl();
+//        responseHeaders.set("Location", redirectToURL);
+//        exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
+//        exchange.getResponseBody().close();
       } catch (NumberFormatException e ) {}
       return;
     } else {
@@ -337,6 +337,7 @@ class QueryHandler implements HttpHandler {
     	        	  tempObj.put("id", doc.getDocId());
     	        	  tempObj.put("title", doc.getDocTitle());
     	        	  tempObj.put("url", doc.getUrl());
+    	        	  tempObj.put("query", cgiArgs._query);
     	        	  
     	        	  docsArray.put(tempObj);
     	          }
@@ -449,7 +450,7 @@ class QueryHandler implements HttpHandler {
 	        	  tempObj.put("id", doc.getDocId());
 	        	  tempObj.put("title", doc.getDocTitle());
 	        	  tempObj.put("url", doc.getUrl());
-	        	  
+	        	  tempObj.put("query", cgiArgs._query);
 	        	  docsArray.put(tempObj);
 	          }
           }
