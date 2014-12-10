@@ -30,10 +30,6 @@ div.centre
   width: 545px;
   display: block;
   margin: 150px auto 90px auto;
-  /*margin-left: auto;
-  margin-right: auto;
-  margin-top: 150px;
-  margin-bottom: 90px;*/
 }
   </style>
   <script>
@@ -57,10 +53,15 @@ div.centre
           {
             if (data.suggestions != null)
             {
-              response(data.suggestions);
+              var newResults = [];
+              for(var i = 0; i<data.suggestions.length; i++)
+              {
+                newResults[i] = request.term + data.suggestions[i];
+              }
+              response(newResults);
 
-              if(data.suggestions.length != 0)
-                $('#autocomplete').val(data.suggestions[0]);
+              if(newResults.length != 0)
+                $('#autocomplete').val(newResults[0]);
             }
 
             populateResultsHTML(data.results);
@@ -74,9 +75,24 @@ div.centre
       
       select: function( event, ui ) 
       {
-        console.log( ui.item ?
-          "Selected: " + ui.item.label :
-          "Nothing selected, input was " + this.value);
+        $.ajax({
+          url: "http://autocomplete.local:25814/search",
+          dataType: "JSON",
+          data: {
+            "query": ui.item.label,
+            "ranker": "linear",
+            "format": "json"
+          },
+          error: function (jqXHR, textStatus, errorThrown)
+          {
+            
+          },
+          success: function( data ) 
+          {
+            populateResultsHTML(data);
+            
+          }
+          });
       },
 
       open: function() 
@@ -121,7 +137,6 @@ function generateDocHTML(result)
   singleHtml += "href=\"http://autocomplete.local:25814/clicktrack?documentId=" + result.id + "\">";
   singleHtml += result.title;
   singleHtml += "</a></p>";
-  // singleHtml += "<p>Document ID: "+result.id+"</p>";
   singleHtml += "<p style=\"color:green;font-size:14px;\">";
   singleHtml += result.url;
   singleHtml += "</p></div>";

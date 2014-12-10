@@ -327,6 +327,25 @@ class QueryHandler implements HttpHandler {
             constructHTMLOutput(scoredDocs, response, cgiArgs._query, endTime-startTime);
             respondWithHTML(exchange, response.toString());
             break;
+          case JSON:
+        	try
+        	{
+        	  JSONArray docsArray = new JSONArray();
+              if(scoredDocs != null) {
+    	          for(ScoredDocument doc : scoredDocs) {	
+    	        	  JSONObject tempObj = new JSONObject();
+    	        	  tempObj.put("id", doc.getDocId());
+    	        	  tempObj.put("title", doc.getDocTitle());
+    	        	  tempObj.put("url", doc.getUrl());
+    	        	  
+    	        	  docsArray.put(tempObj);
+    	          }
+              }
+                        
+              response.append(docsArray.toString());
+            } catch (JSONException e) {}
+            
+        	respondWithJSON(exchange, response.toString());
           default:
             // nothing
         }
@@ -398,7 +417,6 @@ class QueryHandler implements HttpHandler {
         System.out.println("Query: " + uriQuery);
         long startTime = Calendar.getInstance().getTimeInMillis();
 
-        String userQuery = cgiArgs._query;
         List<String> suggestions = null;
         try
         {
@@ -421,7 +439,7 @@ class QueryHandler implements HttpHandler {
                  
 	      if(suggestions != null){
 	          for (String suggestion : suggestions) {
-	        	  suggestionsArray.put(userQuery+suggestion);
+	        	  suggestionsArray.put(suggestion);
 	          }
 	      }
           
