@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>jQuery UI Autocomplete - Remote JSONP datasource</title>
+  <link href="jquery-ui.css" rel="stylesheet">
+<script src="jquery.js"></script>
+<script src="jquery-ui.js"></script>
+  <style>
+  /*.ui-autocomplete-loading {
+    background: white url("images/ui-anim_basic_16x16.gif") right center no-repeat;
+  }*/
+  #query { 
+    width: 32em;
+    z-index: 11;
+    background: transparent;
+    position: fixed;
+ }
+
+  #autocomplete{
+    width: 32em;
+    background: transparent;
+    z-index: 10;
+    color:gray;
+    position: fixed;
+}
+
+div.centre
+{
+  width: 545px;
+  display: block;
+  margin: 150px auto 90px auto;
+  /*margin-left: auto;
+  margin-right: auto;
+  margin-top: 150px;
+  margin-bottom: 90px;*/
+}
+  </style>
+  <script>
+  $(function() {
+    $( "#query" ).autocomplete({
+      source: function( request, response ) 
+      {
+        $.ajax({
+          url: "http://autocomplete.local:25814/instant",
+          dataType: "JSON",
+          data: {
+            "query": request.term,
+            "ranker": "linear",
+            "format": "json"
+          },
+          error: function (jqXHR, textStatus, errorThrown)
+          {
+            
+          },
+          success: function( data ) 
+          {
+            if (data.suggestions != null)
+            {
+              response(data.suggestions);
+
+              if(data.suggestions.length != 0)
+                $('#autocomplete').val(data.suggestions[0]);
+            }
+
+            populateResultsHTML(data.results);
+            
+          }
+
+        });
+      },
+
+      minLength: 3,
+      
+      select: function( event, ui ) 
+      {
+        console.log( ui.item ?
+          "Selected: " + ui.item.label :
+          "Nothing selected, input was " + this.value);
+      },
+
+      open: function() 
+      {
+        $( this ).removeClass( "ui-corner-all" ).addClass( "ui-corner-top" );
+      },
+
+      close: function() 
+      {
+        $( this ).removeClass( "ui-corner-top" ).addClass( "ui-corner-all" );
+      },
+
+      focus: function( event, ui ) 
+      {
+        $('#autocomplete').val(ui.item.label);
+        return false;
+      }
+    });
+  });
+
+function populateResultsHTML(results)
+{
+
+  var allHtml = "";
+  var numberOfResults = results.length;
+  if(results != null && numberOfResults != 0)
+  {
+    for (var i = 0; i < numberOfResults; i++) 
+    {
+      var singleHtml = generateDocHTML(results[i]); 
+      allHtml += singleHtml;
+    }
+
+    $("#results").html(allHtml);
+  }
+
+}
+
+function generateDocHTML(result)
+{
+  var singleHtml = "<div style=\"line-height:5px\"><p><a style=\"text-decoration:none;cursor:pointer;color:#3300CC;font-size:18px\"";
+  singleHtml += "href=\"http://autocomplete.local:25814/clicktrack?documentId=" + result.id + "\">";
+  singleHtml += result.title;
+  singleHtml += "</a></p>";
+  // singleHtml += "<p>Document ID: "+result.id+"</p>";
+  singleHtml += "<p style=\"color:green;font-size:14px;\">";
+  singleHtml += result.url;
+  singleHtml += "</p></div>";
+  singleHtml += "<br></br>";
+
+  return singleHtml;
+}
+
+  </script>
+</head>
+<body>
+ 
+<div class="centre">
+  <img src="images/logo.png" alt="Logo"/>
+<div class="ui-widget">
+  <input id="query">
+  <input id="autocomplete" type="text" disabled="disabled" />
+</div>
+</div>
+ <div id="results">
+</div>
+</body>
+</html>

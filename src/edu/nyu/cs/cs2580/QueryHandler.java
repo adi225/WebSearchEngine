@@ -4,7 +4,10 @@ import com.google.common.collect.Sets;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
 
@@ -139,6 +142,7 @@ class QueryHandler implements HttpHandler {
   private void respondWithJSON(HttpExchange exchange, final String message) throws IOException {
     Headers responseHeaders = exchange.getResponseHeaders();
     responseHeaders.set("Content-Type", "application/json");
+    responseHeaders.set("Access-Control-Allow-Origin", "*");
     exchange.sendResponseHeaders(200, 0); // arbitrary number of bytes
     OutputStream responseBody = exchange.getResponseBody();
     responseBody.write(message.getBytes());
@@ -394,8 +398,16 @@ class QueryHandler implements HttpHandler {
         System.out.println("Query: " + uriQuery);
         long startTime = Calendar.getInstance().getTimeInMillis();
 
-        List<String> suggestions = _autocompleter.topAutoCompleteSuggestions(cgiArgs._query, NUM_SUGGESTED_QUERIES);
-        cgiArgs._query = cgiArgs._query + suggestions.get(0);
+        String userQuery = cgiArgs._query;
+        List<String> suggestions = null;
+        try
+        {
+         suggestions = _autocompleter.topAutoCompleteSuggestions(cgiArgs._query, NUM_SUGGESTED_QUERIES);
+        }
+        catch(Exception e){}
+
+        if(suggestions != null)
+        	cgiArgs._query = cgiArgs._query + suggestions.get(0);
 
         Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
         long endTime = Calendar.getInstance().getTimeInMillis();
@@ -403,15 +415,31 @@ class QueryHandler implements HttpHandler {
         StringBuffer response = new StringBuffer();
 
         try {
-          JSONWriter jsonWriter = new JSONStringer().object().key("suggestions").array();
-          for (String suggestion : suggestions) {
-            jsonWriter = jsonWriter.value(suggestion);
+        JSONObject returnObj = new JSONObject();
+        JSONArray suggestionsArray = new JSONArray();
+        JSONArray docsArray = new JSONArray();
+                 
+	      if(suggestions != null){
+	          for (String suggestion : suggestions) {
+	        	  suggestionsArray.put(userQuery+suggestion);
+	          }
+	      }
+          
+          if(scoredDocs != null) {
+	          for(ScoredDocument doc : scoredDocs) {	
+	        	  JSONObject tempObj = new JSONObject();
+	        	  tempObj.put("id", doc.getDocId());
+	        	  tempObj.put("title", doc.getDocTitle());
+	        	  tempObj.put("url", doc.getUrl());
+	        	  
+	        	  docsArray.put(tempObj);
+	          }
           }
-          jsonWriter = jsonWriter.endArray().key("results").array();
-          for(ScoredDocument doc : scoredDocs) {
-            jsonWriter = jsonWriter.value(doc.asTextResult());
-          }
-          response.append(jsonWriter.endArray().endObject().toString());
+          
+          returnObj.put("suggestions", suggestionsArray);
+          returnObj.put("results", docsArray);
+                    
+          response.append(returnObj.toString());
         } catch (JSONException e) {}
 
         if(cgiArgs._outputFormat.equals(CgiArguments.OutputFormat.JSON)) {

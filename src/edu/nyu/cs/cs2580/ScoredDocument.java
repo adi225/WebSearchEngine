@@ -69,4 +69,9 @@ class ScoredDocument implements Comparable<ScoredDocument> {
   public double getScore(){
   	return _score;
   }
+  
+  public String getUrl()
+  {
+	  return _doc.getUrl();
+  }
 }

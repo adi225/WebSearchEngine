@@ -8,8 +8,8 @@ public class GenerateCorpusFromAOL {
 
 	public static HashMap<String,Integer> urlMapDocId = new HashMap<String,Integer>();
 	
-	public static final String aolFilePath = "D:/NYU/Courses/Web Search Engine/Fall 2014/Project/AOL-user-ct-collection/user-ct-test-collection-01.txt";
-	public static final String outputFolderPath = "D:/NYU/Courses/Web Search Engine/Fall 2014/Project/AOL-corpus/";
+	public static final String aolFilePath = "./AOL-user-ct-collection/user-ct-test-collection-01.txt";
+	public static final String outputFolderPath = "./AOL-corpus/";
 	
 	public static void main(String[] args) throws Exception{
 		generateCorpus();
