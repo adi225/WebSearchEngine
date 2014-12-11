@@ -125,18 +125,17 @@ class Evaluator {
     	try{
 	    	double averagePrecision = averagePrecision(retrievalResults, judgments);
 	    	averagePrecisions.add(averagePrecision);
-	    	precisionAtRecall = precisionAtRecall(retrievalResults, judgments);    		
+	    	precisionAtRecall = precisionAtRecall(retrievalResults, judgments);  
+	    	ArrayList<Double> tempPatR = new ArrayList<Double>();
+	    	for(int i = 0; i < 11; i++){
+	    		tempPatR.add(precisionAtRecall[i]);
+	    	}
+	    	precisionsAtRecalls.add(tempPatR);
     	}
     	catch(Exception e){
+    		System.out.println("Problem with query: " + file.getName());
     		continue;
     	}
-
-
-    	ArrayList<Double> tempPatR = new ArrayList<Double>();
-    	for(int i = 0; i < 11; i++){
-    		tempPatR.add(precisionAtRecall[i]);
-    	}
-    	precisionsAtRecalls.add(tempPatR);
     }
     
     // calculating Mean Average Precision

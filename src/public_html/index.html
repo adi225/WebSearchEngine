@@ -23,7 +23,7 @@
             {
               showLoadingIcon();
             },
-            url: "http://autocomplete.local:25814/search",
+            url: "http://localhost:25814/search",
             dataType: "JSON",
             data: {
               "query": $("#query").val(),
@@ -48,7 +48,7 @@
       source: function( request, response ) 
       {
         $.ajax({
-          url: "http://autocomplete.local:25814/instant",
+          url: "http://localhost:25814/instant",
           dataType: "JSON",
           data: {
             "query": request.term,
@@ -57,10 +57,10 @@
           },
           error: function (jqXHR, textStatus, errorThrown)
           {
-            
           },
           success: function( data ) 
           {
+            console.log(data);
             if (data.suggestions != null)
             {
               var newResults = [];
@@ -91,7 +91,7 @@
           {
             showLoadingIcon();
           },
-          url: "http://autocomplete.local:25814/search",
+          url: "http://localhost:25814/search",
           dataType: "JSON",
           data: {
             "query": ui.item.label,
@@ -175,7 +175,7 @@ function docClicked(id, url, query)
   //log click
   $.ajax({
           
-    url: "http://autocomplete.local:25814/clicktrack",
+    url: "http://localhost:25814/clicktrack",
     data: {
       "documentId": id,
       "query" : query
@@ -184,7 +184,7 @@ function docClicked(id, url, query)
   window.location.href = url;
   // console.log(id);
   // console.log(url);
-  // singleHtml += "href=\"http://autocomplete.local:25814/clicktrack?documentId=" + result.id + "\">";
+  // singleHtml += "href=\"http://localhost:25814/clicktrack?documentId=" + result.id + "\">";
 
 }
 
