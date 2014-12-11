@@ -500,7 +500,7 @@ class QueryHandler implements HttpHandler {
       		System.out.println("Retrieving results for query: " +  q);
       		_processedQuery = new Query(q);
       		_processedQuery.processQuery();
-          Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
+          Vector<ScoredDocument> scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
           if(scoredDocs == null){
           	System.out.println("The query " + q +" failed.");
           	continue;

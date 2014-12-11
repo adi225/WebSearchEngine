@@ -1,0 +1,10 @@
+cars	758
+cars	7256
+cars	6741
+cars	2235
+cars	3272
+cars	7267
+cars	6835
+cars	6695
+cars	2190
+cars	6826

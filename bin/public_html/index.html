@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Group 14 - AutoComplete</title>
+  <link href="jquery-ui.css" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet">
+<script src="jquery.js"></script>
+<script src="jquery-ui.js"></script>
+
+  <script>
+  $(function() {
+
+    $("#query").val();
+
+    $("#query").keyup(function (e) 
+    {
+        if(e.which === 13) 
+        {
+            $(".ui-menu-item").hide();
+            $.ajax({
+            beforeSend : function (XMLHttpRequest)
+            {
+              showLoadingIcon();
+            },
+            url: "http://autocomplete.local:25814/search",
+            dataType: "JSON",
+            data: {
+              "query": $("#query").val(),
+              "ranker": "linear",
+              "format": "json"
+            },
+            error: function (jqXHR, textStatus, errorThrown)
+            {
+              $("results").html("<p> An error took place </p>");
+            },
+            success: function( data ) 
+            {
+              $('#autocomplete').val();
+              populateResultsHTML(data);
+              
+            }
+          });
+        }            
+    });
+
+    $( "#query" ).autocomplete({
+      source: function( request, response ) 
+      {
+        $.ajax({
+          url: "http://autocomplete.local:25814/instant",
+          dataType: "JSON",
+          data: {
+            "query": request.term,
+            "ranker": "linear",
+            "format": "json"
+          },
+          error: function (jqXHR, textStatus, errorThrown)
+          {
+            
+          },
+          success: function( data ) 
+          {
+            if (data.suggestions != null)
+            {
+              var newResults = [];
+              for(var i = 0; i<data.suggestions.length; i++)
+              {
+                newResults[i] = request.term + data.suggestions[i];
+              }
+              response(newResults);
+
+              if(newResults.length != 0)
+                $('#autocomplete').val(newResults[0]);
+            }
+
+            populateResultsHTML(data.results);
+            
+          }
+
+        });
+      },
+
+      minLength: 3,
+      
+      select: function( event, ui ) 
+      {
+        $(".ui-menu-item").hide();
+        $.ajax({
+          beforeSend : function (XMLHttpRequest)
+          {
+            showLoadingIcon();
+          },
+          url: "http://autocomplete.local:25814/search",
+          dataType: "JSON",
+          data: {
+            "query": ui.item.label,
+            "ranker": "linear",
+            "format": "json"
+          },
+          error: function (jqXHR, textStatus, errorThrown)
+          {
+            $("results").html("<p> An error took place </p>");
+          },
+          success: function( data ) 
+          {
+            populateResultsHTML(data);
+            $('#autocomplete').val();
+            
+          }
+          });
+      },
+
+      open: function() 
+      {
+        $( this ).removeClass( "ui-corner-all" ).addClass( "ui-corner-top" );
+      },
+
+      close: function() 
+      {
+        $( this ).removeClass( "ui-corner-top" ).addClass( "ui-corner-all" );
+      },
+
+      focus: function( event, ui ) 
+      {
+        $('#autocomplete').val(ui.item.label);
+        return false;
+      }
+    });
+  });
+
+
+function showLoadingIcon()
+{
+  var image = "<div class='loading'><div><br><br><img src='images/ajax-loader.gif' /></div></div>";
+  $("#results").html(image);
+}
+
+function populateResultsHTML(results)
+{
+
+  var allHtml = "";
+  var numberOfResults = results.length;
+  if(results != null && numberOfResults != 0)
+  {
+    for (var i = 0; i < numberOfResults; i++) 
+    {
+      var singleHtml = generateDocHTML(results[i]); 
+      allHtml += singleHtml;
+    }
+
+    $("#results").html(allHtml);
+  }
+  else
+    $("#results").html("<p class='noresults'> No results found </p>");
+
+}
+
+function generateDocHTML(result)
+{
+  var singleHtml = "<div style=\"line-height:5px\"><p><a onclick=\"docClicked('" + result.id + "','" + result.url + "','" + result.query + "');\"";
+  singleHtml += "style=\"text-decoration:none;cursor:pointer;color:#3300CC;font-size:18px\">";
+  singleHtml += result.title;
+  singleHtml += "</a></p>";
+  singleHtml += "<p style=\"color:green;font-size:14px;\">";
+  singleHtml += result.url;
+  singleHtml += "</p></div>";
+  singleHtml += "<br></br>";
+
+  return singleHtml;
+}
+
+function docClicked(id, url, query)
+{
+  //log click
+  $.ajax({
+          
+    url: "http://autocomplete.local:25814/clicktrack",
+    data: {
+      "documentId": id,
+      "query" : query
+    }
+  }); 
+  window.location.href = url;
+  // console.log(id);
+  // console.log(url);
+  // singleHtml += "href=\"http://autocomplete.local:25814/clicktrack?documentId=" + result.id + "\">";
+
+}
+
+  </script>
+</head>
+<body>
+ 
+<div class="centre">
+  <img src="images/logo.png" alt="Logo"/>
+<div class="ui-widget">
+  <input id="query">
+  <input id="autocomplete" type="text" disabled="disabled" />
+</div>
+</div>
+ <div id="results">
+</div>
+</body>
+</html>

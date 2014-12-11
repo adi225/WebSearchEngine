@@ -120,9 +120,17 @@ class Evaluator {
     	}
     	reader.close();
     	
-    	double averagePrecision = averagePrecision(retrievalResults, judgments);
-    	averagePrecisions.add(averagePrecision);
-    	double[] precisionAtRecall = precisionAtRecall(retrievalResults, judgments);
+    	double[] precisionAtRecall;
+    	
+    	try{
+	    	double averagePrecision = averagePrecision(retrievalResults, judgments);
+	    	averagePrecisions.add(averagePrecision);
+	    	precisionAtRecall = precisionAtRecall(retrievalResults, judgments);    		
+    	}
+    	catch(Exception e){
+    		continue;
+    	}
+
 
     	ArrayList<Double> tempPatR = new ArrayList<Double>();
     	for(int i = 0; i < 11; i++){

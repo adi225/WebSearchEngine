@@ -1,0 +1,10 @@
+cnn	1269
+cnn	4598
+cnn	4597
+cnn	2723
+cnn	10165
+cnn	5479
+cnn	9345
+cnn	9011
+cnn	3646
+cnn	7424
