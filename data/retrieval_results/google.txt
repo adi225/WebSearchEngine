@@ -1,2 +1,10 @@
-google	4343
-google	7912
+google	3665
+google	7028
+google	9735
+google	6285
+google	1030
+google	7891
+google	576
+google	3378
+google	569
+google	2937

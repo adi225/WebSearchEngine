@@ -1,0 +1,10 @@
+dictionary	6471
+dictionary	2809
+dictionary	289
+dictionary	2397
+dictionary	5510
+dictionary	2391
+dictionary	7824
+dictionary	8995
+dictionary	745
+dictionary	5329

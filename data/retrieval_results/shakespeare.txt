@@ -1,0 +1,10 @@
+shakespeare	10103
+shakespeare	7451
+shakespeare	1135
+shakespeare	337
+shakespeare	338
+shakespeare	9983
+shakespeare	260
+shakespeare	660
+shakespeare	2709
+shakespeare	2965

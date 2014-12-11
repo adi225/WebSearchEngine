@@ -1,0 +1,10 @@
+architecture	8286
+architecture	9960
+architecture	7571
+architecture	929
+architecture	4042
+architecture	3402
+architecture	16
+architecture	6494
+architecture	6394
+architecture	7413

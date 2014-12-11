@@ -1,0 +1,10 @@
+maps	5568
+maps	1365
+maps	10014
+maps	3556
+maps	9464
+maps	8232
+maps	9967
+maps	794
+maps	6877
+maps	5717

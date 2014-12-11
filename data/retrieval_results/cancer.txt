@@ -1,0 +1,10 @@
+cancer	9421
+cancer	2633
+cancer	1100
+cancer	6263
+cancer	7822
+cancer	7789
+cancer	9644
+cancer	6014
+cancer	6013
+cancer	9486

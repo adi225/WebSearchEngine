@@ -195,24 +195,23 @@ class QueryHandler implements HttpHandler {
     
     PseudoRelevanceFeedbackProvider prf = new PseudoRelevanceFeedbackProvider((IndexerInverted)_indexer);
     List<Entry<String, Double>> topWords = prf.getExpansionTermsForDocuments(scoredDocs, cgiArgs._numTerms);
-    cgiArgs = getNewUriQuery(cgiArgs, topWords);
-
-    scoredDocs = searchQuery(exchange, cgiArgs);
-    return scoredDocs;
-  }
-  
-  private CgiArguments getNewUriQuery(CgiArguments cgiArgs, List<Entry<String, Double>> topWords) {
+    
+    _processedQuery = new Query(cgiArgs._query);
     // add top words into the original query
     int numTopWordsAdded = 0;
     for (int i = 0; i < topWords.size() && numTopWordsAdded < NUM_ADDED_TOP_WORDS; i++) {
       String topWord = topWords.get(i).getKey();
-      if(!cgiArgs._query.toLowerCase().contains(topWord.toLowerCase())){
-        cgiArgs._query += " " + topWord;
+      if(!_processedQuery._query.toLowerCase().contains(topWord.toLowerCase())){
+      	_processedQuery._query += " " + topWord;
       	numTopWordsAdded++;
       }
     }
-    return cgiArgs;
+    _processedQuery.processQuery();
+        
+    scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
+    return scoredDocs;
   }
+  
   
   public void handle(HttpExchange exchange) throws IOException {
     String requestMethod = exchange.getRequestMethod();
@@ -530,11 +529,21 @@ class QueryHandler implements HttpHandler {
       		_processedQuery = new Query(q);
       		_processedQuery.processQuery();
           Vector<ScoredDocument> scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
+          
           PseudoRelevanceFeedbackProvider prf = new PseudoRelevanceFeedbackProvider((IndexerInverted)_indexer);
           List<Entry<String, Double>> topWords = prf.getExpansionTermsForDocuments(scoredDocs, cgiArgs._numTerms);
-          cgiArgs = getNewUriQuery(cgiArgs, topWords);
-      		_processedQuery = new Query(cgiArgs._query);
-      		_processedQuery.processQuery();
+          // add top words into the original query
+          _processedQuery = new Query(q);
+          int numTopWordsAdded = 0;
+          for (int i = 0; i < topWords.size() && numTopWordsAdded < NUM_ADDED_TOP_WORDS; i++) {
+            String topWord = topWords.get(i).getKey();
+            if(!_processedQuery._query.toLowerCase().contains(topWord.toLowerCase())){
+            	_processedQuery._query += " " + topWord;
+            	numTopWordsAdded++;
+            }
+          }
+          _processedQuery.processQuery();
+          System.out.println("New query: "+_processedQuery._query);
       		scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
           if(scoredDocs == null){
           	System.out.println("The query " + q +" failed.");
