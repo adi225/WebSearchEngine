@@ -505,10 +505,6 @@ class QueryHandler implements HttpHandler {
           	System.out.println("The query " + q +" failed.");
           	continue;
           }
-//          if(scoredDocs.size() < 10){
-//            System.out.println("The query " + q +" has less than 10 documents returned.");
-//            continue;
-//          }
 
           PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + q + ".txt");
           for(ScoredDocument scoredDoc : scoredDocs){
@@ -533,15 +529,17 @@ class QueryHandler implements HttpHandler {
       		System.out.println("Retrieving results for query: " +  q);
       		_processedQuery = new Query(q);
       		_processedQuery.processQuery();
-          Vector<ScoredDocument> scoredDocs = searchQueryPRF(exchange, cgiArgs);
+          Vector<ScoredDocument> scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
+          PseudoRelevanceFeedbackProvider prf = new PseudoRelevanceFeedbackProvider((IndexerInverted)_indexer);
+          List<Entry<String, Double>> topWords = prf.getExpansionTermsForDocuments(scoredDocs, cgiArgs._numTerms);
+          cgiArgs = getNewUriQuery(cgiArgs, topWords);
+      		_processedQuery = new Query(cgiArgs._query);
+      		_processedQuery.processQuery();
+      		scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
           if(scoredDocs == null){
           	System.out.println("The query " + q +" failed.");
           	continue;
           }
-//          if(scoredDocs.size() < 10){
-//            System.out.println("The query " + q +" has less than 10 documents returned.");
-//            continue;
-//          }
 
           PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + q + ".txt");
           for(ScoredDocument scoredDoc : scoredDocs){

@@ -1,10 +1,5 @@
-craigslist	4611
-craigslist	9023
-craigslist	6514
-craigslist	6424
-craigslist	9037
-craigslist	8152
-craigslist	3334
-craigslist	866
-craigslist	3246
-craigslist	5819
+craigslist	4262
+craigslist	4343
+craigslist	5887
+craigslist	7912
+craigslist	215
