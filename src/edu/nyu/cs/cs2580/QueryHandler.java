@@ -495,16 +495,24 @@ class QueryHandler implements HttpHandler {
       	}
       	reader.close();
       	
+      	long averageRetrievalTime = 0;
+      	int numSuccessfulQuery = 0;
+      	
       	for(String q : queries){
       		System.out.println("Retrieving results for query: " +  q);
       		_processedQuery = new Query(q);
       		_processedQuery.processQuery();
+      		long startTime = Calendar.getInstance().getTimeInMillis();
           Vector<ScoredDocument> scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
+          long endTime = Calendar.getInstance().getTimeInMillis();
           if(scoredDocs == null){
           	System.out.println("The query " + q +" failed.");
           	continue;
           }
-
+          
+          averageRetrievalTime += endTime - startTime;
+          numSuccessfulQuery++;
+          
           PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + q + ".txt");
           for(ScoredDocument scoredDoc : scoredDocs){
             String retrievalResult = q + "\t" + scoredDoc.getDocId();
@@ -513,6 +521,9 @@ class QueryHandler implements HttpHandler {
           writer.close();
       	}
       	
+      	averageRetrievalTime /= numSuccessfulQuery;
+      	
+      	System.out.println("Average retrieval time: " + averageRetrievalTime + " ms");
       	System.out.println("Done generating the retrieval result file!");
       } else if(uriPath.equalsIgnoreCase("/prfgenerateretrievalresults")) {
 
@@ -524,10 +535,14 @@ class QueryHandler implements HttpHandler {
       	}
       	reader.close();
       	
+      	long averageRetrievalTime = 0;
+      	int numSuccessfulQuery = 0;
+      	
       	for(String q : queries){
       		System.out.println("Retrieving results for query: " +  q);
       		_processedQuery = new Query(q);
       		_processedQuery.processQuery();
+      		long startTime = Calendar.getInstance().getTimeInMillis();
           Vector<ScoredDocument> scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
           
           PseudoRelevanceFeedbackProvider prf = new PseudoRelevanceFeedbackProvider((IndexerInverted)_indexer);
@@ -545,10 +560,14 @@ class QueryHandler implements HttpHandler {
           _processedQuery.processQuery();
           System.out.println("New query: "+_processedQuery._query);
       		scoredDocs = _ranker.runQuery(_processedQuery, cgiArgs._numResults);
+      		long endTime = Calendar.getInstance().getTimeInMillis();
           if(scoredDocs == null){
           	System.out.println("The query " + q +" failed.");
           	continue;
           }
+          
+          averageRetrievalTime += endTime - startTime;
+          numSuccessfulQuery++;
 
           PrintWriter writer = new PrintWriter(Evaluator.retrievalResultsFolderPath + q + ".txt");
           for(ScoredDocument scoredDoc : scoredDocs){
@@ -558,6 +577,9 @@ class QueryHandler implements HttpHandler {
           writer.close();
       	}
       	
+      	averageRetrievalTime /= numSuccessfulQuery;
+      	
+      	System.out.println("Average retrieval time: " + averageRetrievalTime + " ms");
       	System.out.println("Done generating the retrieval result file!");
       }
     }
