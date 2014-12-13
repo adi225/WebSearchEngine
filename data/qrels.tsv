@@ -8,6 +8,26 @@ facebook	9171	Bad
 facebook	2113	Bad
 facebook	9387	Bad
 facebook	10035	Bad
+facebook	967	Bad
+facebook	4853	Bad
+facebook	5207	Bad
+facebook	3153	Bad
+facebook	6397	Bad
+facebook	6369	Bad
+facebook	9730	Bad
+facebook	6348	Bad
+facebook	2720	Bad
+facebook	7705	Bad
+facebook	8408	Bad
+facebook	8520	Bad
+facebook	7640	Bad
+facebook	9546	Bad
+facebook	9062	Bad
+facebook	5868	Bad
+facebook	2648	Bad
+facebook	3010	Bad
+facebook	9037	Bad
+facebook	8601	Bad
 youtube	10189	Good
 youtube	9639	Good
 youtube	6637	Bad
@@ -18,6 +38,26 @@ youtube	4534	Bad
 youtube	7676	Bad
 youtube	5615	Bad
 youtube	9477	Bad
+youtube	7127	Bad
+youtube	7856	Bad
+youtube	9363	Bad
+youtube	5695	Bad
+youtube	5502	Bad
+youtube	3606	Bad
+youtube	292	Bad
+youtube	8387	Bad
+youtube	9699	Bad
+youtube	3675	Bad
+youtube	4111	Bad
+youtube	4106	Bad
+youtube	9722	Bad
+youtube	9003	Bad
+youtube	802	Bad
+youtube	8315	Bad
+youtube	1294	Bad
+youtube	4987	Bad
+youtube	4658	Bad
+youtube	4294	Bad
 craigslist	4611	Bad
 craigslist	9023	Bad
 craigslist	6514	Bad
@@ -28,6 +68,10 @@ craigslist	3334	Bad
 craigslist	866	Bad
 craigslist	3246	Bad
 craigslist	5819	Bad
+craigslist	214	Bad
+craigslist	7716	Bad
+craigslist	6495	Bad
+craigslist	10223	Bad
 google	3665	Good
 google	7028	Good
 google	576	Good
@@ -38,6 +82,26 @@ google	7891	Bad
 google	2753	Good
 google	1030	Bad
 google	2447	Bad
+google	2937	Bad
+google	7028	Bad
+google	9972	Bad
+google	3439	Bad
+google	210	Bad
+google	9735	Good
+google	944	Bad
+google	6502	Bad
+google	6189	Bad
+google	5357	Bad
+google	1255	Bad
+google	2772	Bad
+google	3507	Bad
+google	4605	Bad
+google	8648	Bad
+google	10175	Bad
+google	431	Bad
+google	6125	Bad
+google	2947	Bad
+google	6369	Bad
 ebay	6065	Bad
 ebay	5876	Bad
 ebay	4349	Bad
@@ -48,6 +112,26 @@ ebay	2851	Bad
 ebay	3630	Bad
 ebay	1332	Bad
 ebay	498	Bad
+ebay	502	Bad
+ebay	6514	Bad
+ebay	2296	Bad
+ebay	7855	Bad
+ebay	4605	Bad
+ebay	795	Bad
+ebay	9797	Bad
+ebay	907	Bad
+ebay	7874	Bad
+ebay	5594	Bad
+ebay	5595	Bad
+ebay	3334	Bad
+ebay	866	Bad
+ebay	3868	Bad
+ebay	9730	Bad
+ebay	5954	Bad
+ebay	4544	Bad
+ebay	10223	Bad
+ebay	4064	Bad
+ebay	9021	Bad
 yahoo	10163	Good
 yahoo	10164	Good
 yahoo	10165	Good
@@ -58,6 +142,26 @@ yahoo	3962	Bad
 yahoo	6217	Bad
 yahoo	4467	Bad
 yahoo	467	Bad
+yahoo	6285	Bad
+yahoo	6135	Bad
+yahoo	6288	Bad
+yahoo	466	Bad
+yahoo	452	Bad
+yahoo	3824	Bad
+yahoo	1260	Bad
+yahoo	4524	Bad
+yahoo	8249	Bad
+yahoo	4216	Bad
+yahoo	3030	Bad
+yahoo	6065	Bad
+yahoo	9794	Bad
+yahoo	302	Bad
+yahoo	2792	Bad
+yahoo	2937	Bad
+yahoo	5919	Bad
+yahoo	6725	Bad
+yahoo	5670	Bad
+yahoo	1242	Bad
 google maps	3665	Bad
 google maps	10014	Good
 google maps	9464	Bad
@@ -68,6 +172,26 @@ google maps	3520	Bad
 google maps	9998	Bad
 google maps	647	Bad
 google maps	5613	Bad
+google maps	9484	Bad
+google maps	5945	Bad
+google maps	6397	Bad
+google maps	8597	Bad
+google maps	8908	Bad
+google maps	986	Bad
+google maps	273	Bad
+google maps	4186	Bad
+google maps	4938	Bad
+google maps	5816	Bad
+google maps	10225	Bad
+google maps	2270	Bad
+google maps	10163	Bad
+google maps	5614	Bad
+google maps	3138	Bad
+google maps	7733	Bad
+google maps	636	Bad
+google maps	637	Bad
+google maps	3878	Bad
+google maps	2729	Bad
 walmart	9680	Good
 walmart	8636	Bad
 walmart	9272	Bad
@@ -78,6 +202,17 @@ walmart	9795	Bad
 walmart	2825	Bad
 walmart	5368	Bad
 walmart	7962	Bad
+walmart	1229	Bad
+walmart	10138	Bad
+walmart	9032	Bad
+walmart	2964	Bad
+walmart	235	Bad
+walmart	358	Bad
+walmart	3977	Bad
+walmart	4604	Bad
+walmart	2474	Bad
+walmart	9000	Bad
+walmart	667	Bad
 home depot	7070	Good
 home depot	5364	Bad
 home depot	9748	Bad
@@ -88,6 +223,18 @@ home depot	726	Bad
 home depot	3000	Bad
 home depot	9217	Bad
 home depot	4572	Bad
+home depot	5551	Bad
+home depot	4225	Bad
+home depot	8952	Bad
+home depot	448	Bad
+home depot	5508	Bad
+home depot	2706	Bad
+home depot	1229	Bad
+home depot	237	Bad
+home depot	1291	Bad
+home depot	9310	Bad
+home depot	1096	Bad
+home depot	5872	Bad
 msn	5478	Good
 msn	5480	Good
 msn	7100	Bad
@@ -98,6 +245,26 @@ msn	350	Bad
 msn	6880	Bad
 msn	6738	Bad
 msn	3866	Bad
+msn	7590	Bad
+msn	9735	Bad
+msn	7224	Bad
+msn	3067	Bad
+msn	2825	Bad
+msn	9612	Bad
+msn	8191	Bad
+msn	5755	Bad
+msn	5804	Bad
+msn	2663	Bad
+msn	9725	Bad
+msn	9724	Bad
+msn	5751	Bad
+msn	224	Bad
+msn	8034	Bad
+msn	817	Bad
+msn	8500	Bad
+msn	445	Bad
+msn	7749	Bad
+msn	2819	Bad
 aol	273	Good
 aol	1260	Bad
 aol	9066	Bad
@@ -108,6 +275,26 @@ aol	467	Bad
 aol	7393	Bad
 aol	6135	Bad
 aol	8540	Bad
+aol	5722	Bad
+aol	291	Bad
+aol	2980	Bad
+aol	452	Bad
+aol	466	Bad
+aol	7076	Bad
+aol	9783	Bad
+aol	6286	Bad
+aol	903	Bad
+aol	2453	Bad
+aol	2790	Bad
+aol	302	Bad
+aol	10164	Bad
+aol	4890	Bad
+aol	328	Bad
+aol	10132	Bad
+aol	5502	Bad
+aol	3832	Bad
+aol	5435	Bad
+aol	5444	Bad
 weather	7613	Good
 weather	6025	Good
 weather	7621	Bad
@@ -118,6 +305,26 @@ weather	9462	Bad
 weather	53	Bad
 weather	7809	Bad
 weather	6564	Bad
+weather	7555	Bad
+weather	899	Bad
+weather	42	Bad
+weather	3659	Bad
+weather	2430	Bad
+weather	16	Bad
+weather	6720	Bad
+weather	2967	Bad
+weather	6932	Bad
+weather	7416	Bad
+weather	2498	Bad
+weather	6801	Bad
+weather	5976	Bad
+weather	5978	Bad
+weather	9539	Bad
+weather	6945	Bad
+weather	1276	Bad
+weather	728	Bad
+weather	799	Bad
+weather	113	Bad
 cnn	1269	Good
 cnn	4598	Bad
 cnn	4597	Bad
@@ -128,6 +335,26 @@ cnn	9345	Bad
 cnn	9011	Bad
 cnn	3646	Bad
 cnn	7424	Bad
+cnn	6428	Bad
+cnn	3400	Bad
+cnn	3153	Bad
+cnn	2320	Bad
+cnn	6005	Bad
+cnn	10118	Bad
+cnn	3650	Bad
+cnn	3653	Bad
+cnn	10069	Bad
+cnn	3845	Bad
+cnn	6670	Bad
+cnn	3065	Bad
+cnn	4072	Bad
+cnn	6118	Good
+cnn	726	Bad
+cnn	1159	Bad
+cnn	9639	Bad
+cnn	5888	Bad
+cnn	8278	Bad
+cnn	10082	Bad
 lowes	675	Bad
 lowes	6511	Bad
 lowes	4742	Bad
@@ -138,6 +365,26 @@ lowes	5520	Bad
 lowes	8547	Bad
 lowes	3415	Bad
 lowes	6155	Bad
+lowes	7267	Bad
+lowes	9650	Bad
+lowes	3868	Bad
+lowes	5882	Bad
+lowes	10222	Bad
+lowes	8783	Bad
+lowes	626	Bad
+lowes	2545	Bad
+lowes	7909	Bad
+lowes	2219	Bad
+lowes	6110	Bad
+lowes	371	Bad
+lowes	8708	Bad
+lowes	2256	Bad
+lowes	9077	Bad
+lowes	4377	Bad
+lowes	3162	Bad
+lowes	6092	Bad
+lowes	6080	Bad
+lowes	2654	Bad
 best buy	5990	Bad
 best buy	5104	Bad
 best buy	4957	Bad
@@ -148,6 +395,46 @@ best buy	9546	Bad
 best buy	6488	Bad
 best buy	2449	Bad
 best buy	2405	Bad
+best buy	7085	Bad
+best buy	7909	Bad
+best buy	907	Bad
+best buy	5108	Bad
+best buy	5468	Bad
+best buy	4208	Bad
+best buy	6928	Bad
+best buy	1210	Bad
+best buy	921	Bad
+best buy	4482	Bad
+best buy	6118	Bad
+best buy	9532	Bad
+best buy	8387	Bad
+best buy	470	Bad
+best buy	6321	Bad
+best buy	2386	Bad
+best buy	9746	Bad
+best buy	5808	Bad
+best buy	1333	Bad
+best buy	9333	Bad
+target	8759	Bad
+target	2723	Bad
+target	3152	Bad
+target	1095	Bad
+target	208	Bad
+target	1096	Bad
+target	5530	Bad
+target	4122	Bad
+target	5437	Bad
+target	7792	Bad
+target	8759	Bad
+target	2723	Bad
+target	3152	Bad
+target	1095	Bad
+target	208	Bad
+target	1096	Bad
+target	5530	Bad
+target	4122	Bad
+target	5437	Bad
+target	7792	Bad
 target	8759	Bad
 target	2723	Bad
 target	3152	Bad
@@ -168,6 +455,26 @@ cars	6835	Bad
 cars	6695	Bad
 cars	2190	Bad
 cars	6826	Good
+cars	2899	Bad
+cars	9063	Bad
+cars	8176	Bad
+cars	8765	Bad
+cars	3914	Bad
+cars	9123	Bad
+cars	2558	Bad
+cars	4524	Bad
+cars	6425	Bad
+cars	8687	Bad
+cars	5584	Bad
+cars	4216	Bad
+cars	6993	Bad
+cars	2196	Bad
+cars	3084	Bad
+cars	157	Bad
+cars	9128	Bad
+cars	2259	Bad
+cars	4057	Bad
+cars	3099	Bad
 espn	4782	Bad
 espn	2319	Bad
 espn	5409	Bad
@@ -177,7 +484,27 @@ espn	6483	Bad
 espn	6482	Bad
 espn	6005	Bad
 espn	4964	Bad
-espn	6009	Bad
+espn	6009	Good
+espn	7273	Good
+espn	9200	Bad
+espn	4575	Bad
+espn	6118	Good
+espn	9112	Bad
+espn	1083	Bad
+espn	1330	Bad
+espn	3930	Bad
+espn	9452	Bad
+espn	3186	Bad
+espn	7886	Bad
+espn	8284	Bad
+espn	4952	Bad
+espn	4429	Bad
+espn	4432	Bad
+espn	2843	Bad
+espn	3823	Bad
+espn	2706	Bad
+espn	8702	Bad
+espn	4592	Bad
 fox news	3400	Good
 fox news	3399	Good
 fox news	223	Bad
@@ -188,6 +515,26 @@ fox news	6118	Good
 fox news	7488	Bad
 fox news	3128	Bad
 fox news	9082	Bad
+fox news	7920	Bad
+fox news	6973	Bad
+fox news	7538	Bad
+fox news	7238	Bad
+fox news	202	Bad
+fox news	10165	Bad
+fox news	6171	Bad
+fox news	8671	Bad
+fox news	9678	Bad
+fox news	8785	Bad
+fox news	4720	Bad
+fox news	2723	Good
+fox news	9013	Good
+fox news	272	Bad
+fox news	6665	Bad
+fox news	5444	Bad
+fox news	7497	Bad
+fox news	6120	Good
+fox news	7003	Bad
+fox news	6440	Bad
 sears	1440	Good
 sears	8650	Bad
 sears	9126	Bad
@@ -198,6 +545,26 @@ sears	9249	Bad
 sears	8035	Bad
 sears	3080	Bad
 sears	6422	Bad
+sears	5981	Bad
+sears	9267	Bad
+sears	4925	Bad
+sears	9396	Bad
+sears	2252	Bad
+sears	2253	Bad
+sears	2258	Bad
+sears	3607	Bad
+sears	445	Bad
+sears	9383	Bad
+sears	3079	Bad
+sears	3210	Bad
+sears	4951	Bad
+sears	2402	Bad
+sears	8403	Bad
+sears	9227	Bad
+sears	5788	Bad
+sears	5778	Bad
+sears	2616	Bad
+sears	576	Bad
 bing	1030	Good
 bing	286	Bad
 bing	8388	Bad
@@ -208,6 +575,26 @@ bing	5206	Bad
 bing	7101	Bad
 bing	5203	Bad
 bing	4552	Bad
+bing	9784	Bad
+bing	4596	Bad
+bing	5104	Good
+bing	9735	Bad
+bing	9782	Bad
+bing	3305	Bad
+bing	5419	Bad
+bing	2937	Bad
+bing	10200	Bad
+bing	3677	Bad
+bing	4496	Bad
+bing	9351	Bad
+bing	2990	Bad
+bing	1324	Bad
+bing	4124	Bad
+bing	6500	Bad
+bing	3414	Bad
+bing	7963	Bad
+bing	3165	Bad
+bing	3427	Bad
 verizon wireless	10022	Bad
 verizon wireless	6397	Bad
 verizon wireless	9786	Bad
@@ -218,6 +605,12 @@ verizon wireless	4882	Bad
 verizon wireless	3878	Bad
 verizon wireless	4757	Bad
 verizon wireless	9240	Bad
+verizon wireless	3665	Bad
+verizon wireless	2968	Bad
+verizon wireless	5755	Bad
+verizon wireless	6430	Bad
+verizon wireless	2305	Bad
+verizon wireless	8760	Bad
 dictionary	6471	Good
 dictionary	7824	Good
 dictionary	5329	Good
@@ -228,6 +621,26 @@ dictionary	2809	Good
 dictionary	2397	Good
 dictionary	8995	Good
 dictionary	745	Good
+dictionary	1317	Good
+dictionary	282	Good
+dictionary	289	Good
+dictionary	3077	Good
+dictionary	2804	Good
+dictionary	1032	Good
+dictionary	2203	Good
+dictionary	550	Good
+dictionary	5764	Good
+dictionary	2467	Good
+dictionary	2805	Good
+dictionary	5835	Good
+dictionary	5509	Good
+dictionary	9739	Good
+dictionary	6355	Good
+dictionary	8281	Good
+dictionary	4931	Good
+dictionary	9100	Good
+dictionary	2808	Good
+dictionary	6088	Good
 kim kardashian	4724	Good
 kim kardashian	4759	Bad
 kim kardashian	4715	Bad
@@ -238,6 +651,9 @@ kim kardashian	2955	Bad
 kim kardashian	2956	Bad
 kim kardashian	2309	Bad
 kim kardashian	9372	Bad
+kim kardashian	7749	Bad
+kim kardashian	4670	Bad
+kim kardashian	8315	Bad
 comcast	5976	Good
 comcast	5978	Good
 comcast	9639	Bad
@@ -248,6 +664,15 @@ comcast	2956	Bad
 comcast	9343	Bad
 comcast	3876	Bad
 comcast	9703	Bad
+comcast	9370	Bad
+comcast	9013	Good
+comcast	8539	Bad
+comcast	5479	Bad
+comcast	1313	Bad
+comcast	273	Bad
+comcast	5975	Bad
+comcast	3665	Bad
+comcast	1229	Bad
 msnbc	5479	Good
 msnbc	9345	Bad
 msnbc	3654	Bad
@@ -258,6 +683,26 @@ msnbc	5976	Good
 msnbc	5978	Good
 msnbc	3400	Bad
 msnbc	264	Bad
+msnbc	8032	Bad
+msnbc	1047	Bad
+msnbc	8178	Bad
+msnbc	5755	Bad
+msnbc	5852	Bad
+msnbc	5478	Good
+msnbc	9281	Bad
+msnbc	2579	Bad
+msnbc	3252	Bad
+msnbc	10123	Bad
+msnbc	10082	Bad
+msnbc	7912	Bad
+msnbc	4007	Bad
+msnbc	4009	Bad
+msnbc	4046	Bad
+msnbc	6653	Bad
+msnbc	7831	Bad
+msnbc	4018	Bad
+msnbc	8305	Bad
+msnbc	9021	Bad
 imdb	4345	Good
 imdb	6512	Bad
 imdb	4138	Bad
@@ -268,6 +713,8 @@ imdb	4620	Bad
 imdb	8321	Bad
 imdb	5611	Bad
 imdb	8536	Bad
+imdb	6495	Bad
+imdb	397	Bad
 bikini	6452	Bad
 bikini	5501	Bad
 bikini	3653	Bad
@@ -278,6 +725,25 @@ bikini	2528	Bad
 bikini	2857	Bad
 bikini	3888	Bad
 bikini	4921	Bad
+bikini	1088	Bad
+bikini	6111	Bad
+bikini	4014	Bad
+bikini	1292	Bad
+bikini	6603	Bad
+bikini	5669	Bad
+bikini	5667	Bad
+bikini	9727	Bad
+bikini	6209	Bad
+bikini	5399	Bad
+bikini	2260	Bad
+bikini	8315	Bad
+bikini	2563	Bad
+bikini	8791	Bad
+bikini	4802	Bad
+bikini	8052	Bad
+bikini	9151	Bad
+bikini	5937	Bad
+bikini	9094	Bad
 cancer	6566	Good
 cancer	4646	Bad
 cancer	7488	Bad
@@ -288,6 +754,26 @@ cancer	6126	Bad
 cancer	5693	Bad
 cancer	5691	Bad
 cancer	6870	Bad
+cancer	6263	Bad
+cancer	10141	Bad
+cancer	1100	Bad
+cancer	2633	Bad
+cancer	2286	Bad
+cancer	4772	Bad
+cancer	7251	Bad
+cancer	6229	Bad
+cancer	4827	Bad
+cancer	9644	Bad
+cancer	7789	Bad
+cancer	7822	Bad
+cancer	5365	Bad
+cancer	6014	Bad
+cancer	6013	Bad
+cancer	5738	Bad
+cancer	7850	Bad
+cancer	6883	Bad
+cancer	4379	Bad
+cancer	326	Bad
 myspace	5951	Good
 myspace	9477	Bad
 myspace	4553	Bad
@@ -298,6 +784,26 @@ myspace	9783	Bad
 myspace	411	Bad
 myspace	4737	Bad
 myspace	2624	Bad
+myspace	9781	Bad
+myspace	6637	Bad
+myspace	480	Bad
+myspace	1104	Bad
+myspace	2907	Bad
+myspace	4651	Bad
+myspace	5999	Bad
+myspace	1348	Bad
+myspace	8031	Bad
+myspace	7705	Bad
+myspace	2700	Bad
+myspace	5502	Bad
+myspace	3246	Bad
+myspace	2425	Bad
+myspace	908	Bad
+myspace	3299	Bad
+myspace	3472	Bad
+myspace	6203	Bad
+myspace	6201	Bad
+myspace	6202	Bad
 google earth	3665	Good
 google earth	986	Bad
 google earth	4897	Bad
@@ -308,6 +814,26 @@ google earth	8908	Bad
 google earth	3138	Bad
 google earth	9050	Bad
 google earth	6472	Bad
+google earth	4575	Bad
+google earth	4385	Bad
+google earth	9464	Bad
+google earth	9265	Bad
+google earth	9158	Bad
+google earth	5341	Bad
+google earth	2292	Bad
+google earth	8946	Bad
+google earth	6291	Bad
+google earth	6292	Bad
+google earth	8708	Bad
+google earth	9808	Bad
+google earth	9950	Bad
+google earth	9932	Bad
+google earth	824	Bad
+google earth	6430	Bad
+google earth	9793	Bad
+google earth	5736	Bad
+google earth	468	Bad
+google earth	2729	Bad
 yellow pages	9818	Bad
 yellow pages	10169	Bad
 yellow pages	1109	Bad
@@ -318,6 +844,26 @@ yellow pages	9783	Bad
 yellow pages	10075	Bad
 yellow pages	10068	Bad
 yellow pages	4041	Bad
+yellow pages	3674	Bad
+yellow pages	4905	Bad
+yellow pages	3057	Bad
+yellow pages	4774	Bad
+yellow pages	4470	Bad
+yellow pages	6101	Bad
+yellow pages	9102	Bad
+yellow pages	9995	Bad
+yellow pages	1046	Bad
+yellow pages	735	Bad
+yellow pages	4989	Bad
+yellow pages	4951	Bad
+yellow pages	503	Bad
+yellow pages	9624	Bad
+yellow pages	8147	Bad
+yellow pages	6010	Bad
+yellow pages	2417	Bad
+yellow pages	2318	Bad
+yellow pages	912	Bad
+yellow pages	5963	Bad
 scorpio	1048	Good
 scorpio	6402	Bad
 scorpio	6579	Bad
@@ -328,6 +874,7 @@ scorpio	2927	Bad
 scorpio	2667	Bad
 scorpio	4767	Bad
 scorpio	5937	Bad
+scorpio	8502	Bad
 maps	5568	Good
 maps	1365	Bad
 maps	10014	Good
@@ -338,6 +885,26 @@ maps	8835	Bad
 maps	2527	Bad
 maps	2952	Bad
 maps	3555	Bad
+maps	2539	Bad
+maps	1713	Good
+maps	8909	Bad
+maps	7823	Bad
+maps	6877	Bad
+maps	6010	Bad
+maps	3305	Bad
+maps	3171	Bad
+maps	3520	Bad
+maps	1777	Bad
+maps	4975	Bad
+maps	9995	Bad
+maps	5401	Bad
+maps	2807	Bad
+maps	3067	Bad
+maps	1592	Bad
+maps	8232	Bad
+maps	10037	Good
+maps	1053	Bad
+maps	442	Bad
 miley cyrus	1029	Good
 miley cyrus	8204	Bad
 miley cyrus	2346	Bad
@@ -348,6 +915,23 @@ miley cyrus	9424	Bad
 miley cyrus	4454	Bad
 miley cyrus	1635	Bad
 miley cyrus	8251	Bad
+miley cyrus	9108	Bad
+miley cyrus	3666	Bad
+miley cyrus	8490	Bad
+miley cyrus	9240	Bad
+miley cyrus	7913	Bad
+miley cyrus	4117	Bad
+miley cyrus	9279	Bad
+miley cyrus	8503	Bad
+miley cyrus	4522	Bad
+miley cyrus	9574	Bad
+miley cyrus	3334	Bad
+miley cyrus	866	Bad
+miley cyrus	3304	Bad
+miley cyrus	8387	Bad
+miley cyrus	2864	Bad
+miley cyrus	1361	Bad
+miley cyrus	8760	Bad
 free galleries	10055	Good
 free galleries	3967	Good
 free galleries	6251	Good
@@ -358,6 +942,26 @@ free galleries	6315	Bad
 free galleries	6277	Bad
 free galleries	6032	Bad
 free galleries	9062	Bad
+free galleries	2759	Bad
+free galleries	9024	Bad
+free galleries	9595	Bad
+free galleries	8082	Bad
+free galleries	5795	Bad
+free galleries	5794	Bad
+free galleries	6100	Bad
+free galleries	5885	Bad
+free galleries	7999	Bad
+free galleries	5788	Bad
+free galleries	2169	Bad
+free galleries	5979	Bad
+free galleries	8542	Bad
+free galleries	2404	Bad
+free galleries	8212	Bad
+free galleries	9416	Bad
+free galleries	4938	Bad
+free galleries	2258	Bad
+free galleries	4074	Bad
+free galleries	2474	Bad
 astrology	6731	Good
 astrology	3126	Good
 astrology	7383	Bad
@@ -368,6 +972,26 @@ astrology	4242	Bad
 astrology	7067	Bad
 astrology	5723	Bad
 astrology	4704	Bad
+astrology	695	Bad
+astrology	215	Bad
+astrology	399	Bad
+astrology	8992	Bad
+astrology	8779	Bad
+astrology	7729	Bad
+astrology	1765	Bad
+astrology	3161	Bad
+astrology	2541	Bad
+astrology	4664	Bad
+astrology	10007	Bad
+astrology	5641	Bad
+astrology	9706	Bad
+astrology	4044	Bad
+astrology	5537	Bad
+astrology	942	Bad
+astrology	2243	Bad
+astrology	2356	Bad
+astrology	4023	Bad
+astrology	4024	Bad
 met art	9640	Bad
 met art	2390	Bad
 met art	1193	Bad
@@ -378,6 +1002,26 @@ met art	869	Bad
 met art	3018	Bad
 met art	9786	Bad
 met art	9107	Bad
+met art	9585	Bad
+met art	1210	Bad
+met art	7807	Bad
+met art	2232	Bad
+met art	9310	Bad
+met art	3825	Bad
+met art	5572	Bad
+met art	4519	Bad
+met art	8116	Bad
+met art	6441	Bad
+met art	6560	Bad
+met art	4545	Bad
+met art	5761	Bad
+met art	940	Bad
+met art	6641	Bad
+met art	2486	Bad
+met art	3919	Bad
+met art	5519	Bad
+met art	3324	Bad
+met art	9050	Bad
 search engines	9735	Good
 search engines	2941	Bad
 search engines	2937	Good
@@ -388,6 +1032,26 @@ search engines	2823	Bad
 search engines	5453	Bad
 search engines	5802	Bad
 search engines	9937	Bad
+search engines	569	Bad
+search engines	9906	Bad
+search engines	3086	Bad
+search engines	3665	Good
+search engines	9733	Bad
+search engines	4299	Good
+search engines	431	Bad
+search engines	825	Good
+search engines	4300	Good
+search engines	9882	Bad
+search engines	7028	Good
+search engines	6903	Bad
+search engines	302	Bad
+search engines	6369	Bad
+search engines	1242	Bad
+search engines	8117	Bad
+search engines	2772	Bad
+search engines	9873	Bad
+search engines	9832	Bad
+search engines	4746	Bad
 alcoholism	4827	Bad
 alcoholism	1354	Bad
 alcoholism	1246	Bad
@@ -398,6 +1062,26 @@ alcoholism	6505	Bad
 alcoholism	8953	Bad
 alcoholism	2200	Bad
 alcoholism	10096	Bad
+alcoholism	8494	Bad
+alcoholism	6589	Bad
+alcoholism	6091	Bad
+alcoholism	8539	Bad
+alcoholism	447	Bad
+alcoholism	5508	Bad
+alcoholism	9700	Bad
+alcoholism	627	Bad
+alcoholism	9000	Bad
+alcoholism	3170	Bad
+alcoholism	8199	Bad
+alcoholism	8623	Bad
+alcoholism	9382	Bad
+alcoholism	8706	Bad
+alcoholism	2651	Bad
+alcoholism	817	Bad
+alcoholism	691	Bad
+alcoholism	2726	Bad
+alcoholism	5457	Bad
+alcoholism	4451	Bad
 computer vision	2460	Good
 computer vision	6015	Bad
 computer vision	7690	Bad
@@ -408,16 +1092,56 @@ computer vision	8773	Bad
 computer vision	8233	Bad
 computer vision	694	Good
 computer vision	4300	Bad
-golf war	9695	Bad
-golf war	936	Bad
-golf war	3277	Bad
-golf war	8564	Bad
-golf war	9492	Bad
-golf war	9509	Bad
-golf war	1269	Bad
-golf war	9488	Bad
-golf war	10150	Bad
-golf war	319	Bad
+computer vision	8521	Bad
+computer vision	689	Bad
+computer vision	6228	Bad
+computer vision	4747	Bad
+computer vision	5341	Bad
+computer vision	4761	Bad
+computer vision	6298	Bad
+computer vision	9256	Bad
+computer vision	766	Bad
+computer vision	5858	Bad
+computer vision	3314	Bad
+computer vision	731	Bad
+computer vision	6016	Bad
+computer vision	4049	Bad
+computer vision	1726	Bad
+computer vision	5568	Bad
+computer vision	2479	Bad
+computer vision	5793	Bad
+computer vision	1055	Bad
+computer vision	2905	Bad
+golf war	8137	Bad
+golf war	3437	Bad
+golf war	4951	Bad
+golf war	1172	Bad
+golf war	10130	Bad
+golf war	3423	Bad
+golf war	4774	Bad
+golf war	5676	Bad
+golf war	5364	Bad
+golf war	691	Bad
+golf war	2726	Bad
+golf war	6538	Bad
+golf war	8433	Bad
+golf war	3579	Bad
+golf war	9277	Bad
+golf war	5976	Bad
+golf war	5978	Bad
+golf war	1060	Bad
+golf war	5975	Bad
+golf war	1314	Bad
+golf war	2351	Bad
+golf war	3846	Bad
+golf war	781	Bad
+golf war	10109	Bad
+golf war	10105	Bad
+golf war	2522	Bad
+golf war	3414	Bad
+golf war	8965	Bad
+golf war	9396	Bad
+golf war	5736	Bad
 shakespeare	10103	Good
 shakespeare	7451	Good
 shakespeare	1135	Good
@@ -428,6 +1152,26 @@ shakespeare	338	Bad
 shakespeare	660	Bad
 shakespeare	9983	Bad
 shakespeare	2709	Bad
+shakespeare	2965	Bad
+shakespeare	979	Bad
+shakespeare	2809	Bad
+shakespeare	6134	Bad
+shakespeare	4680	Bad
+shakespeare	3552	Bad
+shakespeare	8346	Bad
+shakespeare	5821	Bad
+shakespeare	7471	Bad
+shakespeare	6522	Bad
+shakespeare	5883	Bad
+shakespeare	1980	Bad
+shakespeare	6732	Bad
+shakespeare	7265	Bad
+shakespeare	7777	Bad
+shakespeare	6287	Bad
+shakespeare	7066	Bad
+shakespeare	4736	Bad
+shakespeare	6647	Bad
+shakespeare	6659	Bad
 volcano	7604	Good
 volcano	7258	Bad
 volcano	5841	Bad
@@ -438,6 +1182,26 @@ volcano	2377	Bad
 volcano	2187	Bad
 volcano	9163	Bad
 volcano	7248	Bad
+volcano	3560	Bad
+volcano	8316	Bad
+volcano	616	Bad
+volcano	4651	Bad
+volcano	7437	Bad
+volcano	5714	Bad
+volcano	560	Bad
+volcano	8954	Bad
+volcano	8125	Bad
+volcano	10170	Bad
+volcano	8511	Bad
+volcano	6608	Bad
+volcano	413	Bad
+volcano	4353	Bad
+volcano	8756	Bad
+volcano	4387	Bad
+volcano	9584	Bad
+volcano	4847	Bad
+volcano	6441	Bad
+volcano	2667	Bad
 java	4475	Good
 java	7119	Good
 java	4476	Good
@@ -448,6 +1212,26 @@ java	1622	Bad
 java	3438	Bad
 java	7378	Bad
 java	6296	Bad
+java	1355	Bad
+java	5453	Bad
+java	5881	Bad
+java	4289	Bad
+java	5814	Bad
+java	4685	Bad
+java	5570	Bad
+java	3439	Bad
+java	4473	Bad
+java	4175	Bad
+java	2676	Bad
+java	9034	Bad
+java	2481	Bad
+java	576	Bad
+java	2375	Bad
+java	1301	Bad
+java	464	Bad
+java	2461	Bad
+java	6367	Bad
+java	9840	Bad
 blues	1071	Good
 blues	3696	Good
 blues	1992	Good
@@ -458,6 +1242,26 @@ blues	6085	Good
 blues	1070	Bad
 blues	1459	Good
 blues	1067	Bad
+blues	7778	Good
+blues	7953	Good
+blues	1065	Bad
+blues	8650	Good
+blues	1066	Bad
+blues	3908	Good
+blues	8870	Good
+blues	1069	Bad
+blues	5779	Bad
+blues	8392	Good
+blues	9087	Bad
+blues	5790	Bad
+blues	2871	Bad
+blues	3994	Bad
+blues	6767	Bad
+blues	4796	Bad
+blues	5806	Bad
+blues	3639	Bad
+blues	8026	Bad
+blues	8021	Bad
 architecture	1469	Good
 architecture	9960	Good
 architecture	663	Good
@@ -468,6 +1272,26 @@ architecture	8081	Bad
 architecture	8082	Bad
 architecture	3810	Bad
 architecture	8286	Bad
+architecture	9734	Bad
+architecture	3866	Bad
+architecture	6394	Good
+architecture	943	Bad
+architecture	2218	Bad
+architecture	7188	Bad
+architecture	1165	Bad
+architecture	3402	Bad
+architecture	929	Bad
+architecture	4176	Bad
+architecture	4042	Bad
+architecture	10018	Bad
+architecture	2602	Bad
+architecture	7070	Bad
+architecture	3674	Bad
+architecture	7288	Bad
+architecture	6670	Bad
+architecture	1220	Bad
+architecture	4175	Bad
+architecture	2046	Bad
 affirmative action	8696	Bad
 affirmative action	625	Bad
 affirmative action	3998	Bad
@@ -478,6 +1302,12 @@ affirmative action	2480	Bad
 affirmative action	3101	Bad
 affirmative action	5399	Bad
 affirmative action	517	Bad
+affirmative action	7801	Bad
+affirmative action	4909	Bad
+affirmative action	605	Bad
+affirmative action	8291	Bad
+affirmative action	8478	Bad
+affirmative action	9497	Bad
 recycling cans	6379	Bad
 recycling cans	6636	Bad
 recycling cans	3085	Bad
@@ -488,6 +1318,26 @@ recycling cans	1131	Bad
 recycling cans	6490	Bad
 recycling cans	6593	Bad
 recycling cans	2111	Bad
+recycling cans	9599	Bad
+recycling cans	6407	Bad
+recycling cans	4248	Bad
+recycling cans	4216	Bad
+recycling cans	9427	Bad
+recycling cans	4092	Bad
+recycling cans	760	Bad
+recycling cans	3212	Bad
+recycling cans	3281	Bad
+recycling cans	9075	Bad
+recycling cans	8050	Bad
+recycling cans	5715	Bad
+recycling cans	2967	Bad
+recycling cans	4263	Bad
+recycling cans	247	Bad
+recycling cans	6046	Bad
+recycling cans	3559	Bad
+recycling cans	2938	Bad
+recycling cans	6538	Bad
+recycling cans	390	Bad
 soccer	6728	Good
 soccer	6729	Good
 soccer	6666	Good
@@ -498,3 +1348,23 @@ soccer	1536	Good
 soccer	6955	Good
 soccer	7913	Good
 soccer	6878	Bad	
+soccer	6865	Good
+soccer	6239	Bad
+soccer	8697	Bad
+soccer	9754	Good
+soccer	9118	Bad
+soccer	6134	Bad
+soccer	7418	Bad
+soccer	937	Bad
+soccer	7103	Bad
+soccer	9126	Bad	
+soccer	2404	Bad
+soccer	4075	Bad
+soccer	5707	Bad
+soccer	7781	Bad
+soccer	9402	Bad
+soccer	256	Bad
+soccer	4561	Bad
+soccer	2384	Bad
+soccer	3239	Good
+soccer	363	Bad	
