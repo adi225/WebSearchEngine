@@ -5,62 +5,69 @@
   <title>Group 14 - AutoComplete</title>
   <link href="jquery-ui.css" rel="stylesheet">
   <link href="styles.css" rel="stylesheet">
-<script src="jquery.js"></script>
-<script src="jquery-ui.js"></script>
+  <script src="jquery.js"></script>
+  <script src="jquery-ui.js"></script>
+  <script src="scripts.js"></script>
+  <script src="numeral.js"></script>
+</head>
+<body>
+ 
+<div id="header" class="centre">
+  <img class="biglogo" id="biglogo" src="images/logo.jpg" alt="Logo"/>
+  <img class="smalllogo" id="logosmall" src="images/logosmall.jpg" alt="Logo"/>
+  <div class="ui-widget">
+    <input class="query" id="query">
+    <input class="autocomplete" id="autocomplete" type="text" disabled="disabled" />
+    <div id="gobutton" class="search">
+        <a href="javascript:search();">Go</a>
+    </div>
+  </div>
+</div>
 
-  <script>
-  $(function() {
+<div class="time" id="time">
+</div>
+<br>
+<div class="results" id="results"></div>
 
-    $("#query").val();
+<script>
 
-    $("#query").keyup(function (e) 
+var first = true;
+
+$("#logosmall").hide();
+$("#gobutton").hide();
+$("#results").hide();
+$("#query").focus();
+
+$("#query").keypress(function (e) 
+{
+    toggleHeader();
+    first = false;
+    if(e.which === 13) 
     {
-        if(e.which === 13) 
-        {
-            $(".ui-menu-item").hide();
-            $.ajax({
-            beforeSend : function (XMLHttpRequest)
-            {
-              showLoadingIcon();
-            },
-            url: "http://localhost:25814/search",
-            dataType: "JSON",
-            data: {
-              "query": $("#query").val(),
-              "ranker": "linear",
-              "format": "json"
-            },
-            error: function (jqXHR, textStatus, errorThrown)
-            {
-              $("results").html("<p> An error took place </p>");
-            },
-            success: function( data ) 
-            {
-              $('#autocomplete').val();
-              populateResultsHTML(data);
-              
-            }
-          });
-        }            
-    });
+        search();
+    } 
 
-    $( "#query" ).autocomplete({
+    $('#autocomplete').val("");     
+
+});
+
+$( "#query" ).autocomplete({
       source: function( request, response ) 
       {
         $.ajax({
-          url: "http://localhost:25814/instant",
+          url: ENDPOINT + AUTOCOMPLETE,
           dataType: "JSON",
           data: {
             "query": request.term,
-            "ranker": "linear",
-            "format": "json"
+            "ranker": RANKER,
+            "format": "json",
+            "numdocs" : NUMDOCS
           },
           error: function (jqXHR, textStatus, errorThrown)
           {
           },
           success: function( data ) 
           {
-            console.log(data);
             if (data.suggestions != null)
             {
               var newResults = [];
@@ -70,11 +77,10 @@
               }
               response(newResults);
 
-              if(newResults.length != 0)
-                $('#autocomplete').val(newResults[0]);
+              $('#autocomplete').val(newResults[0]);
             }
 
-            populateResultsHTML(data.results);
+            populateResultsHTML(data.results, data.time);
             
           }
 
@@ -85,30 +91,8 @@
       
       select: function( event, ui ) 
       {
-        $(".ui-menu-item").hide();
-        $.ajax({
-          beforeSend : function (XMLHttpRequest)
-          {
-            showLoadingIcon();
-          },
-          url: "http://localhost:25814/search",
-          dataType: "JSON",
-          data: {
-            "query": ui.item.label,
-            "ranker": "linear",
-            "format": "json"
-          },
-          error: function (jqXHR, textStatus, errorThrown)
-          {
-            $("results").html("<p> An error took place </p>");
-          },
-          success: function( data ) 
-          {
-            populateResultsHTML(data);
-            $('#autocomplete').val();
-            
-          }
-          });
+        
+        search();
       },
 
       open: function() 
@@ -126,80 +110,7 @@
         $('#autocomplete').val(ui.item.label);
         return false;
       }
-    });
   });
-
-
-function showLoadingIcon()
-{
-  var image = "<div class='loading'><div><br><br><img src='images/ajax-loader.gif' /></div></div>";
-  $("#results").html(image);
-}
-
-function populateResultsHTML(results)
-{
-
-  var allHtml = "";
-  var numberOfResults = results.length;
-  if(results != null && numberOfResults != 0)
-  {
-    for (var i = 0; i < numberOfResults; i++) 
-    {
-      var singleHtml = generateDocHTML(results[i]); 
-      allHtml += singleHtml;
-    }
-
-    $("#results").html(allHtml);
-  }
-  else
-    $("#results").html("<p class='noresults'> No results found </p>");
-
-}
-
-function generateDocHTML(result)
-{
-  var singleHtml = "<div style=\"line-height:5px\"><p><a onclick=\"docClicked('" + result.id + "','" + result.url + "','" + result.query + "');\"";
-  singleHtml += "style=\"text-decoration:none;cursor:pointer;color:#3300CC;font-size:18px\">";
-  singleHtml += result.title;
-  singleHtml += "</a></p>";
-  singleHtml += "<p style=\"color:green;font-size:14px;\">";
-  singleHtml += result.url;
-  singleHtml += "</p></div>";
-  singleHtml += "<br></br>";
-
-  return singleHtml;
-}
-
-function docClicked(id, url, query)
-{
-  //log click
-  $.ajax({
-          
-    url: "http://localhost:25814/clicktrack",
-    data: {
-      "documentId": id,
-      "query" : query
-    }
-  }); 
-  window.location.href = url;
-  // console.log(id);
-  // console.log(url);
-  // singleHtml += "href=\"http://localhost:25814/clicktrack?documentId=" + result.id + "\">";
-
-}
-
   </script>
-</head>
-<body>
- 
-<div class="centre">
-  <img src="images/logo.png" alt="Logo"/>
-<div class="ui-widget">
-  <input id="query">
-  <input id="autocomplete" type="text" disabled="disabled" />
-</div>
-</div>
- <div id="results">
-</div>
 </body>
 </html>

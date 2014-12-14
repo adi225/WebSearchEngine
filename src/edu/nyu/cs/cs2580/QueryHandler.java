@@ -134,6 +134,7 @@ class QueryHandler implements HttpHandler {
   private void respondWithHTML(HttpExchange exchange, final String message) throws IOException {
     Headers responseHeaders = exchange.getResponseHeaders();
     responseHeaders.set("Content-Type", "text/html");
+    responseHeaders.set("Access-Control-Allow-Origin", "*");
     exchange.sendResponseHeaders(200, 0); // arbitrary number of bytes
     OutputStream responseBody = exchange.getResponseBody();
     responseBody.write(message.getBytes());
@@ -332,6 +333,7 @@ class QueryHandler implements HttpHandler {
           case JSON:
         	try
         	{
+        		JSONObject returnObj = new JSONObject();
         	  JSONArray docsArray = new JSONArray();
               if(scoredDocs != null) {
     	          for(ScoredDocument doc : scoredDocs) {	
@@ -340,12 +342,13 @@ class QueryHandler implements HttpHandler {
     	        	  tempObj.put("title", doc.getDocTitle());
     	        	  tempObj.put("url", doc.getUrl());
     	        	  tempObj.put("query", cgiArgs._query);
-    	        	  
     	        	  docsArray.put(tempObj);
     	          }
               }
-                        
-              response.append(docsArray.toString());
+                       
+              returnObj.put("time", endTime-startTime);
+              returnObj.put("results", docsArray);
+              response.append(returnObj.toString());
             } catch (JSONException e) {}
             
         	respondWithJSON(exchange, response.toString());
@@ -418,7 +421,7 @@ class QueryHandler implements HttpHandler {
 
       } else if(uriPath.equalsIgnoreCase("/instant")) {
         System.out.println("Query: " + uriQuery);
-        long startTime = Calendar.getInstance().getTimeInMillis();
+        
 
         List<String> suggestions = null;
         try
@@ -429,7 +432,8 @@ class QueryHandler implements HttpHandler {
 
         if(suggestions != null)
         	cgiArgs._query = cgiArgs._query + suggestions.get(0);
-
+        
+        long startTime = Calendar.getInstance().getTimeInMillis();
         Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
         long endTime = Calendar.getInstance().getTimeInMillis();
 
@@ -459,7 +463,7 @@ class QueryHandler implements HttpHandler {
           
           returnObj.put("suggestions", suggestionsArray);
           returnObj.put("results", docsArray);
-                    
+          returnObj.put("time", endTime-startTime);
           response.append(returnObj.toString());
         } catch (JSONException e) {}
 

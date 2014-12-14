@@ -137,7 +137,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       // adding an indexed document
       int docId = _numDocs++;     // the current number of doc is ID for the current document
       DocumentIndexed docIndexed = new DocumentIndexed(docId);
-      docIndexed.setUrl(docFile.getAbsolutePath());
+      docIndexed.setUrl(docFile.getName());
       _documents.add(docIndexed);
 
       try {
@@ -153,7 +153,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       System.out.println("Finished indexing document id: " + docId);
 
       if(_numDocs > MAX_DOCS) break;
-    }
+    }	
 
     // dump any leftover partial index
     if(_utilityIndexFlatSize > 0) {
