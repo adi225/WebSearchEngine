@@ -1,4 +1,4 @@
-var RANKER = "conjunctive";
+var RANKER = "cosine";
 var ENDPOINT = "http://localhost:25814/";
 var AUTOCOMPLETE = "instant";
 var SEARCH = "search";
