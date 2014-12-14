@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -102,6 +103,33 @@ class Evaluator {
     
     getEvaluation(judgments);
     //evaluateStdin(judgments);
+    evaluateAutoComplete();
+  }
+  
+  public static void evaluateAutoComplete() throws IOException{
+    AutocompleteQueryLog ql = AutocompleteQueryLog.getInstance();
+    // ql.prepareMainFile();    assuming that autocomplete.log already exists
+    ql.loadAutocomplete();
+    System.out.println("Loaded autocomplete log.");
+    System.out.println("Evaluating Autocompletion response time...");
+    
+    long averageResponseTime = 0;
+    int count = 0;
+    BufferedReader reader = new BufferedReader(new FileReader(queriesFilePath));
+    String query = "";
+    while((query = reader.readLine()) != null){
+    	long startTime = Calendar.getInstance().getTimeInMillis();
+    	List<String> suggestions = ql.topAutoCompleteSuggestions(query, 500);
+    	long endTime = Calendar.getInstance().getTimeInMillis();
+    	long responseTime = endTime - startTime;
+    	averageResponseTime += responseTime;
+    	count++;
+    }
+    reader.close();
+    
+    averageResponseTime /= count;
+    
+    System.out.println("Average response time for completions: " + averageResponseTime +"ms");
   }
   
   public static void getEvaluation(Map<String, DocumentRelevances> judgments) throws Exception{
