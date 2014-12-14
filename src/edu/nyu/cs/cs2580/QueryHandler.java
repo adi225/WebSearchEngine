@@ -28,6 +28,7 @@ import java.util.Map.Entry;
  */
 class QueryHandler implements HttpHandler {
 
+	private static final double TOP_WORD_THRESHOLD = 0.05;
   private static final int NUM_ADDED_TOP_WORDS = 1;
   private static final int NUM_SUGGESTED_QUERIES = 5;
   public final static int SESSION_TIMEOUT = 60000;
@@ -199,12 +200,14 @@ class QueryHandler implements HttpHandler {
     _processedQuery = new Query(cgiArgs._query);
     // add top words into the original query
     int numTopWordsAdded = 0;
-    for (int i = 0; i < topWords.size() && numTopWordsAdded < NUM_ADDED_TOP_WORDS; i++) {
-      String topWord = topWords.get(i).getKey();
-      if(!_processedQuery._query.toLowerCase().contains(topWord.toLowerCase())){
-      	_processedQuery._query += " " + topWord;
-      	numTopWordsAdded++;
-      }
+    for (int i = 0; i < topWords.size(); i++) {
+    	if(topWords.get(i).getValue() >= TOP_WORD_THRESHOLD){
+	      String topWord = topWords.get(i).getKey();
+	      if(!_processedQuery._query.toLowerCase().contains(topWord.toLowerCase())){
+	      	_processedQuery._query += " " + topWord;
+	      	numTopWordsAdded++;
+	      }    		
+    	}
     }
     _processedQuery.processQuery();
         
@@ -550,12 +553,14 @@ class QueryHandler implements HttpHandler {
           // add top words into the original query
           _processedQuery = new Query(q);
           int numTopWordsAdded = 0;
-          for (int i = 0; i < topWords.size() && numTopWordsAdded < NUM_ADDED_TOP_WORDS; i++) {
-            String topWord = topWords.get(i).getKey();
-            if(!_processedQuery._query.toLowerCase().contains(topWord.toLowerCase())){
-            	_processedQuery._query += " " + topWord;
-            	numTopWordsAdded++;
-            }
+          for (int i = 0; i < topWords.size(); i++) {
+          	if(topWords.get(i).getValue() >= TOP_WORD_THRESHOLD){
+	            String topWord = topWords.get(i).getKey();
+	            if(!_processedQuery._query.toLowerCase().contains(topWord.toLowerCase())){
+	            	_processedQuery._query += " " + topWord;
+	            	numTopWordsAdded++;
+	            }         		
+          	}
           }
           _processedQuery.processQuery();
           System.out.println("New query: "+_processedQuery._query);
