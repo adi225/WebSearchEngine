@@ -1,11 +1,11 @@
 package edu.nyu.cs.cs2580;
 
+import com.google.common.collect.Sets;
+import edu.nyu.cs.cs2580.SearchEngine.Options;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
-
-import com.google.common.collect.Sets;
-import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
  * @CS2580: Implement this class for HW2.

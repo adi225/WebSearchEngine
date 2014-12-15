@@ -403,16 +403,13 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
 
     // Treat all tokens as 1 word phrases.
     for(String token : query._tokens) {
-      phrases.add(Lists.newArrayList(token));
+      if(!_stoppingWords.contains(token)) phrases.add(Lists.newArrayList(token));
     }
 
     // query is already processed before getting passed into this method
     try {
       List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each phrase in the query
       for(List<String> phrase : phrases) {
-        if(phrase.size() == 1 && _stoppingWords.contains(phrase.get(0))) {  // skip processing a stop word (if not in phrase)
-          continue;
-        }
         int nextDocID = nextPhrase(phrase, docid);
         if(nextDocID == -1) return null;
         docIDs.add(nextDocID);
