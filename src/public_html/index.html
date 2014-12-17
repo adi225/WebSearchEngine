@@ -79,11 +79,6 @@ $( "#query" ).autocomplete({
             "format": "json",
             "numdocs" : NUMDOCS
           },
-          // timeout: TIMEOUT,
-          // timeout: function (jqXHR, textStatus, errorThrown)
-          // {
-          //   $("#results").html("<p> An error took place </p>");
-          // },
           error: function (jqXHR, textStatus, errorThrown)
           {
           },
@@ -104,9 +99,6 @@ $( "#query" ).autocomplete({
                 $('#autocomplete').val($('#query').val());
               }
             }
-
-            // populateResultsHTML(data.results, data.time);
-
             search(false);
             
           }

@@ -5,7 +5,6 @@ var SEARCH = "search";
 var LOG = "clicktrack";
 var DOCUMENT = "document";
 var NUMDOCS = 25;
-var TIMEOUT = 5000;
 
 function showLoadingIcon()
 {
@@ -110,11 +109,6 @@ function search(hide)
             "format": "json",
             "numdocs" : NUMDOCS
           },
-          // timeout: TIMEOUT,
-          // timeout: function (jqXHR, textStatus, errorThrown)
-          // {
-          //   $("#results").html("<p> An error took place </p>");
-          // },
           error: function (jqXHR, textStatus, errorThrown)
           {
             if(textStatus == 'timeout')
@@ -124,8 +118,6 @@ function search(hide)
           },
           success: function( data ) 
           {
-            // $('#query').val($("#autocomplete").val());
-
             populateResultsHTML(data.results, data.time);
 
             if (searchedForDifferent)
@@ -160,15 +152,10 @@ function searchNew(value)
             "format": "json",
             "numdocs" : NUMDOCS
           },
-          // timeout: TIMEOUT,
           error: function (jqXHR, textStatus, errorThrown)
           {
             $("#results").html("<p> An error took place </p>");
           },
-          // timeout: function (jqXHR, textStatus, errorThrown)
-          // {
-          //   $("#results").html("<p> An error took place </p>");
-          // },
           success: function( data ) 
           {
             
