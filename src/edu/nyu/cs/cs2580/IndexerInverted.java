@@ -406,6 +406,8 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       if(!_stoppingWords.contains(token)) phrases.add(Lists.newArrayList(token));
     }
 
+    if(phrases.size() < 1) return null;
+
     // query is already processed before getting passed into this method
     try {
       List<Integer> docIDs = new ArrayList<Integer>();  // a list containing doc ID for each phrase in the query
