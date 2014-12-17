@@ -499,7 +499,7 @@ public abstract class IndexerInverted extends Indexer implements Serializable {
       return _indexCache.get(word);
     }
 
-    List<Integer> postingsList = new LinkedList<Integer>();
+    List<Integer> postingsList = new ArrayList<Integer>();
     FileUtils.FileRange fileRange = _index.get(word);
     _indexRAF.seek(_indexOffset + fileRange.offset);
     byte[] loadedList = new byte[(int)fileRange.length];

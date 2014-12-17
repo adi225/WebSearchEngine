@@ -91,7 +91,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
     if(!_dictionary.containsKey(term)) {
       return -1;
     }
-
+    //System.out.println("next(): " + term + "\t" + docid);
     int termInt = _dictionary.get(term);  // an integer representation of a term
     List<Integer> postingList = postingsListForWord(termInt);
 
@@ -266,7 +266,7 @@ public class IndexerInvertedOccurrence extends IndexerInverted implements Serial
   }
 
   public int documentTermFrequency(String term, int docId) {
-    if(docId < 0 || !_dictionary.containsKey(term)) return 0;
+    if(docId < 0 || !_dictionary.containsKey(term) || _stoppingWords.contains(term)) return 0;
     int termId = _dictionary.get(term);
     
     try {
