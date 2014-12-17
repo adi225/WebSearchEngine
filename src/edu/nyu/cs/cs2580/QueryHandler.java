@@ -434,7 +434,7 @@ class QueryHandler implements HttpHandler {
         	cgiArgs._query = cgiArgs._query + suggestions.get(0);
         
         long startTime = Calendar.getInstance().getTimeInMillis();
-        Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
+//        Vector<ScoredDocument> scoredDocs = searchQuery(exchange, cgiArgs);
         long endTime = Calendar.getInstance().getTimeInMillis();
 
         StringBuffer response = new StringBuffer();
@@ -442,7 +442,7 @@ class QueryHandler implements HttpHandler {
         try {
         JSONObject returnObj = new JSONObject();
         JSONArray suggestionsArray = new JSONArray();
-        JSONArray docsArray = new JSONArray();
+//        JSONArray docsArray = new JSONArray();
                  
 	      if(suggestions != null){
 	          for (String suggestion : suggestions) {
@@ -450,19 +450,19 @@ class QueryHandler implements HttpHandler {
 	          }
 	      }
           
-          if(scoredDocs != null) {
-	          for(ScoredDocument doc : scoredDocs) {	
-	        	  JSONObject tempObj = new JSONObject();
-	        	  tempObj.put("id", doc.getDocId());
-	        	  tempObj.put("title", doc.getDocTitle());
-	        	  tempObj.put("url", doc.getUrl());
-	        	  tempObj.put("query", cgiArgs._query);
-	        	  docsArray.put(tempObj);
-	          }
-          }
+//          if(scoredDocs != null) {
+//	          for(ScoredDocument doc : scoredDocs) {	
+//	        	  JSONObject tempObj = new JSONObject();
+//	        	  tempObj.put("id", doc.getDocId());
+//	        	  tempObj.put("title", doc.getDocTitle());
+//	        	  tempObj.put("url", doc.getUrl());
+//	        	  tempObj.put("query", cgiArgs._query);
+//	        	  docsArray.put(tempObj);
+//	          }
+//          }
           
           returnObj.put("suggestions", suggestionsArray);
-          returnObj.put("results", docsArray);
+//          returnObj.put("results", docsArray);
           returnObj.put("time", endTime-startTime);
           response.append(returnObj.toString());
         } catch (JSONException e) {}
@@ -470,7 +470,7 @@ class QueryHandler implements HttpHandler {
         if(cgiArgs._outputFormat.equals(CgiArguments.OutputFormat.JSON)) {
           respondWithJSON(exchange, response.toString());
         }
-        System.out.println("Finished query: " + cgiArgs._query);
+//        System.out.println("Finished query: " + cgiArgs._query);
       } else if(uriPath.equalsIgnoreCase("/prfevaluation")) {
         System.out.println("Query: " + uriQuery);
 
