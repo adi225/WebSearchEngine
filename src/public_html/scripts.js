@@ -90,12 +90,12 @@ function search()
           url: ENDPOINT + SEARCH,
           dataType: "JSON",
           data: {
-            "query": $("#autocomplete").val(),
+            "query": $("#query").val(),
             "ranker": RANKER,
             "format": "json",
             "numdocs" : NUMDOCS
           },
-          error: function (jqXHR, textStatus, errorThrown)
+          error: function (jqX  HR, textStatus, errorThrown)
           {
             $("results").html("<p> An error took place </p>");
           },

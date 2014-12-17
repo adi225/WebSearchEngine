@@ -78,6 +78,7 @@ public class AutocompleteQueryLog implements Serializable {
     try {
       PrintWriter writer = new PrintWriter(new FileWriter(new File(_mainFile), true));
       writer.print("\n" + query);
+      writer.close();
     } catch (IOException e) {}
   }
 
