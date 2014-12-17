@@ -4,12 +4,9 @@ import com.google.common.collect.Sets;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONStringer;
-import org.json.JSONWriter;
 
 import java.io.*;
 import java.text.DateFormat;
@@ -286,6 +283,7 @@ class QueryHandler implements HttpHandler {
         documentId = params[0].split("=").length == 2 ? params[0].split("=")[1] : "ERROR";
         query = params[1].split("=").length == 2 ?  params[1].split("=")[1] : "ERROR";
       }
+      _autocompleter.recordQuery(query);
       
       String logEntry = sessionId +
     		  "\t" + query +
@@ -300,6 +298,7 @@ class QueryHandler implements HttpHandler {
 //        exchange.sendResponseHeaders(302, 0);  // arbitrary number of bytes
 //        exchange.getResponseBody().close();
       } catch (NumberFormatException e ) {}
+      respondWithMsg(exchange, "");
       return;
     } else {
       CgiArguments cgiArgs = new CgiArguments(uriQuery);
@@ -355,7 +354,6 @@ class QueryHandler implements HttpHandler {
           default:
             // nothing
         }
-        _autocompleter.recordQuery(cgiArgs._query);
         System.out.println("Finished query: " + cgiArgs._query);
 
       } else if(uriPath.equalsIgnoreCase("/prf")){
@@ -393,7 +391,6 @@ class QueryHandler implements HttpHandler {
           default:
             // nothing
         }
-        _autocompleter.recordQuery(cgiArgs._query);
         System.out.println("Finished query: " + cgiArgs._query);
 
       } else if(uriPath.equalsIgnoreCase("/evaluation")) {

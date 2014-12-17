@@ -1,4 +1,4 @@
-var RANKER = "comprehensive";
+var RANKER = "cosine";
 var ENDPOINT = "http://localhost:25814/";
 var AUTOCOMPLETE = "instant";
 var SEARCH = "search";
@@ -38,7 +38,7 @@ function populateResultsHTML(results, time)
 function generateDocHTML(result)
 {
 
-  var singleHtml = "<div class=\"singleresult\"><p><a onclick=\"docClicked('" + result.id + "','" + result.url + "','" + result.query + "');\">";
+  var singleHtml = "<div class=\"singleresult\"><p><a onclick=\"docClicked('" + result.id + "','" + result.url.replace("'", "\\'") + "','" + result.query + "');\">";
   singleHtml += result.title;
   singleHtml += "</a></p>";
   singleHtml += "</div>";
@@ -49,13 +49,15 @@ function generateDocHTML(result)
 function docClicked(id, url, query)
 {
   //log click
-  $.ajax({
-          
+  $.ajax({         
     url: ENDPOINT + LOG,
     data: {
       "documentId": id,
       "query" : query
-    }
+    },
+    success: null,
+    error: null,
+    dataType: "text"
   }); 
   window.location.href = ENDPOINT + DOCUMENT + "/" + url;
 
