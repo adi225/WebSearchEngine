@@ -24,8 +24,13 @@
   </div>
 </div>
 
+<div class="time" id="instead">
+</div>
+
+
 <div class="time" id="time">
 </div>
+
 <br>
 <div class="results" id="results"></div>
 
@@ -38,6 +43,16 @@ $("#gobutton").hide();
 $("#results").hide();
 $("#query").focus();
 
+$("#query").keydown(function (e) 
+{
+  if (e.keyCode == 27) 
+    {
+        $("#autocomplete").val("");
+
+       $("#autocomplete").val($("#query").val());
+    }
+});
+
 $("#query").keypress(function (e) 
 {
     toggleHeader();
@@ -46,6 +61,7 @@ $("#query").keypress(function (e)
     {
         search();
     } 
+    
 
     $('#autocomplete').val("");     
 
@@ -63,6 +79,7 @@ $( "#query" ).autocomplete({
             "format": "json",
             "numdocs" : NUMDOCS
           },
+          timeout: TIMEOUT,
           error: function (jqXHR, textStatus, errorThrown)
           {
           },
@@ -80,7 +97,9 @@ $( "#query" ).autocomplete({
               $('#autocomplete').val(newResults[0]);
             }
 
-            populateResultsHTML(data.results, data.time);
+            // populateResultsHTML(data.results, data.time);
+
+            search(false);
             
           }
 
@@ -92,6 +111,7 @@ $( "#query" ).autocomplete({
       select: function( event, ui ) 
       {
         
+        $("#query").val($("#autocomplete").val());
         search();
       },
 

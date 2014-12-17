@@ -5,6 +5,7 @@ var SEARCH = "search";
 var LOG = "clicktrack";
 var DOCUMENT = "document";
 var NUMDOCS = 25;
+var TIMEOUT = 5000;
 
 function showLoadingIcon()
 {
@@ -28,6 +29,7 @@ function populateResultsHTML(results, time)
     $("#results").html(allHtml);
 
     $("#time").html("Your search returned in " + numeral(time).format('0,0') + " ms.");
+    $("#instead").html("");
   }
   else
     $("#results").html("<p class='noresults'> No results found </p>");
@@ -41,7 +43,6 @@ function generateDocHTML(result)
   singleHtml += result.title;
   singleHtml += "</a></p>";
   singleHtml += "</div>";
-  // singleHtml += "<br></br>";
 
   return singleHtml;
 }
@@ -76,11 +77,68 @@ function toggleHeader()
   }
 }
 
-function search()
+function search(hide)
 {
+  hide = typeof hide !== 'undefined' ? hide : true;
+
+  var searchedForDifferent = false;
   if($("#autocomplete").val() != "")
   {
-    $(".ui-menu-item").hide();
+    if ($("#autocomplete").val() != $("#query").val())
+    {
+      var searchValue = $("#autocomplete").val();
+      var originalValue = $("#query").val();
+      if(hide)
+      $("#query").val($("#autocomplete").val())
+      searchedForDifferent = true;
+    }
+    if(hide)
+      $(".ui-menu-item").hide();
+
+        $.ajax({
+          beforeSend : function (XMLHttpRequest)
+          {
+            showLoadingIcon();
+            $("#time").html("");
+            $("#instead").html("");
+          },
+          url: ENDPOINT + SEARCH,
+          dataType: "JSON",
+          data: {
+            "query": $("#autocomplete").val(),
+            "ranker": RANKER,
+            "format": "json",
+            "numdocs" : NUMDOCS
+          },
+          timeout: TIMEOUT,
+          error: function (jqXHR, textStatus, errorThrown)
+          {
+            $("results").html("<p> An error took place </p>");
+          },
+          success: function( data ) 
+          {
+            // $('#query').val($("#autocomplete").val());
+
+            populateResultsHTML(data.results, data.time);
+
+            if (searchedForDifferent)
+            {
+
+              $("#instead").html("Searched for <b>"+searchValue+"</b>.<br> Search for <a href='javascript:searchNew(\""+originalValue+"\");'>" + originalValue
+              + "</a> instead");
+            }
+            
+          }
+        });
+  }
+}
+
+function searchNew(value)
+{
+  $("#query").val(value);
+ $("#autocomplete").val(value);
+ 
+  $(".ui-menu-item").hide();
         $.ajax({
           beforeSend : function (XMLHttpRequest)
           {
@@ -90,22 +148,21 @@ function search()
           url: ENDPOINT + SEARCH,
           dataType: "JSON",
           data: {
-            "query": $("#query").val(),
+            "query": value,
             "ranker": RANKER,
             "format": "json",
             "numdocs" : NUMDOCS
           },
-          error: function (jqX  HR, textStatus, errorThrown)
+          timeout: TIMEOUT,
+          error: function (jqXHR, textStatus, errorThrown)
           {
             $("results").html("<p> An error took place </p>");
           },
           success: function( data ) 
           {
-            $('#query').val($("#autocomplete").val());
-
+            
             populateResultsHTML(data.results, data.time);
             
           }
         });
-  }
 }
