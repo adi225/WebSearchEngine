@@ -10,7 +10,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class FileUtils {
 
-  static class FileRange implements Serializable {
+  public static class FileRange implements Serializable {
     private static final long serialVersionUID = 7526472295622776147L;
     public long offset;
     public long length;

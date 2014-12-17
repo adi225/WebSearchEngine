@@ -137,8 +137,8 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
       return _indexCache.get(word);
     }
 
-    LinkedList<Integer> deltaPostingsList = (LinkedList<Integer>) deltaPostingsListForWord(word);
-    List<Integer> postingsList = new LinkedList<Integer>();
+    LinkedList<Integer> deltaPostingsList = deltaPostingsListForWord(word);
+    List<Integer> postingsList = new ArrayList<Integer>();
 
     int _prevDocId = 0;
     while(deltaPostingsList.size() > 0) {
@@ -198,8 +198,8 @@ public class IndexerInvertedCompressed extends IndexerInvertedOccurrence {
     return wordsList;
   }
 
-  protected List<Integer> deltaPostingsListForWord(int word) throws IOException {
-    List<Integer> postingsList = new LinkedList<Integer>();
+  protected LinkedList<Integer> deltaPostingsListForWord(int word) throws IOException {
+    LinkedList<Integer> postingsList = new LinkedList<Integer>();
     FileUtils.FileRange fileRange = _index.get(word);
     _indexRAF.seek(_indexOffset + fileRange.offset);
     int bytesRead = 0;

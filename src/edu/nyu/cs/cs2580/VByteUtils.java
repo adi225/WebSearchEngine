@@ -10,7 +10,7 @@ import static com.google.common.base.Preconditions.*;
  */
 public class VByteUtils {
 
-  protected static byte[] encodeInt(int number) {
+  public static byte[] encodeInt(int number) {
     checkArgument(number >= 0, "Negative integers are not supported.");
 
     // Calculate number of bits required.
@@ -36,7 +36,7 @@ public class VByteUtils {
     return encodedValue;
   }
 
-  protected static int decodeByteArray(byte[] bytes) {
+  public static int decodeByteArray(byte[] bytes) {
     int decodedValue = 0;
     for (int i = 0; i < bytes.length; i++) {
       int contribution = bytes[i] & 127; // apply bitmask to get last 7 bits only
@@ -49,7 +49,7 @@ public class VByteUtils {
     return decodedValue;
   }
 
-  protected static byte[] intToBytes(int i) {
+  public static byte[] intToBytes(int i) {
     byte[] result = new byte[4];
     result[0] = (byte) (i >>> 24);
     result[1] = (byte) (i >>> 16);
@@ -58,7 +58,7 @@ public class VByteUtils {
     return result;
   }
 
-  protected static int bytesToInt(byte[] bytes) {
+  public static int bytesToInt(byte[] bytes) {
     checkArgument(bytes.length == 4);
     int i = 0;
     for(byte aByte : bytes) {
