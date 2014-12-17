@@ -79,7 +79,11 @@ $( "#query" ).autocomplete({
             "format": "json",
             "numdocs" : NUMDOCS
           },
-          timeout: TIMEOUT,
+          // timeout: TIMEOUT,
+          // timeout: function (jqXHR, textStatus, errorThrown)
+          // {
+          //   $("#results").html("<p> An error took place </p>");
+          // },
           error: function (jqXHR, textStatus, errorThrown)
           {
           },
@@ -94,7 +98,11 @@ $( "#query" ).autocomplete({
               }
               response(newResults);
 
-              $('#autocomplete').val(newResults[0]);
+              if(data.suggestions.length != 0) {
+                $('#autocomplete').val(newResults[0]);
+              } else {
+                $('#autocomplete').val($('#query').val());
+              }
             }
 
             // populateResultsHTML(data.results, data.time);

@@ -15,6 +15,7 @@ function showLoadingIcon()
 
 function populateResultsHTML(results, time)
 {
+  $("#instead").html("");
 
   var allHtml = "";
   var numberOfResults = results.length;
@@ -29,7 +30,6 @@ function populateResultsHTML(results, time)
     $("#results").html(allHtml);
 
     $("#time").html("Your search returned in " + numeral(time).format('0,0') + " ms.");
-    $("#instead").html("");
   }
   else
     $("#results").html("<p class='noresults'> No results found </p>");
@@ -110,10 +110,17 @@ function search(hide)
             "format": "json",
             "numdocs" : NUMDOCS
           },
-          timeout: TIMEOUT,
+          // timeout: TIMEOUT,
+          // timeout: function (jqXHR, textStatus, errorThrown)
+          // {
+          //   $("#results").html("<p> An error took place </p>");
+          // },
           error: function (jqXHR, textStatus, errorThrown)
           {
-            $("results").html("<p> An error took place </p>");
+            if(textStatus == 'timeout')
+              alert("timeout");
+            else
+              $("results").html("<p> An error took place </p>");
           },
           success: function( data ) 
           {
@@ -137,7 +144,7 @@ function searchNew(value)
 {
   $("#query").val(value);
  $("#autocomplete").val(value);
- 
+
   $(".ui-menu-item").hide();
         $.ajax({
           beforeSend : function (XMLHttpRequest)
@@ -153,11 +160,15 @@ function searchNew(value)
             "format": "json",
             "numdocs" : NUMDOCS
           },
-          timeout: TIMEOUT,
+          // timeout: TIMEOUT,
           error: function (jqXHR, textStatus, errorThrown)
           {
-            $("results").html("<p> An error took place </p>");
+            $("#results").html("<p> An error took place </p>");
           },
+          // timeout: function (jqXHR, textStatus, errorThrown)
+          // {
+          //   $("#results").html("<p> An error took place </p>");
+          // },
           success: function( data ) 
           {
             
